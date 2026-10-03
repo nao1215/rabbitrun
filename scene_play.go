@@ -113,7 +113,7 @@ type PlayScene struct {
 	// congratulation.
 	allClear  bool
 	endLayer  *ebiten.Image // the ending's portrait, when there is no illustration
-	committed bool          // whether this run was recorded in the progress (commitScore)
+	committed bool          // whether this run was recorded in the progress (commitRun)
 	// artFor is the course (negative: the course a retry goes back to) whose next
 	// illustration prefetchArt has started decoding; prefetched are the illustrations it
 	// started, freed with the scene.
@@ -364,12 +364,12 @@ func (s *PlayScene) onGameOver() {
 	s.overFrame = 0
 	stopBGM()
 	playSE(seGameOver)
-	s.commitScore()
+	s.commitRun()
 	s.updateExpression()
 }
 
-// commitScore records how far this run got and how long it lasted (also called on quit).
-func (s *PlayScene) commitScore() {
+// commitRun records how far this run got and how long it lasted (also called on quit).
+func (s *PlayScene) commitRun() {
 	if s.committed {
 		return
 	}

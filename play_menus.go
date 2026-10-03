@@ -77,12 +77,12 @@ func (s *PlayScene) updatePause(g *Game) {
 			resume = true
 		case 1:
 			stopBGM()
-			s.commitScore()
+			s.commitRun()
 			g.SetScene(newPlayScene(s.char))
 			return
 		case 2:
 			stopBGM()
-			s.commitScore()
+			s.commitRun()
 			g.SetScene(newTitleScene())
 			return
 		}

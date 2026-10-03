@@ -69,7 +69,7 @@ func (s *PlayScene) courseClear(n int) {
 func (s *PlayScene) allClearNow() {
 	s.allClear = true
 	s.overFrame = 0
-	s.commitScore()
+	s.commitRun()
 	stopBGM()
 	playSE(seUnlock)
 	// the rewards (see secret.go) show on the title screen: a new character comes in, the
