@@ -18,11 +18,10 @@ func (s *PlayScene) drawBoard(screen *ebiten.Image) {
 	e := s.eng
 	bx, by := boardX, boardY
 	w, h := float32(cell*BoardW), float32(cell*VisibleRows)
-	// White-bordered board with a whitened background image
+	// The road's frame: a white border with a flat shadow
 	fillRoundRect(screen, float32(bx), float32(by)+2, w+16, h+16, 18, shadowColor())
 	fillRoundRect(screen, float32(bx)-8, float32(by)-8, w+16, h+16, 18, panelFill)
-	// Board background: the unlocked illustration (character on transparent background) scaled to fill the board over the base image
-	// (overflow may be cropped so the face does not look too small)
+	// The base picture under the road (assets/ui/board), covering the frame
 	if img := uiImage("board"); img != nil {
 		drawImageCover(screen, img, bx, by, float64(w), float64(h), 1)
 	}

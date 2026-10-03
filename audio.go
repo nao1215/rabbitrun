@@ -195,7 +195,7 @@ var seSynthed = make(chan struct{})
 
 // synthEffects synthesizes every sound effect into d.
 func synthEffects(d *[seCount][]byte) {
-	// Moving and placing gummies uses soft sine waves with falling pitch (squishy, bouncy).
+	// The menu cursor clicks with a soft sine wave of falling pitch (squishy, bouncy).
 	d[seMove] = synth(0.05, func(t float64) float64 { return glide(t, 1100, 800, 60) * soft(t, 0.002, 70) * .18 })
 	d[seHammer] = hammerSound()
 	d[seBreak] = breakSound()

@@ -28,13 +28,13 @@ import (
 //go:embed assets/blocks assets/fonts assets/ui assets/characters/*/game.json all:assets/characters/*/images
 var assetFS embed.FS
 
-// Expression IDs switched by the board state. game.json lists an image under each ID in expressions.
+// Expression IDs switched by the road ahead and what happens on it. game.json lists an image under each ID in expressions.
 const (
 	ExprNormal   = "normal"   // default
 	ExprRelaxed  = "relaxed"  // the road ahead is wide and easy
 	ExprHappy    = "happy"    // picked up a sweet
 	ExprGreat    = "great"    // picked up a macaron
-	ExprExcited  = "excited"  // a bomb (the hammer) went off
+	ExprExcited  = "excited"  // a hammer swung, an extra life picked up
 	ExprTreat    = "treat"    // picked up the precious sweet (worth three)
 	ExprCombo    = "combo"    // five sweets in a row
 	ExprPerfect  = "perfect"  // a stage cleared
@@ -44,7 +44,8 @@ const (
 	ExprCrying   = "crying"   // she ran into a wall
 	ExprGameOver = "gameover" // game over
 
-	// Reactions to how the board is built (see PlayScene.readBoard).
+	// Reactions to the road and to events (see PlayScene.readRoad and handleEvents).
+	// blocked and ready are not reacted to in play; their portraits show in the gallery.
 	ExprOops    = "oops"    // the precious sweet got away
 	ExprBlocked = "blocked" // the road ahead is shut by a gate or a wall across
 	ExprReady   = "ready"   // the countdown before the road moves
@@ -318,11 +319,11 @@ func (e *ImageEntry) ReleaseFull() {
 type Character struct {
 	ID          string       `json:"id"`     // never shown on screen (characters are unnamed)
 	Order       int          `json:"order"`  // order on the character select screen
-	Secret      bool         `json:"secret"` // the secret character, locked until secretGoal is reached
+	Secret      bool         `json:"secret"` // the secret character, locked until the others clear (secretUnlocked)
 	Expressions []ImageEntry `json:"expressions"`
 	Group       *ImageEntry  `json:"group"`  // pose for the group picture of the secret title command
 	Select      *ImageEntry  `json:"select"` // full-body image for character select (modest outfit)
-	Cutin       *ImageEntry  `json:"-"`      // the big cut-in when a star candy goes off (images/cutin.png)
+	Cutin       *ImageEntry  `json:"-"`      // the big cut-in when a hammer is swung (images/cutin.png)
 	// Ending and EndingExtra are the pictures of the all clear, of the regular and of the
 	// extra stages (images/ending, images/ending_extra): the shape of the window, to fill it.
 	Ending      *ImageEntry  `json:"-"`
@@ -413,7 +414,6 @@ func loadAssets() {
 	}
 }
 
-// readCharacters parses every assets/characters/*/game.json manifest in fsys.
 // hasNormalImage reports whether the character in base has its standing picture
 // (images/normal.png or .jpg), the one every screen falls back on.
 func hasNormalImage(fsys fs.FS, base string) bool {
@@ -430,6 +430,7 @@ func hasImageFile(fsys fs.FS, stem string) bool {
 	return false
 }
 
+// readCharacters parses every assets/characters/*/game.json manifest in fsys.
 // Characters come back sorted by Order and each character's CGs by their Order.
 // Images are not loaded; they load lazily on use.
 func readCharacters(fsys fs.FS) ([]*Character, error) {

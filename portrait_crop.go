@@ -78,7 +78,7 @@ func portraitBox(pix []byte, w, h int, kind cropKind) (image.Rectangle, bool) {
 
 // faceCrops holds the face close-ups cut from the full-resolution portraits.
 // Decoding a portrait takes a few frames, so it runs in the background; until a
-// crop is ready the panel keeps showing the previous one.
+// crop is ready faceOf returns nil and the caller shows something else (or nothing).
 var faceCrops = struct {
 	sync.Mutex
 	ready   map[cropKey]*image.RGBA // decoded crops waiting to be uploaded to the GPU

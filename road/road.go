@@ -4,6 +4,9 @@
 //
 // Time is counted in steps: one step scrolls the road by one row. The game decides
 // how many steps a second there are (the speed).
+//
+// The hammer item, which clears every wall on the screen, is called a bomb in the names
+// of this package (SweetBomb, Bombs, UseBomb and so on), from an earlier design.
 package road
 
 import (
@@ -29,14 +32,14 @@ type Cell struct {
 // Row is one row of the road.
 type Row [W]Cell
 
-// Sweet kinds. Rare sweets are worth more.
+// Sweet kinds. The rare cake counts for three toward the next extra life.
 const (
 	SweetNone int8 = iota
 	SweetCandy
 	SweetMacaron
 	SweetCake  // rare
 	SweetOneUp // an extra life (very rare)
-	SweetBomb  // a bomb for the stock (rare)
+	SweetBomb  // a hammer for the stock (rare)
 )
 
 // Event is something that happened in a step.
@@ -59,8 +62,8 @@ const (
 	EventAllClear                    // the last course of the game is done
 	EventOneUp                       // picked up an extra life
 	EventRestart                     // a life was used: the stage starts over
-	EventBombGain                    // a bomb was added to the stock
-	EventBomb                        // a bomb went off: every wall on the screen is gone
+	EventBombGain                    // a hammer was added to the stock
+	EventBomb                        // a hammer was swung: every wall on the screen is gone
 	EventOver
 )
 
@@ -69,10 +72,10 @@ type Game struct {
 	Rows [Rows]Row // Rows[0] is the top
 	X    float64   // middle of the player, in cells from the left edge (0.5 is the middle of column 0)
 
-	Bombs    int // bombs in stock: a bomb clears every wall on the screen
+	Bombs    int // hammers in stock: a hammer clears every wall on the screen
 	Sweets   int // sweets picked up toward the next extra life (SweetsPerLife)
 	Lives    int
-	Level    int // courses reached so far (1 for the first course): sets the speed and the points
+	Level    int // courses reached so far (1 for the first course): sets the speed
 	Stage    int // 1 for the first stage
 	Course   int // 0-6 within the stage
 	Ahead    Row // the row that comes in at the top next (drawn above the visible road)
@@ -220,14 +223,14 @@ const (
 	sectionZigzag
 	sectionSlalom
 	sectionTunnel
-	sectionVault     // a cage of blocks with a prize inside: only a bomb opens it
+	sectionVault     // a cage of blocks with a prize inside: only a hammer opens it
 	sectionFeast     // a wide stretch with a sweet on every open cell: help yourself
 	sectionKinds = 3 // the kinds that come at random (vaults and feasts are placed: Vaults, Feasts)
 )
 
 // Vaults are the courses (by Level) that have a cage of blocks with two prizes inside,
-// which only a bomb can get at: always worth more than the bomb it takes (an extra life
-// and the bomb back, so a vault never adds to the bombs). The road is the same every game, so
+// which only a hammer can get at: always worth more than the hammer it takes (an extra life
+// and the hammer back, so a vault never adds to the hammers). The road is the same every game, so
 // they are always in the same places.
 var Vaults = map[int][2]int8{
 	3:  {SweetOneUp, SweetBomb},
@@ -256,7 +259,7 @@ func sectionChance(d int) float64 {
 	return min(0.09, 0.025*float64(d))
 }
 
-// BombChance is the chance that a bomb lies somewhere on the road of a stage: an even
+// BombChance is the chance that a hammer lies somewhere on the road of a stage: an even
 // chance at first, rarer every stage (a hammer is a rare help, not one a stage).
 func BombChance(stage int) float64 { return max(0.1, 0.5-0.15*float64(stage-1)) }
 
@@ -686,7 +689,7 @@ func (g *Game) buildRoad(withThings bool) Row {
 	return g.addThings(row, left, right)
 }
 
-// addThings puts the sweets (and the stage's bomb) on a row of road between left and right.
+// addThings puts the sweets (and the stage's hammer) on a row of road between left and right.
 func (g *Game) addThings(row Row, left, right int) Row {
 	p := g.Profile
 	g.stageRow++
@@ -725,7 +728,7 @@ func (g *Game) addThings(row Row, left, right int) Row {
 
 // place puts a thing on the road where it tempts the player into a risk: often right by
 // a wall or a pillar, and sometimes in a dent in the wall that she must dart into and out
-// of before the wall comes back. Extra lives and bombs go to the risky places more often.
+// of before the wall comes back. Extra lives and hammers go to the risky places more often.
 func (g *Game) place(row *Row, left, right int, thing int8) {
 	precious := thing == SweetOneUp || thing == SweetBomb || thing == SweetCake
 	dent := alcoveChance
@@ -1015,8 +1018,8 @@ func (g *Game) gainHammer() {
 	}
 }
 
-// UseBomb sets off a bomb from the stock: every wall on the screen (and the row about
-// to come in) is gone; the sweets stay. It reports whether there was a bomb.
+// UseBomb swings a hammer from the stock: every wall on the screen (and the row about
+// to come in) is gone; the sweets stay. It reports whether there was a hammer.
 func (g *Game) UseBomb() bool {
 	if g.Over || g.Bombs == 0 {
 		return false

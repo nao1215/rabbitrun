@@ -15,7 +15,7 @@ import (
 
 // GalleryScene is the screen for browsing portraits and illustrations, reached from the title.
 // Small character cards along the top switch characters (LB/RB, Q/E); the grid below lists portraits then illustrations.
-// Only portraits seen during play and illustrations unlocked by cumulative score can be viewed.
+// Only portraits seen during play and illustrations earned in play can be viewed.
 type GalleryScene struct {
 	charIdx int
 	sel     int

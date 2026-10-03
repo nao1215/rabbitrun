@@ -31,12 +31,12 @@ func (s *PlayScene) updateComeback() {
 
 // Reaction strengths: a weaker reaction never interrupts a stronger one that is still showing.
 const (
-	rankHint    = iota // a passing look: level up, a wall brushing past
-	rankSmall          // a sweet
-	rankGood           // a macaron, a lost rare sweet
+	rankHint    = iota // a passing look: level up, a wall brushing past, the rare sweet ahead
+	rankSmall          // a sweet, a long way without one
+	rankGood           // a macaron, a lost rare sweet, an extra life
 	rankCombo          // five sweets in a row, out of danger
-	rankBig            // the rare sweet, a crash
-	rankPerfect        // (unused: kept for the order of the ranks)
+	rankBig            // the rare sweet, a hammer, getting back up
+	rankPerfect        // a stage cleared, a crash
 )
 
 func (s *PlayScene) react(expr string, frames, rank int) {

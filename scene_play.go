@@ -11,7 +11,7 @@ import (
 )
 
 // Screen layout: the road on the left; on the right, a tall frame for the full-body
-// character (as wide as possible, so she shows large). The lives, stars and sweets sit
+// character (as wide as possible, so she shows large). The lives, hammers and sweets sit
 // in a row above the frame.
 const (
 	cell     = 46.0
@@ -92,29 +92,28 @@ type PlayScene struct {
 
 	fadeLayer, frameLayer *ebiten.Image
 
-	// Illustration shown behind the board (the newest unlocked one); switches when a new one unlocks
-	// The stage background: from the second stage on, the illustration unlocked by the
-	// stage just cleared (it stays for the whole stage). stageFade fades it in.
+	// stageCG is the illustration behind the road: from the second course on, the newest
+	// one earned (it stays until the next is earned). stageFade fades it in.
 	stageCG   *ImageEntry
 	stageFade float64
 	// prevCG is the illustration before stageCG, kept under it while the new one fades in
-	// (without it the plain board showed for a moment at every change)
+	// (without it the plain road showed for a moment at every change)
 	prevCG *ImageEntry
 	// After a miss: missFrame counts the frames since it, missSel is the chosen button
 	// (RETRY or GIVE UP), and countdown runs while the lives count ticks down on RETRY.
 	missFrame int
 	missSel   int
 	countdown int
-	// The bomb: frames left of its cut-in, the walls it blew away (drawn breaking), and the
-	// frames since they began to break (0: not breaking).
+	// The hammer: the frames since the walls it blew away began to break (0: not breaking),
+	// the frames left of its cut-in, and those walls (drawn breaking).
 	crumble     int
 	cutin       int
 	hammerWalls [road.Rows + 1]road.Row
-	// allClear: the last locked illustration was unlocked; the run ends on it with a
+	// allClear: the last course is done; the run ends on the ending's picture with a
 	// congratulation.
 	allClear  bool
 	endLayer  *ebiten.Image // the ending's portrait, when there is no illustration
-	committed bool          // whether this run's score was added to the total
+	committed bool          // whether this run was recorded in the progress (commitScore)
 	// artFor is the course (negative: the course a retry goes back to) whose next
 	// illustration prefetchArt has started decoding; prefetched are the illustrations it
 	// started, freed with the scene.
@@ -203,7 +202,7 @@ func (s *PlayScene) Update(g *Game) {
 		s.updateMiss(g)
 		return
 	}
-	// The cut-in of a bomb holds the road for a moment; then the walls break, row by row
+	// The cut-in of a hammer holds the road for a moment; then the walls break, row by row
 	// from the bottom up, each row with a crack.
 	if s.cutin > 0 {
 		s.cutin--
@@ -319,8 +318,8 @@ func (s *PlayScene) handleEvents() {
 	}
 }
 
-// drawLives shows, at the top right (where the score used to be), the lives left as
-// her SD figure times the number, the star candies in stock (Space sets one off), and
+// drawLives shows, at the top right, the lives left as her face times the number, the
+// hammers in stock (Space swings one), and
 // the sweets gathered toward the next life.
 func (s *PlayScene) drawLives(screen *ebiten.Image) {
 	const size = 46.0

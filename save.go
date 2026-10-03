@@ -20,9 +20,9 @@ type CharProgress struct {
 	Cleared    bool `json:"cleared"`     // the regular stages run to the end
 	// ClearedExtra is set once the extra stages have been run to the end.
 	ClearedExtra bool            `json:"cleared_extra"`
-	UnlockedCG   map[string]bool `json:"unlocked_cg"`      // illustrations unlock one per stage cleared
+	UnlockedCG   map[string]bool `json:"unlocked_cg"`      // illustrations earned, one a course (unlockedAfter)
 	SeenExpr     map[string]bool `json:"seen_expressions"` //nolint:tagliatelle // key used by existing save files, which must keep loading
-	// PlaySeconds is the total time played with the character (it counts toward the secret character).
+	// PlaySeconds is the total time played with the character.
 	PlaySeconds int `json:"play_seconds"`
 }
 

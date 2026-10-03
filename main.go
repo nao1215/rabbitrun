@@ -11,7 +11,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
-// Portrait screen (4:5). The board fills the full height with no top or bottom margin.
+// Portrait screen (4:5).
 const (
 	ScreenW = 720
 	ScreenH = 900

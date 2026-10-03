@@ -12,7 +12,7 @@ import (
 
 // The hammer: swinging one, its cut-in, and the walls breaking after it.
 
-// cutinFrames is how long the cut-in of a bomb lasts (the road waits meanwhile).
+// cutinFrames is how long the cut-in of a hammer lasts (the road waits meanwhile).
 const cutinFrames = 70
 
 // useHammer swings a hammer: the character cuts in big, and every wall on the screen bursts.
@@ -29,7 +29,7 @@ func (s *PlayScene) useHammer() {
 	s.react(ExprExcited, 120, rankBig)
 }
 
-// drawCutin draws the cut-in of a bomb: a pastel band with speed lines sweeps across
+// drawCutin draws the cut-in of a hammer: a pastel band with speed lines sweeps across
 // the screen, and the character bursts out of it (her head rises above the band), holds,
 // and sweeps out to the left.
 func (s *PlayScene) drawCutin(screen *ebiten.Image) {
@@ -78,7 +78,7 @@ func (s *PlayScene) drawCutin(screen *ebiten.Image) {
 // (assets/ui/hammer.png), shown on the road and in the stock.
 func hammerImage() *ebiten.Image { return uiImage("hammer") }
 
-// cutinImage is the big picture of the bomb cut-in: images/cutin.png (no background, a
+// cutinImage is the big picture of the hammer's cut-in: images/cutin.png (no background, a
 // "here I go!" pose), or the character select picture until it exists.
 func cutinImage(c *Character) *ebiten.Image {
 	if c.Cutin != nil && c.Cutin.HasImage() {

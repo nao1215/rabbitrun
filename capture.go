@@ -302,7 +302,7 @@ func writePNG(p string, img image.Image) error {
 	return f.Close()
 }
 
-// cutinScene sets off a star candy so the capture shows the cut-in of character i.
+// cutinScene swings a hammer so the capture shows the cut-in of character i.
 func cutinScene(g *Game, i int) {
 	s := newPlayScene(characters[i])
 	s.ready = 0
@@ -341,7 +341,6 @@ func feastOnScreen(g *road.Game) bool {
 	return n >= 8
 }
 
-// gameOverScene runs a game with no life left into the first wall: the full game over.
 // titleRevealScene is the title bringing in the secret character as just unlocked.
 func titleRevealScene(g *Game) {
 	s := newTitleScene()
@@ -368,6 +367,7 @@ func allClearScene(g *Game) {
 	g.SetScene(s)
 }
 
+// gameOverScene runs a game with no life left into the first wall: the full game over.
 func gameOverScene(g *Game) {
 	s := newPlayScene(characters[defaultCharIndex()])
 	s.ready = 0
