@@ -14,10 +14,18 @@ import (
 // character (as wide as possible, so she shows large). The lives, stars and sweets sit
 // in a row above the frame.
 const (
-	cell    = 46.0
-	boardX  = 14.0
-	boardY  = 70.0 // y of the top row of the road
-	readyFr = 90   // duration of READY / GO
+	cell     = 46.0
+	boardX   = 14.0
+	boardY   = 70.0 // y of the top row of the road
+	readyFr  = 90   // duration of READY / GO
+	goFrames = 35   // the last frames of READY, which show GO
+
+	// boardMidX is the middle of the road across.
+	boardMidX = boardX + cell*BoardW/2
+	// boardTextX is where READY / GO and the popups are centered: half a cell right of the
+	// road's middle (it was the middle of an older, wider road). Moving them to boardMidX
+	// would shift them on the screen, so they stay.
+	boardTextX = boardX + cell*5
 
 	rightX, rightW = boardX + cell*BoardW + 20, ScreenW - (boardX + cell*BoardW + 20) - 10
 
@@ -177,7 +185,7 @@ func (s *PlayScene) Update(g *Game) {
 		switch s.ready {
 		case readyFr:
 			playSE(seReady)
-		case 35:
+		case goFrames:
 			playSE(seGo)
 		}
 		s.updateComeback()
@@ -411,10 +419,10 @@ func (s *PlayScene) Draw(screen *ebiten.Image) {
 
 	if s.ready > 0 {
 		msg := "READY"
-		if s.ready < 35 {
+		if s.ready < goFrames {
 			msg = "GO"
 		}
-		drawTextOutline(screen, msg, boardX+cell*5, boardY+cell*8, 48, candyPink)
+		drawTextOutline(screen, msg, boardTextX, boardY+cell*8, 48, candyPink)
 	}
 	if s.paused {
 		dimScreen(screen, 0xb0)
@@ -483,7 +491,7 @@ func (s *PlayScene) drawCharacter(screen *ebiten.Image) {
 }
 
 func (s *PlayScene) drawPopups(screen *ebiten.Image) {
-	cx := boardX + cell*5
+	cx := boardTextX
 	for i, p := range s.popups {
 		a := math.Min(1, float64(p.timer)/25)
 		y := boardY + cell*6 + float64(i)*50 - float64(70-p.timer)*0.3

@@ -95,7 +95,7 @@ func (s *PlayScene) updatePause(g *Game) {
 
 func (s *PlayScene) updateGameOver(g *Game) {
 	s.overFrame++
-	wait := 60
+	wait := endInputAt
 	if !s.allClear {
 		wait = curtainStart + curtainFrames + 10 // the menu takes input once the curtain is down
 	}
@@ -131,12 +131,12 @@ func (s *PlayScene) drawMiss(screen *ebiten.Image) {
 	if s.missFrame < 10 {
 		return
 	}
-	drawTextOutline(screen, "MISS", boardX+cell*BoardW/2, boardY+cell*4, 64, candyPink)
+	drawTextOutline(screen, "MISS", boardMidX, boardY+cell*4, 64, candyPink)
 	// The lives: on RETRY the number ticks down by one, dropping out and the new count
 	// bouncing in.
 	if img := charFace(s.char); img != nil {
 		const size = 64.0
-		cx, cy := boardX+cell*BoardW/2, boardY+cell*7
+		cx, cy := boardMidX, boardY+cell*7
 		drawImageFit(screen, img, cx-size*1.2, cy-size/2, size, size, 1)
 		n := s.eng.G.Lives
 		if s.countdown > 0 {
@@ -152,10 +152,19 @@ func (s *PlayScene) drawMiss(screen *ebiten.Image) {
 		}
 	}
 	if s.missFrame >= missFrames && s.countdown == 0 {
-		drawTextOutline(screen, "RESTART AT "+s.eng.RestartProgress(), boardX+cell*BoardW/2, boardY+cell*8.9, 26, textMain)
-		drawMenuAt(screen, missItems, s.missSel, boardX+cell*BoardW/2, boardY+cell*10, 40)
+		drawTextOutline(screen, "RESTART AT "+s.eng.RestartProgress(), boardMidX, boardY+cell*8.9, 26, textMain)
+		drawMenuAt(screen, missItems, s.missSel, boardMidX, boardY+cell*10, 40)
 	}
 }
+
+// The ending's timing: the picture fades in over endFadeFrames, the menu takes input from
+// endInputAt, and the words come up from endWordsAt (over endBandFrames).
+const (
+	endFadeFrames = 60
+	endInputAt    = 60
+	endWordsAt    = 90
+	endBandFrames = 20
+)
 
 // The box of the ending's portrait (when there is no illustration): between the words
 // at the top and the menu at the bottom.
@@ -166,7 +175,7 @@ const (
 
 // drawAllClear is the ending: the last illustration over the whole screen, and a congratulation.
 func (s *PlayScene) drawAllClear(screen *ebiten.Image) {
-	a := float32(math.Min(1, float64(s.overFrame)/60))
+	a := float32(math.Min(1, float64(s.overFrame)/endFadeFrames))
 	dimScreen(screen, uint8(0xff*a))
 	if ending := s.ending(); ending != nil && ending.HasImage() {
 		// the ending's own picture, made the shape of the window: it fills it
@@ -186,12 +195,12 @@ func (s *PlayScene) drawAllClear(screen *ebiten.Image) {
 		op.ColorScale.ScaleAlpha(a)
 		screen.DrawImage(s.endLayer, op)
 	}
-	if s.overFrame < 90 {
+	if s.overFrame < endWordsAt {
 		return
 	}
 	// just the congratulation in a thin band at the top and the way back to the title at
 	// the bottom, so the picture (her face is near the top) stays in view
-	bands := float32(math.Min(1, float64(s.overFrame-90)/20))
+	bands := float32(math.Min(1, float64(s.overFrame-endWordsAt)/endBandFrames))
 	vector.FillRect(screen, 0, 0, ScreenW, 66, color.NRGBA{0xff, 0xff, 0xff, uint8(0x90 * bands)}, false)
 	vector.FillRect(screen, 0, ScreenH-74, ScreenW, 74, color.NRGBA{0xff, 0xff, 0xff, uint8(0x90 * bands)}, false)
 	drawTextOutline(screen, "CONGRATULATIONS!", ScreenW/2, 10, 42, candyPink)
