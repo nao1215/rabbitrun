@@ -1160,6 +1160,24 @@ func (g *Game) Restart() bool {
 	return true
 }
 
+// StartAt runs the road of a game just begun on to the start of the course at level (the
+// last course at most): the rows are built one by one as in play, so Level, Stage and
+// Course agree, the screen shows the end of the course before, and the road from there
+// on is the one every game has. It is for the demo recording and the screenshots.
+func (g *Game) StartAt(level int) {
+	if g.TotalCourses > 0 {
+		level = min(level, g.TotalCourses)
+	}
+	events := len(g.Events)
+	for g.Level < level {
+		g.pushRow()
+		g.Distance++
+		g.nextCourse()
+	}
+	g.Events = g.Events[:events] // nothing happened to her on the way
+	g.X = g.openColumn(g.X)
+}
+
 // openColumn is where she stands after a retry: an open cell of her row with open cells
 // straight ahead of it (up to seven rows of room count), the nearest to x among those. The
 // row below hers counts too: most of her body is drawn over it.

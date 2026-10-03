@@ -844,3 +844,48 @@ func TestSweetAheadFindsAKindAmongOthers(t *testing.T) {
 		t.Fatal("a cake three rows ahead was found within one row")
 	}
 }
+
+// TestStartAtIsTheRoadOfPlay checks that a game started at a later course is on the road a
+// game played up to there is on, with its stage and course in step with its level.
+func TestStartAtIsTheRoadOfPlay(t *testing.T) {
+	t.Parallel()
+	newGame := func() *Game {
+		g := NewWith(7, Profile{Speed: 1, MaxWidth: 5, Narrowing: 2, Wander: 0.16, Mixed: true,
+			Pillars: 0.07, Gates: 0.05, SweetsRate: 0.16})
+		g.TotalCourses = 14
+		return g
+	}
+	for _, level := range []int{2, Courses + 1, Courses + 2, 14} {
+		played, started := newGame(), newGame()
+		played.Safe = 1 << 30
+		for played.Level < level {
+			played.Step()
+		}
+		started.StartAt(level)
+		if started.Level != level || started.Stage != played.Stage || started.Course != played.Course {
+			t.Fatalf("level %d: started on level %d, stage %d, course %d; played to stage %d, course %d",
+				level, started.Level, started.Stage, started.Course, played.Stage, played.Course)
+		}
+		if started.Stage != (level-1)/Courses+1 || started.Course != (level-1)%Courses {
+			t.Fatalf("level %d: stage %d, course %d", level, started.Stage, started.Course)
+		}
+		if len(started.Events) != 0 {
+			t.Fatalf("level %d: events %v on the way", level, started.Events)
+		}
+		started.Safe = 1 << 30
+		for range 200 {
+			played.Step()
+			started.Step()
+			for x := range W {
+				if played.Rows[0][x].Wall != started.Rows[0][x].Wall {
+					t.Fatalf("level %d: the road differs from the one played", level)
+				}
+			}
+		}
+	}
+	g := newGame()
+	g.StartAt(99)
+	if g.Level != 14 || g.Stage != 4 || g.Course != 1 {
+		t.Fatalf("past the end: level %d, stage %d, course %d", g.Level, g.Stage, g.Course)
+	}
+}
