@@ -55,10 +55,6 @@ Your character stands beside the road and reacts to the run: she relaxes on a wi
 | <img src="./doc/img/faces/street.png" width="64" alt="Taisho"> | 86 | 15 + α |
 | <img src="./doc/img/faces/secret.png" width="64" alt="secret"> | 86 | 15 + α |
 
-The portraits cover about twenty situations (a sweet picked up, a narrow road, a miss, a retry and more), with several poses each. Some are still being drawn. α is what the secrets unlock.
-
-The music is Vivaldi's *Four Seasons* arranged as drum and bass: Spring on the title, Autumn on character select, Winter on the road, Summer in the gallery.
-
 Everything in this game was made with AI: the program, the characters and illustrations, the blocks and items, the backgrounds and the music arrangements. I have wanted to make games since I was a student, and I wanted to find out what is left for a person to do when a game is built with AI.
 
 ## How to play
