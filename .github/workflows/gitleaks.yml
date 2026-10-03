@@ -1,5 +1,10 @@
 name: gitleaks
-on: [pull_request]
+# Pull requests and direct pushes to main: a secret committed straight to main
+# would otherwise never be scanned.
+on:
+  pull_request:
+  push:
+    branches: [main]
 permissions:
   contents: read
 jobs:
