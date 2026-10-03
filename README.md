@@ -93,7 +93,7 @@ No C compiler is needed. On Linux the game needs the X11, OpenGL and ALSA librar
 sudo apt install libx11-6 libgl1 libglx-mesa0 libxcursor1 libxi6 libxinerama1 libxrandr2 libxrender1 libxext6 libasound2t64
 ```
 
-Rabbit Run needs Go 1.25 or later. CI tests Go 1.25, 1.26, 1.27 and the latest release on Linux, macOS and Windows.
+Rabbit Run needs Go 1.26.6 or later. CI tests Go 1.26.6 and the latest release on Linux, macOS and Windows.
 
 ### Verifying release integrity
 
