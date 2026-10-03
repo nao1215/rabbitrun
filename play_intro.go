@@ -67,16 +67,11 @@ func (s *PlayScene) drawIntro(screen *ebiten.Image) {
 			return
 		}
 	}
-	// the cut-in: a pink window with speed lines streaming out of the middle
-	vector.FillRect(screen, 0, 0, ScreenW, ScreenH, color.NRGBA{0xf7, 0x8f, 0xb3, uint8(0xf0 * a)}, false)
-	cx, cy := ScreenW*0.5, ScreenH*0.45
-	for i := range 28 {
-		ang := float64(i)*2*math.Pi/28 + float64(t)*0.01
-		r0 := 120 + math.Mod(float64(t*14+i*53), 260)
-		r1 := r0 + 80 + float64(i*37%90)
-		vector.StrokeLine(screen, float32(cx+math.Cos(ang)*r0), float32(cy+math.Sin(ang)*r0),
-			float32(cx+math.Cos(ang)*r1), float32(cy+math.Sin(ang)*r1), 5, color.NRGBA{0xff, 0xff, 0xff, uint8(0x90 * a)}, false)
+	// the cut-in: the sweets of the play screen, washed light so the two of them stand out
+	if back := uiImage("play"); back != nil {
+		drawImageCover(screen, back, 0, 0, ScreenW, ScreenH, a)
 	}
+	vector.FillRect(screen, 0, 0, ScreenW, ScreenH, color.NRGBA{0xff, 0xff, 0xff, uint8(0x50 * a)}, false)
 	// she comes in from the left, the bunny hops in from the right
 	in := 1 - math.Pow(1-math.Min(1, float64(t)/18), 3)
 	if img := cutinImage(s.char); img != nil {
@@ -90,6 +85,9 @@ func (s *PlayScene) drawIntro(screen *ebiten.Image) {
 		sc := ScreenH * 0.36 / ph
 		hop := math.Abs(math.Sin(float64(t)*0.18)) * 36
 		x := ScreenW*0.78 - pw*sc/2 + (1-in)*ScreenW*0.5
+		// a shadow on the ground, smaller as she hops, so the white bunny shows on the light sweets
+		shadow := float32(1 - hop/72)
+		drawEllipse(screen, x+pw*sc/2, ScreenH-30, pw*sc*0.42, 16, color.NRGBA{0x60, 0x40, 0x60, 0xa0}, a*shadow)
 		drawImageScaled(screen, pet, x, ScreenH-ph*sc-24-hop, sc, a)
 	}
 	s.drawIntroWords(screen, t, a)
