@@ -622,7 +622,7 @@ func (s *PlayScene) readRoad() {
 		s.react(ExprRelief, 120, rankCombo) // through the narrow stretch
 	}
 	s.danger = d
-	if e.G.SweetAhead(10) == road.SweetCake {
+	if e.G.SweetAhead(10, road.SweetCake) {
 		if !s.cakeSeen {
 			s.cakeSeen = true
 			s.react(ExprWaiting, 80, rankHint) // the rare sweet is coming

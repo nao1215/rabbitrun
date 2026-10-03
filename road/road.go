@@ -1187,13 +1187,15 @@ func (g *Game) RoadWidthAhead(n int) int {
 	return narrow
 }
 
-// SweetAhead returns the best sweet within the next n rows above the player (0 for none).
-func (g *Game) SweetAhead(n int) int8 {
-	best := int8(0)
+// SweetAhead reports whether a sweet of the kind lies within the next n rows above the player
+// (by kind, not by the largest kind number: a hammer nearby hid a cake).
+func (g *Game) SweetAhead(n int, kind int8) bool {
 	for y := max(0, PlayerRow-n); y < PlayerRow; y++ {
 		for x := range W {
-			best = max(best, g.Rows[y][x].Sweet)
+			if g.Rows[y][x].Sweet == kind {
+				return true
+			}
 		}
 	}
-	return best
+	return false
 }

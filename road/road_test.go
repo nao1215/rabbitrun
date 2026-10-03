@@ -831,3 +831,16 @@ func TestLongStraightRunsEndInABlock(t *testing.T) {
 		t.Fatal("a long straight run never ended in a block")
 	}
 }
+
+func TestSweetAheadFindsAKindAmongOthers(t *testing.T) {
+	t.Parallel()
+	g := New(1)
+	g.Rows[PlayerRow-3][2].Sweet = SweetCake
+	g.Rows[PlayerRow-2][5].Sweet = SweetBomb // a hammer nearer must not hide the cake
+	if !g.SweetAhead(10, SweetCake) {
+		t.Fatal("the cake ahead was not found because a hammer was also ahead")
+	}
+	if g.SweetAhead(1, SweetCake) {
+		t.Fatal("a cake three rows ahead was found within one row")
+	}
+}
