@@ -44,8 +44,10 @@ type decodedPicture struct {
 	img image.Image
 }
 
-// tileDecoders limits how many pictures are decoded at the same time.
-var tileDecoders = make(chan struct{}, max(1, runtime.NumCPU()-1))
+// tileDecoders limits how many pictures are decoded at the same time. A few are enough:
+// the tiles are uploaded only a few a frame anyway, and every decoder holds a portrait
+// of several megabytes while it works (one per CPU spiked memory to hundreds of MB).
+var tileDecoders = make(chan struct{}, min(3, max(1, runtime.NumCPU()-1)))
 
 const (
 	tileW, tileGap       = 160.0, 12.0
