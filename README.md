@@ -4,7 +4,7 @@
 
 # Rabbit Run
 
-Rabbit Run is a short, sweets-themed road runner. A bunny hops up a road built of gummy blocks; you slide her left and right, pick up macarons and stay off the walls. A run takes about three minutes. It is written in Go with [Ebitengine](https://ebitengine.org/) and runs on Linux, macOS and Windows.
+Rabbit Run is a short road runner with sweets. A bunny hops up a road of gummy blocks. It is written in Go with [Ebitengine](https://ebitengine.org/) and runs on Linux, macOS and Windows.
 
 | Title | Character select | Play |
 | :---: | :---: | :---: |
@@ -20,36 +20,40 @@ Rabbit Run is a short, sweets-themed road runner. A bunny hops up a road built o
 
 ## About this game
 
-The road scrolls down toward the bunny and gets faster course by course. A run is four stages of four courses, sixteen courses in all. Every course has a theme of its own: a narrow road winding in long curves, a road that swings from one side of the screen to the other, slaloms, gates with a gap of two, pillars, lanes, a checkerboard of blocks, and more. Each character runs her own roads, so the courses are different for every character, and the roads are the same every time you play, so you can learn them.
+Slide the bunny left and right, pick up macarons and keep off the walls. The road scrolls toward her and speeds up course by course. A run is 4 stages of 4 courses, about three minutes.
 
-The courses run on from one to the next. Along the way you will find:
+- Each course has a theme: winding roads, swings, slaloms, gates, pillars, lanes, checkers and more.
+- Each character has her own roads. They are the same every time, so you can learn them.
+- Hit a wall, from the front or the side, and it is a miss. A life sends you back ten rows to retry. With no lives left, or if you give up, the game is over.
+- Hold up to speed the road up by as much as 30% for the rest of the stage. The music speeds up with it.
 
-- Macarons: Collect them for extra lives. The first life comes after 20 (the opening course lays a trail of them for you); after that, every 150. A retry does not bring back the sweets of the rows you go back over. A glowing macaron counts for three.
-- Bonus courses: One course in each stage after the first is walled with blocks of every candy color. Its road is wider, it has twice the sweets, and partway along the road is covered in macarons. Help yourself.
-- Vaults: An extra life and a hammer locked in a cage of blocks. Only a hammer opens it, and you get it back.
-- The hammer: A pop squeaky toy hammer. Set it off and every wall on the screen is smashed. You start with one, and now and then one lies on the road, more rarely as the stages go on.
+| | Item | What it does |
+| :---: | --- | --- |
+| <img src="./doc/img/items/macaron.png" width="40" alt="macaron"> | Macaron | Lives come from macarons: the first after 20 (the first course lays a trail of them), then one every 150. Macarons you go back over on a retry do not come back. |
+| <img src="./doc/img/items/macaron_glow.png" width="40" alt="glowing macaron"> | Glowing macaron | Counts as three. |
+| <img src="./doc/img/items/hammer.png" width="40" alt="hammer"> | Hammer | Smashes every wall on the screen. You start with one; more lie on the road now and then, fewer in later stages. |
+| <img src="./doc/img/items/oneup.png" width="28" alt="1UP"> | 1UP | An extra life. |
+| <img src="./doc/img/items/vault.png" width="72" alt="vault"> | Vault | A 1UP and a hammer locked in blocks. Only a hammer opens it, and you get that hammer back. |
 
-Hold up to speed the road up yourself (up to 30% faster; it lasts for the rest of the stage). The music speeds up with the road.
+From the second stage on, one course per stage is a bonus course with candy-colored blocks: a wider road, twice the macarons, and a stretch covered in them.
 
-Run into a wall, from the front or from the side, and it is a miss. Use a life to retry: you go back ten rows, to the same road. With no lives left, or if you give up, the game is over.
+Each course you clear unlocks an illustration of your character, which becomes the background of the next course. The gallery shows everything you have unlocked.
 
-Every course you clear unlocks an illustration of your character, and it becomes the background of the next course. You can view every unlocked picture any time in the gallery.
+Your character stands beside the road and reacts to the run: she relaxes on a wide road, gets nervous when it narrows, cheers at a glowing macaron or a cleared stage, and cries at a miss. Her face counts your lives. The bunny you steer is the same for every character.
 
-You play alongside a character who stands next to the road. She watches the run and changes her expression and pose: she relaxes on a wide road, gets nervous as it narrows, cheers when you pick up the glowing macaron or clear a stage, and cries when you hit a wall. The bunny you steer is the same for everyone; your character's face counts your lives.
-
-Every part of this game was made with AI: the program, the characters and illustrations, the blocks and items, the backgrounds and the music arrangements. I have been interested in making games since I was a student, and I wanted to find out what work is still left for a person when a game is built together with AI.
-
-| Character | Look | Portraits (planned) | Illustrations (planned) |
+| Character | Look | Portraits | Illustrations |
 | --- | --- | :---: | :---: |
-| Cool | Silver bob, white leather jacket and black leather pants | 86 | 30 |
-| Cute | Wavy mint hair, white beret, lavender cardigan and mint pencil skirt | 86 | 30 |
-| Gyaru | Tan skin, long blond hair, pink hoodie and rainbow thighhighs | 87 | 30 |
-| Taisho Romance | Black hair with red inner color, pink arrow-pattern kimono, hakama and lace-up boots | 86 | 30 |
-| Secret | ? | 86 | 30 |
+| Cool | Silver bob, white leather jacket, black leather pants | 86 | 15 + α |
+| Cute | Wavy mint hair, white beret, lavender cardigan, mint pencil skirt | 86 | 15 + α |
+| Gyaru | Tan skin, long blond hair, pink hoodie, rainbow thighhighs (gyaru: a Japanese flashy fashion style) | 87 | 15 + α |
+| Taisho | Black hair with red inside, arrow-pattern kimono, hakama, lace-up boots (Taisho roman: a Japanese retro style of the 1910s and 1920s) | 86 | 15 + α |
+| Secret | ? | 86 | 15 + α |
 
-The portraits cover about twenty situations (for example normal, a sweet picked up, a narrow road, a miss, game over and the comeback after a retry) with several poses each. Some of them are still being drawn.
+The portraits cover about twenty situations (a sweet picked up, a narrow road, a miss, a retry and more), with several poses each. Some are still being drawn. α is what the secrets unlock.
 
-The music is Vivaldi's *Four Seasons* arranged as drum and bass, one season for each screen: Spring on the title, Autumn on character select, Winter on the road and Summer in the gallery.
+The music is Vivaldi's *Four Seasons* arranged as drum and bass: Spring on the title, Autumn on character select, Winter on the road, Summer in the gallery.
+
+Everything in this game was made with AI: the program, the characters and illustrations, the blocks and items, the backgrounds and the music arrangements. I have wanted to make games since I was a student, and I wanted to find out what is left for a person to do when a game is built with AI.
 
 ## How to play
 
@@ -146,7 +150,7 @@ Bug reports, ideas and pull requests are welcome. See [CONTRIBUTING.md](./CONTRI
 
 ## Contributors
 
-Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
+Thanks to these people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 <!-- prettier-ignore-start -->
@@ -191,4 +195,4 @@ Clear the extra stages with every character, and the title screen gets an illust
 
 </details>
 
-If you just want to see every character and picture, start the game with `--debug`, or look at the images in this repository on GitHub. That is the easy way, but I hope you will play the game and unlock them yourself.
+If you just want to see every character and picture, start the game with `--debug`, or look at the images in this repository on GitHub. I hope you play and unlock them yourself, though.
