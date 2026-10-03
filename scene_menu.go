@@ -45,8 +45,8 @@ const (
 	revealColorStart  = 30
 	revealColorFrames = 90
 	revealWordsAt     = revealColorStart + revealColorFrames
-	revealPortraitY   = 140
-	revealPortraitH   = 700
+	revealPortraitY   = 120
+	revealPortraitH   = 800
 )
 
 // selectEntries are the pictures of the character select cards. The title decodes them in
@@ -174,7 +174,8 @@ func (s *TitleScene) drawReveal(screen *ebiten.Image) {
 	drawTextOutlineColor(screen, "A NEW CHARACTER", ScreenW/2, 40, 50, candyPink, outline, a)
 	drawTextOutlineColor(screen, "HAS COME!", ScreenW/2, 100, 50, candyPink, outline, a)
 	if s.revealFrame > revealWordsAt+20 && (s.revealFrame/30)%2 == 0 {
-		drawTextOutlineColor(screen, "PRESS ENTER", ScreenW/2, 820, 34, color.White, outline, 1)
+		// under the words: at the bottom it fell on her feet once she was drawn larger
+		drawTextOutlineColor(screen, "PRESS ENTER", ScreenW/2, 158, 30, color.White, outline, 1)
 	}
 }
 
