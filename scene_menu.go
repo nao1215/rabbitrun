@@ -209,22 +209,12 @@ func (s *TitleScene) drawWord(screen *ebiten.Image) {
 	vector.FillRect(screen, 0, 0, ScreenW, ScreenH, color.NRGBA{0x20, 0x16, 0x2a, uint8(0xb0 * a)}, false)
 	outline := color.NRGBA{0x40, 0x30, 0x48, 0xff}
 	drawTextOutlineColor(screen, "THE SECRET WORD", ScreenW/2, 250, 46, color.White, outline, a)
-	drawTextOutlineColor(screen, `"`+groupCommand+`"`, ScreenW/2, 350, 64, candyPink, outline, a)
+	drawTextOutlineColor(screen, `"`+secretWord+`"`, ScreenW/2, 350, 64, candyPink, outline, a)
 	drawTextOutlineColor(screen, "TYPE IT ON THE TITLE SCREEN", ScreenW/2, 470, 32, color.White, outline, a)
 	drawTextOutlineColor(screen, "(IN CAPITALS)", ScreenW/2, 520, 28, color.White, outline, a)
 	if s.wordFrame > wordWait && (s.wordFrame/30)%2 == 0 {
 		drawTextOutlineColor(screen, "PRESS ENTER", ScreenW/2, 820, 34, color.White, outline, 1)
 	}
-}
-
-// toggleExtra is what the secret word does: it switches to the extra stages (and back),
-// and once it has been typed the gallery also lists the extra illustrations. It reports
-// whether the extra stages are on.
-func toggleExtra() bool {
-	save.ExtraFound = true
-	save.ExtraMode = !save.ExtraMode
-	writeSave()
-	return save.ExtraMode
 }
 
 // ---- Character select ----

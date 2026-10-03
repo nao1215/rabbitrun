@@ -48,3 +48,39 @@ func titleComplete() bool {
 func (c *Character) locked() bool {
 	return c.Secret && !secretUnlocked(characters, save)
 }
+
+// secretWord is the secret word: typing it on the title screen switches to the extra
+// stages (and back), with a picture of all the characters together as the title
+// background. It is in capitals only, as the game tells it.
+const secretWord = "RABBITRUN"
+
+// commandBuffer remembers the last letters typed on the title screen.
+type commandBuffer struct {
+	typed []rune
+}
+
+// feed adds the letters typed this frame and reports whether the command was completed.
+func (b *commandBuffer) feed(chars []rune) bool {
+	done := false
+	for _, r := range chars {
+		b.typed = append(b.typed, r)
+		if len(b.typed) > len(secretWord) {
+			b.typed = b.typed[len(b.typed)-len(secretWord):]
+		}
+		if string(b.typed) == secretWord {
+			done = true
+			b.typed = b.typed[:0]
+		}
+	}
+	return done
+}
+
+// toggleExtra is what the secret word does: it switches to the extra stages (and back),
+// and once it has been typed the gallery also lists the extra illustrations. It reports
+// whether the extra stages are on.
+func toggleExtra() bool {
+	save.ExtraFound = true
+	save.ExtraMode = !save.ExtraMode
+	writeSave()
+	return save.ExtraMode
+}
