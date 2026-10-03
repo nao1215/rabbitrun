@@ -62,12 +62,15 @@ func (s *PlayScene) drawBoard(screen *ebiten.Image) {
 		if y > 0 {
 			w = g.Rows[y-1][x].Wall
 		}
-		if s.breaking() && !s.rowBroken(y) {
+		if s.showingWalls() || s.breaking() && !s.rowBroken(y) {
 			w = s.hammerWalls[y][x].Wall // the hammer's walls, not broken yet
 		}
 		return w
 	}
 	buried := func(x, y int) bool {
+		if s.showing {
+			return false // the hammer show's wall of blocks is drawn whole
+		}
 		return wallAt(x-1, y) != 0 && wallAt(x+1, y) != 0 && wallAt(x, y-1) != 0 && wallAt(x, y+1) != 0
 	}
 	// the cells of the walls left out get a soft white, so the illustration shows there

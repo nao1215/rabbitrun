@@ -108,7 +108,9 @@ type PlayScene struct {
 	// The hammer: the frames since the walls it blew away began to break (0: not breaking),
 	// the frames left of its cut-in, and those walls (drawn breaking).
 	crumble     int
-	intro       int // frames left of the intro before READY (see play_intro.go)
+	intro       int  // frames left of the intro before READY (see play_intro.go)
+	showHold    int  // frames the hammer show's blocks stand before the hammer (play_intro.go)
+	showing     bool // the hammer show is on
 	cutin       int
 	hammerWalls [road.Rows + 1]road.Row
 	// allClear: the last course is done; the run ends on the ending's picture with a
@@ -235,14 +237,7 @@ func (s *PlayScene) Update(g *Game) {
 		return
 	}
 	if s.crumble > 0 {
-		if k := (s.crumble - 1) / crumbleStep; (s.crumble-1)%crumbleStep == 0 && k <= road.Rows {
-			if rowHasWall(s.hammerWalls[road.Rows-k]) { // the row breaking now (rowBroken)
-				playSE(seBreak)
-			}
-		}
-		if s.crumble++; s.crumble > (road.Rows+1)*crumbleStep+crumbleFly {
-			s.crumble = 0
-		}
+		s.updateCrumble()
 		s.updateExpression()
 		return
 	}
@@ -447,7 +442,7 @@ func (s *PlayScene) Draw(screen *ebiten.Image) {
 	s.drawPopups(screen)
 	s.drawCutin(screen)
 
-	if s.ready > 0 {
+	if s.ready > 0 && s.intro == 0 && !s.showing {
 		msg := "READY"
 		if s.ready < goFrames {
 			msg = "GO"

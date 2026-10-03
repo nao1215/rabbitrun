@@ -6,6 +6,8 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+
+	"github.com/nao1215/rabbitrun/road"
 )
 
 // The intro of a run: before READY, the character and the bunny she runs with get ready
@@ -41,17 +43,72 @@ func (s *PlayScene) startPicture() *ImageEntry {
 	return e
 }
 
-// updateIntro counts the intro down; it reports whether the intro is still on.
+// updateIntro counts the intro down, and then runs the hammer show; it reports whether
+// either is still on (the road and READY wait meanwhile).
 func (s *PlayScene) updateIntro(g *Game) bool {
-	if s.intro == 0 {
+	if s.intro > 0 {
+		if introFrames-s.intro >= introSkip && g.in.Pressed(ActConfirm) {
+			s.intro = min(s.intro, introFade) // fade out quickly
+		}
+		if s.intro--; s.intro == 0 {
+			s.startHammerShow()
+		}
+		return true
+	}
+	return s.updateHammerShow()
+}
+
+// The hammer show, after the intro: the open road at the start fills with blocks, she
+// swings a hammer, and they all break, so the player sees what a hammer does before the
+// first one comes up. It does not use up her hammer, and the blocks are only shown (the
+// road itself stays open).
+const showHold = 40 // frames the blocks stand before the hammer comes
+
+// startHammerShow fills the screen above the bunny with blocks to break.
+func (s *PlayScene) startHammerShow() {
+	g := s.eng.G
+	s.hammerWalls[0] = g.Ahead
+	copy(s.hammerWalls[1:], g.Rows[:])
+	for y := range road.PlayerRow { // the rows above her row; hers and those below stay open
+		for x := range road.W {
+			if c := &s.hammerWalls[y][x]; c.Wall == 0 && c.Sweet == road.SweetNone {
+				c.Wall = road.CourseColors[(x+y)%len(road.CourseColors)]
+			}
+		}
+	}
+	s.showHold, s.showing = showHold, true
+	playSE(seDenied) // the way is shut
+	s.react(ExprBlocked, showHold, rankBig)
+}
+
+// updateHammerShow runs the show: the blocks stand, the cut-in, then the breaking (the
+// same as a hammer swung in play). It reports whether the show is still on.
+func (s *PlayScene) updateHammerShow() bool {
+	switch {
+	case s.showHold > 0:
+		if s.showHold--; s.showHold == 0 {
+			playSE(seHammer)
+			s.cutin = cutinFrames
+			s.react(ExprExcited, 120, rankBig)
+		}
+	case s.cutin > 0 && s.crumble == 0 && s.showing:
+		if s.cutin--; s.cutin == 0 {
+			s.crumble = 1
+		}
+	case s.crumble > 0 && s.showing:
+		s.updateCrumble()
+		if s.crumble == 0 {
+			s.showing = false
+		}
+	default:
 		return false
 	}
-	if introFrames-s.intro >= introSkip && g.in.Pressed(ActConfirm) {
-		s.intro = min(s.intro, introFade) // fade out quickly
-	}
-	s.intro--
+	s.updateExpression()
 	return true
 }
+
+// showingWalls reports whether the board shows the show's blocks (before they break).
+func (s *PlayScene) showingWalls() bool { return s.showing && s.crumble == 0 }
 
 // drawIntro draws the intro over the whole window.
 func (s *PlayScene) drawIntro(screen *ebiten.Image) {

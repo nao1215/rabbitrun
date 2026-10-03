@@ -97,6 +97,19 @@ const (
 // breaking reports whether the walls are breaking after the hammer.
 func (s *PlayScene) breaking() bool { return s.crumble > 0 }
 
+// updateCrumble moves the breaking on a frame: a row breaks every crumbleStep frames,
+// with a crack when it has walls.
+func (s *PlayScene) updateCrumble() {
+	if k := (s.crumble - 1) / crumbleStep; (s.crumble-1)%crumbleStep == 0 && k <= road.Rows {
+		if rowHasWall(s.hammerWalls[road.Rows-k]) { // the row breaking now (rowBroken)
+			playSE(seBreak)
+		}
+	}
+	if s.crumble++; s.crumble > (road.Rows+1)*crumbleStep+crumbleFly {
+		s.crumble = 0
+	}
+}
+
 // rowBroken reports whether row y of the hammer's walls (0 is the row coming in at the
 // top) has broken yet.
 func (s *PlayScene) rowBroken(y int) bool { return s.crumble >= (road.Rows-y)*crumbleStep }
