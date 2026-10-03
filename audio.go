@@ -179,8 +179,17 @@ var (
 
 func initAudio() {
 	audioCtx = audio.NewContext(sampleRate)
-	synthEffects(&seData)
+	go func() {
+		synthEffects(&seData)
+		close(seSynthed)
+	}()
 }
+
+// seSynthed is closed once the sound effects are synthesized. They are made in the
+// background (a tenth of a second of work, more on a slow machine), so the window opens
+// without waiting for them; playSE waits in the rare case one is wanted before they are
+// done (nothing plays a sound in the first frames).
+var seSynthed = make(chan struct{})
 
 // synthEffects synthesizes every sound effect into d.
 func synthEffects(d *[seCount][]byte) {
@@ -317,6 +326,7 @@ func playSE(id seID) {
 	if audioCtx == nil || audioMuted {
 		return
 	}
+	<-seSynthed
 	seMu.Lock()
 	defer seMu.Unlock()
 	p := audioCtx.NewPlayerF32FromBytes(seData[id])
