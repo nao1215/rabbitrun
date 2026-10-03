@@ -26,7 +26,7 @@ var debugMode = flag.Bool("debug", false, "unlock every character, portrait and 
 // without starting the game.
 var resetSaveFlag = flag.Bool("reset-save", false, "delete the save data (kept as save.json.bak) and exit without starting the game")
 
-// bgmWavDir: with -bgm-wav <dir>, 30 seconds of each character's BGM arrangement is written as WAV and the game exits (for listening).
+// bgmWavDir: with -bgm-wav <dir>, 30 seconds of each song at each intensity stage is written as WAV and the game exits (for listening).
 var bgmWavDir = flag.String("bgm-wav", "", "write each music arrangement to `DIR` as WAV and exit")
 
 // recordPath: with --record-demo <file.mp4>, the game plays itself and the frames are
