@@ -15,6 +15,9 @@ permissions: read-all
 jobs:
   analysis:
     name: Scorecard analysis
+    # Scorecard reads the repository through the public API (a private one is "not
+    # found"); the analysis starts running once the repository is public.
+    if: ${{ !github.event.repository.private }}
     runs-on: ubuntu-latest
     permissions:
       security-events: write
