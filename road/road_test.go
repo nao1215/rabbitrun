@@ -532,7 +532,7 @@ func TestVaultsHoldTwoPrizesOnlyABombOpens(t *testing.T) {
 		if !found {
 			t.Fatalf("level %d: no walled-in %v found", level, prizes)
 		}
-		// worth more than the bomb it takes
+		// worth more than the hammer it takes
 		if prizes[0] != SweetOneUp && prizes[0] != SweetBomb || prizes[1] != SweetOneUp && prizes[1] != SweetBomb {
 			t.Fatalf("level %d: prizes %v", level, prizes)
 		}
