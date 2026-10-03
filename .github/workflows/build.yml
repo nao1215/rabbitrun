@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  # go-version-file pins this job to go.mod's minimum, so the oldest toolchain
-  # rabbitrun claims to support is proven to still build it.
+  # The newest Go, like the release builds. The minimum in go.mod is proven by
+  # the pinned leg of unit_test.yml.
   build:
     runs-on: ubuntu-latest
     steps:
@@ -24,7 +24,8 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version-file: "go.mod"
+          go-version: "stable"
+          check-latest: true
 
       - name: Build
         run: make build
