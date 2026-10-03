@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"image"
 	"image/draw"
 	"io/fs"
@@ -84,10 +83,19 @@ func portraitBox(pix []byte, w, h int, kind cropKind) (image.Rectangle, bool) {
 // crop is ready the panel keeps showing the previous one.
 var faceCrops = struct {
 	sync.Mutex
-	ready   map[string]*image.RGBA   // decoded crops waiting to be uploaded to the GPU
-	images  map[string]*ebiten.Image // uploaded crops (nil when the portrait has no image)
-	loading map[string]bool
-}{ready: map[string]*image.RGBA{}, images: map[string]*ebiten.Image{}, loading: map[string]bool{}}
+	ready   map[cropKey]*image.RGBA // decoded crops waiting to be uploaded to the GPU
+	loading map[cropKey]bool
+}{ready: map[cropKey]*image.RGBA{}, loading: map[cropKey]bool{}}
+
+// cropImages are the uploaded crops (nil when the portrait has no image). Only the main
+// goroutine uses them, so the crops shown every frame are found without the lock.
+var cropImages = map[cropKey]*ebiten.Image{}
+
+// cropKey names a crop: the portrait (entries never move) and the kind of crop.
+type cropKey struct {
+	e    *ImageEntry
+	kind cropKind
+}
 
 // cropPortrait decodes the portrait at full resolution and cuts out the part of the given kind.
 func cropPortrait(e *ImageEntry, kind cropKind) *image.RGBA {
@@ -122,25 +130,25 @@ func portraitCrop(e *ImageEntry, kind cropKind) *ebiten.Image {
 	if e == nil {
 		return nil
 	}
-	id := fmt.Sprintf("%s/%s#%d", e.base, e.ID, kind)
-	faceCrops.Lock()
-	defer faceCrops.Unlock()
-	if img, ok := faceCrops.images[id]; ok {
+	id := cropKey{e, kind}
+	if img, ok := cropImages[id]; ok {
 		return img
 	}
+	faceCrops.Lock()
+	defer faceCrops.Unlock()
 	if rgba, ok := faceCrops.ready[id]; ok {
 		delete(faceCrops.ready, id)
 		var img *ebiten.Image
 		if rgba != nil {
 			img = ebiten.NewImageFromImage(rgba)
 		}
-		faceCrops.images[id] = img
+		cropImages[id] = img
 		return img
 	}
 	if !faceCrops.loading[id] {
 		faceCrops.loading[id] = true
 		if !e.HasImage() {
-			faceCrops.images[id] = nil
+			cropImages[id] = nil
 			return nil
 		}
 		go func() {
