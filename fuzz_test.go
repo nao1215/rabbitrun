@@ -38,8 +38,15 @@ func checkEngine(t *testing.T, e *Engine, prevScore, step int) {
 	if g.Level < 1 || g.Level > GameCourses+1 { // one past the last course on the open road after it
 		t.Fatalf("step %d: level %d", step, g.Level)
 	}
-	// While playing, the player never stands inside a wall unless in the grace after a crash.
-	if !g.Over && g.Safe == 0 && g.Rows[road.PlayerRow][g.Col()].Wall != 0 {
+	// While playing, the player never stands inside a wall of the row beside her body
+	// unless in the grace after a crash. Until the row that just came in has slid
+	// halfway down (SideRowBehind), that is still the row before it: a wall arriving
+	// in her own row is only a miss at ReachHalfway, so she may stand under it until then.
+	besideRow := road.PlayerRow
+	if g.SideRowBehind && road.PlayerRow+1 < road.Rows {
+		besideRow++
+	}
+	if !g.Over && !g.Missed && g.Safe == 0 && g.Rows[besideRow][g.Col()].Wall != 0 {
 		t.Fatalf("step %d: player inside a wall", step)
 	}
 	for _, r := range g.Rows {
