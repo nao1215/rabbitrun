@@ -1,10 +1,8 @@
 package main
 
 import (
-	"errors"
 	"image"
 	"image/draw"
-	"io/fs"
 	"path"
 	"sync"
 
@@ -99,27 +97,21 @@ type cropKey struct {
 
 // cropPortrait decodes the portrait at full resolution and cuts out the part of the given kind.
 func cropPortrait(e *ImageEntry, kind cropKind) *image.RGBA {
-	for _, ext := range imageExts {
-		src, err := decodeAsset(path.Join(e.base, "images", e.ID+ext))
-		if errors.Is(err, fs.ErrNotExist) {
-			continue
-		}
-		if err != nil {
-			return nil
-		}
-		// Only the alpha is read to find the box: the decoded pixels are read as they are
-		// (no full-size copy), and only the box is converted.
-		b := src.Bounds()
-		r, ok := portraitBox(alphaPixels(src), b.Dx(), b.Dy(), kind)
-		if !ok {
-			return nil
-		}
-		// Parts of r outside the portrait stay transparent.
-		face := image.NewRGBA(image.Rect(0, 0, r.Dx(), r.Dy()))
-		draw.Draw(face, face.Bounds(), src, r.Min.Add(b.Min), draw.Src)
-		return face
+	src, err := decodeImage(path.Join(e.base, "images", e.ID))
+	if err != nil {
+		return nil
 	}
-	return nil
+	// Only the alpha is read to find the box: the decoded pixels are read as they are
+	// (no full-size copy), and only the box is converted.
+	b := src.Bounds()
+	r, ok := portraitBox(alphaPixels(src), b.Dx(), b.Dy(), kind)
+	if !ok {
+		return nil
+	}
+	// Parts of r outside the portrait stay transparent.
+	face := image.NewRGBA(image.Rect(0, 0, r.Dx(), r.Dy()))
+	draw.Draw(face, face.Bounds(), src, r.Min.Add(b.Min), draw.Src)
+	return face
 }
 
 // faceOf returns the face close-up of a portrait, or nil while it is still being

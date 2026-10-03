@@ -88,11 +88,8 @@ type ImageEntry struct {
 func (e *ImageEntry) HasImage() bool {
 	if e.has == 0 {
 		e.has = -1
-		for _, ext := range imageExts {
-			if _, err := fs.Stat(assetFS, path.Join(e.base, "images", e.ID+ext)); err == nil {
-				e.has = 1
-				break
-			}
+		if hasImageFile(assetFS, path.Join(e.base, "images", e.ID)) {
+			e.has = 1
 		}
 	}
 	return e.has > 0
@@ -418,8 +415,13 @@ func loadAssets() {
 // hasNormalImage reports whether the character in base has its standing picture
 // (images/normal.png or .jpg), the one every screen falls back on.
 func hasNormalImage(fsys fs.FS, base string) bool {
+	return hasImageFile(fsys, path.Join(base, "images", "normal"))
+}
+
+// hasImageFile reports whether the picture stem.jpg or stem.png (imageExts) is in fsys.
+func hasImageFile(fsys fs.FS, stem string) bool {
 	for _, ext := range imageExts {
-		if _, err := fs.Stat(fsys, path.Join(base, "images", "normal"+ext)); err == nil {
+		if _, err := fs.Stat(fsys, stem+ext); err == nil {
 			return true
 		}
 	}
@@ -478,21 +480,18 @@ func readCharacters(fsys fs.FS) ([]*Character, error) {
 // decodeScaled reads images/<id> and scales it down to at most maxH pixels high. It only
 // touches the CPU, so it may run on any goroutine. It returns nil if the image is missing.
 func decodeScaled(base, id string, maxH int) image.Image {
-	for _, ext := range imageExts {
-		img, err := decodeAsset(path.Join(base, "images", id+ext))
-		if err != nil {
-			continue
-		}
-		b := img.Bounds()
-		if b.Dy() > maxH {
-			w := b.Dx() * maxH / b.Dy()
-			dst := image.NewRGBA(image.Rect(0, 0, w, maxH))
-			draw.ApproxBiLinear.Scale(dst, dst.Bounds(), img, b, draw.Src, nil)
-			img = dst
-		}
-		return img
+	img, err := decodeImage(path.Join(base, "images", id))
+	if err != nil {
+		return nil
 	}
-	return nil
+	b := img.Bounds()
+	if b.Dy() > maxH {
+		w := b.Dx() * maxH / b.Dy()
+		dst := image.NewRGBA(image.Rect(0, 0, w, maxH))
+		draw.ApproxBiLinear.Scale(dst, dst.Bounds(), img, b, draw.Src, nil)
+		img = dst
+	}
+	return img
 }
 
 // loadCharImage reads images/<id>.jpg (or .png). If missing, it returns a placeholder.
@@ -506,18 +505,34 @@ func loadCharImage(base, id, label string) *ebiten.Image {
 // decodeCharImage decodes images/<id>.jpg (or .png) at full size, or returns nil if it is
 // missing. It only touches the CPU, so it may run on any goroutine.
 func decodeCharImage(base, id string) image.Image {
-	for _, ext := range imageExts {
-		img, err := decodeAsset(path.Join(base, "images", id+ext))
-		if errors.Is(err, fs.ErrNotExist) {
-			continue
+	img, err := decodeImage(path.Join(base, "images", id))
+	if err != nil {
+		if !errors.Is(err, fs.ErrNotExist) {
+			log.Printf("%s: %v", id, err)
 		}
-		if err != nil {
-			log.Printf("%s%s: %v", id, ext, err)
-			continue
-		}
-		return img
+		return nil
 	}
-	return nil
+	return img
+}
+
+// decodeImage decodes the embedded picture stem.jpg or stem.png, trying imageExts in
+// order. A file that does not decode is passed over for the next one too; the error
+// wraps fs.ErrNotExist when there is no file at all.
+func decodeImage(stem string) (image.Image, error) {
+	var errs []error
+	for _, ext := range imageExts {
+		img, err := decodeAsset(stem + ext)
+		if err == nil {
+			return img, nil
+		}
+		if !errors.Is(err, fs.ErrNotExist) {
+			errs = append(errs, fmt.Errorf("%s: %w", path.Base(stem+ext), err))
+		}
+	}
+	if len(errs) == 0 {
+		return nil, fs.ErrNotExist
+	}
+	return nil, errors.Join(errs...)
 }
 
 // decodeAsset decodes the embedded image name. It reads the embedded bytes in place:

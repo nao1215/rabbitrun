@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -365,5 +366,18 @@ func TestMarkedSaveIsWrittenOnFlush(t *testing.T) {
 	flushSave()
 	if _, err := os.Stat(savePath()); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("a flush with nothing changed wrote the save: %v", err)
+	}
+}
+
+func TestDecodeImageTriesEachExtension(t *testing.T) {
+	t.Parallel()
+	if img, err := decodeImage("assets/ui/hammer"); err != nil || img == nil {
+		t.Fatalf("the hammer (a .png) did not decode: %v", err)
+	}
+	if img, err := decodeImage("assets/ui/title"); err != nil || img == nil {
+		t.Fatalf("the title art (a .jpg) did not decode: %v", err)
+	}
+	if _, err := decodeImage("assets/ui/no_such_picture"); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("a missing picture gave %v, want fs.ErrNotExist", err)
 	}
 }

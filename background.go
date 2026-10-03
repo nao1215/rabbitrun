@@ -72,11 +72,8 @@ func uiImage(name string) *ebiten.Image {
 		return img
 	}
 	var img *ebiten.Image
-	for _, ext := range imageExts {
-		if dec, err := decodeAsset("assets/ui/" + name + ext); err == nil {
-			img = ebiten.NewImageFromImage(dec)
-			break
-		}
+	if dec, err := decodeImage("assets/ui/" + name); err == nil {
+		img = ebiten.NewImageFromImage(dec)
 	}
 	uiCache[name] = img
 	return img
