@@ -19,8 +19,7 @@ type Engine struct {
 	G *road.Game
 
 	// Events of the frames since the scene last read them.
-	Events   []road.Event
-	LevelUps int
+	Events []road.Event
 	// PlayFrames counts the frames played (Tick calls while not paused).
 	PlayFrames int
 	stepAcc    float64
@@ -174,8 +173,6 @@ func (e *Engine) Scroll() float64 { return e.stepAcc }
 func (e *Engine) collect() {
 	for _, ev := range e.G.Events {
 		switch ev.Kind {
-		case road.EventLevelUp:
-			e.LevelUps++
 		case road.EventStageClear, road.EventRestart:
 			e.Boost = 1 // the speed-up holds for one stage; a new stage or a retry starts at its own speed
 		default:

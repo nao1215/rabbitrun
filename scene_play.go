@@ -260,7 +260,7 @@ func (s *PlayScene) Update(g *Game) {
 
 func (s *PlayScene) handleEvents() {
 	e := s.eng
-	picked := 0
+	picked, courses := 0, 0
 	for _, ev := range e.Events {
 		switch ev.Kind {
 		case road.EventPick:
@@ -299,6 +299,7 @@ func (s *PlayScene) handleEvents() {
 				s.react(ExprCrying, missFrames-5, rankPerfect) // a miss: she cries until the restart
 			}
 		case road.EventCourse:
+			courses++
 			s.courseClear(e.G.Level - 1)
 			if e.G.Bonus() {
 				s.popups = append(s.popups, popup{text: "BONUS!", timer: 120})
@@ -312,14 +313,12 @@ func (s *PlayScene) handleEvents() {
 			playSE(seConfirm)
 		case road.EventRestart:
 			s.react(ExprComeback, 150, rankBig) // back on her feet
-		case road.EventLevelUp, road.EventBomb, road.EventOver:
-			// level ups are counted by the Engine (one per course); the wall color shows the
-			// course; the game over is handled by onGameOver
+		case road.EventBomb, road.EventOver:
+			// the game over is handled by onGameOver
 		}
 	}
 	e.Events = e.Events[:0]
-	if e.LevelUps > 0 {
-		e.LevelUps = 0
+	if courses > 0 { // a new course is a level up: the road is faster now
 		playSE(seLevelUp)
 		s.react(ExprLevelUp, 60, rankHint)
 	}

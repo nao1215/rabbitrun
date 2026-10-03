@@ -51,18 +51,17 @@ type Event struct {
 type EventKind int
 
 const (
-	EventPick     EventKind = iota // picked up a sweet
-	EventMiss                      // a sweet scrolled past the player
-	EventCrash                     // ran into a wall: one life lost
-	EventNearMiss                  // a wall passed right next to the player
-	EventLevelUp
-	EventCourse     // a new course (wall color) began
-	EventStageClear // all the courses of a stage are done
-	EventAllClear   // the last course of the game is done
-	EventOneUp      // picked up an extra life
-	EventRestart    // a life was used: the stage starts over
-	EventBombGain   // a bomb was added to the stock
-	EventBomb       // a bomb went off: every wall on the screen is gone
+	EventPick       EventKind = iota // picked up a sweet
+	EventMiss                        // a sweet scrolled past the player
+	EventCrash                       // ran into a wall: one life lost
+	EventNearMiss                    // a wall passed right next to the player
+	EventCourse                      // a new course (wall color) began: the next level, faster
+	EventStageClear                  // all the courses of a stage are done
+	EventAllClear                    // the last course of the game is done
+	EventOneUp                       // picked up an extra life
+	EventRestart                     // a life was used: the stage starts over
+	EventBombGain                    // a bomb was added to the stock
+	EventBomb                        // a bomb went off: every wall on the screen is gone
 	EventOver
 )
 
@@ -834,11 +833,11 @@ func (g *Game) nextCourse() {
 		// last walls have passed her (she runs out onto the open road, not mid-course)
 		g.Course--
 		g.finishing, g.finishLeft = true, finishRows
-		g.Events = append(g.Events, Event{Kind: EventCourse}, Event{Kind: EventLevelUp})
+		g.Events = append(g.Events, Event{Kind: EventCourse})
 		return
 	}
 	g.startCourse()
-	g.Events = append(g.Events, Event{Kind: EventCourse}, Event{Kind: EventLevelUp})
+	g.Events = append(g.Events, Event{Kind: EventCourse})
 	if g.Course == g.StageCourses() {
 		g.Course = 0
 		g.Stage++
