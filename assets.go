@@ -493,9 +493,24 @@ func decodeScaled(base, id string, maxH int) image.Image {
 		w := b.Dx() * maxH / b.Dy()
 		dst := image.NewRGBA(image.Rect(0, 0, w, maxH))
 		draw.ApproxBiLinear.Scale(dst, dst.Bounds(), img, b, draw.Src, nil)
-		img = dst
+		return dst
 	}
-	return img
+	return toRGBA(img)
+}
+
+// toRGBA returns img as premultiplied RGBA, the form ebiten.NewImageFromImage uploads as
+// it is. Any other form (a JPEG's YCbCr, a PNG's NRGBA) it converts first, the same way
+// (draw.Src into RGBA), on the goroutine that calls it: done on the main goroutine, that
+// took 2 to 6 ms the frame a picture first showed. The decoders call it, off the main
+// goroutine, so uploading is only a copy.
+func toRGBA(img image.Image) image.Image {
+	if p, ok := img.(*image.RGBA); ok && p.Rect.Min == (image.Point{}) && p.Stride == 4*p.Rect.Dx() {
+		return p
+	}
+	b := img.Bounds()
+	dst := image.NewRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
+	draw.Draw(dst, dst.Bounds(), img, b.Min, draw.Src)
+	return dst
 }
 
 // loadCharImage reads images/<id>.jpg (or .png). If missing, it returns a placeholder.
@@ -514,7 +529,7 @@ func decodeCharImage(base, id string) image.Image {
 		logBrokenImage(id, err)
 		return nil
 	}
-	return img
+	return toRGBA(img)
 }
 
 // logBrokenImage logs err when a picture is there but does not decode. A missing picture

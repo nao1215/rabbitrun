@@ -62,6 +62,8 @@ type Input struct {
 	held, prev [actionCount]bool
 	holdFrames [actionCount]int
 	pads       []ebiten.GamepadID
+	// lastSide is the side (-1 left, 1 right) pressed last: it wins while both are held.
+	lastSide int
 }
 
 func (in *Input) Update() {
@@ -75,6 +77,35 @@ func (in *Input) Update() {
 			in.holdFrames[a] = 0
 		}
 	}
+	in.trackSide()
+}
+
+// trackSide notes which of left and right was pressed last.
+func (in *Input) trackSide() {
+	l, r := in.Pressed(ActLeft), in.Pressed(ActRight)
+	switch {
+	case l && !r:
+		in.lastSide = -1
+	case r && !l:
+		in.lastSide = 1
+	}
+}
+
+// Side is the way the player steers: -1 left, 1 right, 0 neither. While both are held
+// the one pressed last wins, so rolling from one key to the other turns her at once;
+// before, both held stopped her for the frames the keys overlapped, and she started
+// again from the slow start of a slide (SlideSpeed) when the first key came up.
+func (in *Input) Side() int {
+	l, r := in.held[ActLeft], in.held[ActRight]
+	switch {
+	case l && r:
+		return in.lastSide
+	case l:
+		return -1
+	case r:
+		return 1
+	}
+	return 0
 }
 
 func (in *Input) poll(a Action) bool {

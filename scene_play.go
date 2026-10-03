@@ -3,6 +3,7 @@ package main
 import (
 	"image/color"
 	"math"
+	"sort"
 	"strconv"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -143,9 +144,26 @@ func newPlayScene(c *Character) *PlayScene {
 	releasePortraitsExcept(c)
 	s.portraits = portraitEntries(c)
 	prefetchImgs(s.portraits)
+	prefetchUI(playArtwork...)
 	// Each run starts on the sweets background; illustrations appear as the run earns them.
 	return s
 }
+
+// playArtwork is the artwork the play screen shows, decoded in the background when a run
+// starts (prefetchUI): the frame of every family of expressions (moodBackground) and the
+// pieces of the road.
+var playArtwork = func() []string {
+	names := make([]string, 0, 4+len(macaronColors)+len(moodBackground))
+	names = append(names, "play", "board", "pet", "hammer")
+	for _, c := range macaronColors {
+		names = append(names, "macaron_"+c)
+	}
+	for f := range moodBackground {
+		names = append(names, "frame_"+f)
+	}
+	sort.Strings(names)
+	return names
+}()
 
 func (s *PlayScene) Update(g *Game) {
 	s.frame++
@@ -230,7 +248,7 @@ func (s *PlayScene) Update(g *Game) {
 	} else {
 		// Sideways moves are smooth: she slides while a direction is held, slowly at
 		// first and faster the longer it is held (SlideSpeed).
-		dir := boolInt(g.in.Held(ActRight)) - boolInt(g.in.Held(ActLeft))
+		dir := g.in.Side()
 		if dir != s.holdDir {
 			s.holdDir, s.holdFrames = dir, 0
 		}
