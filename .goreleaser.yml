@@ -42,6 +42,29 @@ archives:
         dst: THIRD_PARTY_LICENSES
 checksum:
   name_template: "checksums.txt"
+
+# Homebrew cask in the shared nao1215/homebrew-tap (the tap that ships atago and
+# gup), pushed with a tap-scoped token. `--skip=publish` (release-smoke) skips
+# it, so snapshot builds need no token.
+homebrew_casks:
+  - name: rabbitrun
+    repository:
+      owner: nao1215
+      name: homebrew-tap
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
+    directory: Casks
+    homepage: "https://github.com/nao1215/rabbitrun"
+    description: "A short, sweets-themed road runner with characters who react to your run"
+    license: MIT
+    # The game is not signed or notarized, so strip the quarantine attribute on
+    # install; otherwise Gatekeeper refuses to open it ("cannot verify the
+    # developer"), as GoReleaser documents for unsigned binaries.
+    hooks:
+      post:
+        install: |
+          if system_command("/usr/bin/xattr", args: ["-h"]).exit_status == 0
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/rabbitrun"]
+          end
 snapshot:
   version_template: "{{ incpatch .Version }}-next"
 release:

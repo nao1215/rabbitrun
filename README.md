@@ -77,11 +77,7 @@ Choose PLAY on the title screen, pick a character, and the run starts. GALLERY s
 
 ## How to install
 
-### Download a release
-
-Download the archive for your OS from the [releases page](https://github.com/nao1215/rabbitrun/releases), unpack it and run `rabbitrun` (`rabbitrun.exe` on Windows). Linux users can also install the `.deb`, `.rpm` or `.apk` package. Binaries are built for amd64 and arm64.
-
-### go install
+### Use "go install"
 
 ```shell
 go install github.com/nao1215/rabbitrun@latest
@@ -94,6 +90,29 @@ sudo apt install libx11-6 libgl1 libglx-mesa0 libxcursor1 libxi6 libxinerama1 li
 ```
 
 Rabbit Run needs Go 1.26.6 or later. CI tests Go 1.26.6 and the latest release on Linux, macOS and Windows.
+
+### Use homebrew
+
+```shell
+brew install --cask nao1215/tap/rabbitrun
+```
+
+### Install from Package or Binary
+
+[The release page](https://github.com/nao1215/rabbitrun/releases) contains packages in .deb, .rpm, and .apk formats for `amd64` and `arm64`, plus `.tar.gz` archives for Linux/macOS and `.zip` archives for Windows. Unpack an archive and run `rabbitrun` (`rabbitrun.exe` on Windows), or install a package:
+
+```shell
+# Debian, Ubuntu
+$ sudo dpkg -i rabbitrun_1.0.0_linux_amd64.deb
+
+# Fedora, RHEL, openSUSE
+$ sudo rpm -Uvh rabbitrun_1.0.0_linux_amd64.rpm
+
+# Alpine Linux
+$ sudo apk add --allow-untrusted rabbitrun_1.0.0_linux_amd64.apk
+```
+
+Replace `1.0.0` with the release you downloaded and `amd64` with `arm64` where applicable.
 
 ### Verifying release integrity
 
