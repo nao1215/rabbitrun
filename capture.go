@@ -260,7 +260,7 @@ var captureSteps = []captureStep{
 		s := newGalleryScene()
 		for i, it := range s.items() {
 			if it.cg && s.open[i] {
-				s.sel, s.viewing, s.pan = i, true, 0.3
+				s.sel, s.viewing = i, true
 				break
 			}
 		}
