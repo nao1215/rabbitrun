@@ -142,6 +142,7 @@ func newPlayScene(c *Character) *PlayScene {
 
 func (s *PlayScene) Update(g *Game) {
 	s.frame++
+	defer s.updateLean() // after everything that moves her this frame
 	uploadPrefetched(s.portraits, 3)
 	s.prefetchArt()
 	s.updateEffects()

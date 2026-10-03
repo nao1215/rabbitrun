@@ -114,7 +114,7 @@ func (s *PlayScene) drawBoard(screen *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(bx, by)
 	screen.DrawImage(layer, op)
-	if s.ready > 0 && s.comeback == 0 && s.frame%2 == 0 {
+	if s.bunnyHidden() {
 		return
 	}
 	// The player: the bunny hopping up the road on her row. After a crash she is
@@ -123,14 +123,27 @@ func (s *PlayScene) drawBoard(screen *ebiten.Image) {
 	if g.Safe > 0 {
 		alpha = 0.45
 	}
-	lean := math.Max(-1, math.Min(1, (g.X-s.prevX)*12)) // which way and how fast she slides
-	s.prevX = g.X
-	s.lean += (lean - s.lean) * 0.2
 	// She stands just below her row: a row that hits her comes in with its bottom edge
 	// on the tips of her ears (a wall running into her stops the road as it touches her)
 	// and slides down over her while it is hers.
 	drawBunny(screen, bx+g.X*cell, by+(float64(road.PlayerRow)+0.75)*cell+bunnyHeight,
 		float64(g.Distance)+s.eng.Scroll(), s.lean, alpha)
+}
+
+// bunnyHidden reports whether the bunny is left out this frame: she blinks during READY
+// (but not while she gets back up after a retry).
+func (s *PlayScene) bunnyHidden() bool { return s.ready > 0 && s.comeback == 0 && s.frame%2 == 0 }
+
+// updateLean follows which way and how fast the bunny slides, smoothed, for her tilt. It
+// runs at the end of every Update, on the frames she is drawn, so Draw only reads it.
+func (s *PlayScene) updateLean() {
+	if s.bunnyHidden() {
+		return
+	}
+	x := s.eng.G.X
+	lean := math.Max(-1, math.Min(1, (x-s.prevX)*12))
+	s.prevX = x
+	s.lean += (lean - s.lean) * 0.2
 }
 
 // bunnyHeight is how tall the bunny is drawn (a little over a row).
