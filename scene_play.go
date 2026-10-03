@@ -79,7 +79,7 @@ type PlayScene struct {
 	// Reading the road for the reactions: the danger level last frame, and whether the
 	// "a big sweet is coming" look was shown for the sweet in sight.
 	danger      int
-	oneUpSeen    bool
+	oneUpSeen   bool
 	sinceSweet  int // rows since the last sweet picked up
 	lastSteps   int
 	droughtSeen bool
