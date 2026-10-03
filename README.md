@@ -10,12 +10,17 @@ Rabbit Run is a short road runner: a bunny hops up a road of gummy blocks. It is
 
 ## About this game
 
+### The road
+
 Slide the bunny left and right, pick up macarons and keep off the walls. The road scrolls toward her and speeds up course by course. A run is 4 stages of 4 courses, about three minutes.
 
 - Each course has a theme: winding roads, swings, slaloms, gates, pillars, lanes, checkers and more.
 - Each character has her own roads. They are the same every time, so you can learn them.
 - Hit a wall, from the front or the side, and it is a miss. A life sends you back ten rows to retry. With no lives left, or if you give up, the game is over.
 - Hold up to speed the road up by as much as 30% for the rest of the stage. The music speeds up with it.
+- From the second stage on, one course per stage is a bonus course with candy-colored blocks: a wider road, twice the macarons, and a stretch covered in them.
+
+### Items
 
 | | Item | What it does |
 | :---: | --- | --- |
@@ -29,13 +34,15 @@ Slide the bunny left and right, pick up macarons and keep off the walls. The roa
 | :---: | :---: |
 | <img src="./doc/img/play_cutin.png" width="300" alt="swinging the hammer"> | <img src="./doc/img/play_break.png" width="300" alt="the walls breaking"> |
 
-From the second stage on, one course per stage is a bonus course with candy-colored blocks: a wider road, twice the macarons, and a stretch covered in them.
+### Illustrations
 
 Each course you clear unlocks an illustration of your character, which becomes the background of the next course. The gallery shows everything you have unlocked.
 
 | An unlocked illustration | Behind the next course |
 | :---: | :---: |
 | <img src="./doc/img/illustration.jpg" width="240" alt="illustration"> | <img src="./doc/img/play_cg.png" width="300" alt="the illustration behind the road"> |
+
+### Characters
 
 Your character stands beside the road and reacts to the run: she relaxes on a wide road, gets nervous when it narrows, cheers at a glowing macaron or a cleared stage, and cries at a miss. Her face counts your lives. The bunny you steer is the same for every character.
 
