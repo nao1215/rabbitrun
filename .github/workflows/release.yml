@@ -28,7 +28,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "1.27"
+          go-version: "stable"
           check-latest: true
 
       # The goreleaser before hook collects the dependency license texts.
@@ -98,6 +98,9 @@ jobs:
       contents: write
       id-token: write
       attestations: write
+    outputs:
+      # base64 of checksums.txt: the subjects the SLSA provenance job attests.
+      hashes: ${{ steps.hash.outputs.hashes }}
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -107,15 +110,16 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "1.27"
+          go-version: "stable"
           check-latest: true
       - name: Install go-licenses
         run: go install github.com/google/go-licenses/v2@v2.0.1
       - name: Install cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
       - name: Install Syft (SBOM generator)
-        uses: anchore/sbom-action/download-syft@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
+        uses: anchore/sbom-action/download-syft@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
       - name: Run GoReleaser
+        id: run-goreleaser
         uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
           version: latest
@@ -131,4 +135,75 @@ jobs:
             dist/*.deb
             dist/*.rpm
             dist/*.apk
+            dist/*.sbom.json
             dist/checksums.txt
+            dist/checksums.txt.sigstore.json
+
+      - name: Generate subject
+        id: hash
+        env:
+          ARTIFACTS: "${{ steps.run-goreleaser.outputs.artifacts }}"
+        run: |
+          set -euo pipefail
+          checksum_file=$(echo "$ARTIFACTS" | jq -r '.[] | select (.type=="Checksum") | .path')
+          echo "hashes=$(base64 -w0 < "$checksum_file")" >> "$GITHUB_OUTPUT"
+
+  # SLSA build provenance as a release asset (multiple.intoto.jsonl). The GitHub
+  # attestation above is not a release asset, so it is invisible to anyone who
+  # only has the downloaded files and to OpenSSF Scorecard's Signed-Releases
+  # check. The generator must be referenced by tag, not by commit SHA:
+  # slsa-verifier checks the reusable workflow's ref.
+  provenance:
+    name: SLSA provenance
+    needs: [release]
+    permissions:
+      actions: read # To read the workflow path.
+      id-token: write # To sign the provenance.
+      contents: write # To add assets to a release.
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
+    with:
+      base64-subjects: "${{ needs.release.outputs.hashes }}"
+      upload-assets: true # upload to the release goreleaser just created
+
+  # Verify the published archives against the published provenance, the way a
+  # player would, so a provenance that does not verify fails the release run.
+  verification:
+    name: Verify SLSA provenance
+    needs: [release, provenance]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Install the verifier
+        uses: slsa-framework/slsa-verifier/actions/installer@ea584f4502babc6f60d9bc799dbbb13c1caa9ee6 # v2.7.1
+
+      - name: Download assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PROVENANCE: "${{ needs.provenance.outputs.provenance-name }}"
+        run: |
+          set -euo pipefail
+          gh -R "$GITHUB_REPOSITORY" release download "$GITHUB_REF_NAME" -p "*.tar.gz" -p "*.zip"
+          gh -R "$GITHUB_REPOSITORY" release download "$GITHUB_REF_NAME" -p "$PROVENANCE"
+
+      # checksums.txt also lists the .deb/.rpm/.apk packages and the SBOMs; only
+      # the archives are downloaded above, so only they are verified here.
+      - name: Verify assets
+        env:
+          CHECKSUMS: ${{ needs.release.outputs.hashes }}
+          PROVENANCE: "${{ needs.provenance.outputs.provenance-name }}"
+        run: |
+          set -euo pipefail
+          checksums=$(echo "$CHECKSUMS" | base64 -d)
+          while read -r _ fn; do
+            case "$fn" in
+              *.tar.gz|*.zip) ;;
+              *) continue ;;
+            esac
+            echo "Verifying $fn"
+            slsa-verifier verify-artifact --provenance-path "$PROVENANCE" \
+                                          --source-uri "github.com/$GITHUB_REPOSITORY" \
+                                          --source-tag "$GITHUB_REF_NAME" \
+                                          "$fn"
+          done <<<"$checksums"

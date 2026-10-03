@@ -1,9 +1,14 @@
-.PHONY: build run test vet fmt lint vuln licenses clean help
+.PHONY: build run test vet fmt lint vuln licenses tools clean help
 
 APP         = rabbitrun
 VERSION     = $(shell git describe --tags --abbrev=0 2>/dev/null || echo dev)
 GO          = go
 GO_LDFLAGS  = -ldflags '-X main.version=$(VERSION)'
+
+# Tool versions; keep them equal to the versions the CI workflows pin.
+GOLANGCI_LINT_VERSION = v2.14.0
+GOVULNCHECK_VERSION   = v1.8.0
+GO_LICENSES_VERSION   = v2.0.1
 
 build: ## Build the rabbitrun binary
 	$(GO) build $(GO_LDFLAGS) -o $(APP) .
@@ -27,9 +32,18 @@ lint: ## Run golangci-lint (same config as CI)
 vuln: ## Scan for known vulnerabilities (requires govulncheck)
 	govulncheck ./...
 
-licenses: ## Check dependency licenses and collect their texts (requires go-licenses)
-	CGO_ENABLED=0 go-licenses check --disallowed_types=forbidden,restricted,unknown .
+# GOROOT is set because go-licenses recognizes the standard library by path:
+# after a toolchain switch it would report every standard package as unlicensed.
+licenses: ## Check dependency licenses for each release OS and collect their texts (requires go-licenses)
+	for goos in linux darwin windows; do \
+		GOROOT="$$($(GO) env GOROOT)" GOOS=$$goos CGO_ENABLED=0 go-licenses check --disallowed_types=forbidden,restricted,unknown . || exit 1; \
+	done
 	./scripts/third_party_licenses.sh
+
+tools: ## Install golangci-lint, govulncheck and go-licenses at the versions CI uses
+	$(GO) install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+	$(GO) install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
+	$(GO) install github.com/google/go-licenses/v2@$(GO_LICENSES_VERSION)
 
 clean: ## Remove build and coverage output
 	-rm -rf $(APP) $(APP).exe cover.out cover.html dist third_party_licenses

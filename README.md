@@ -93,11 +93,11 @@ No C compiler is needed. On Linux the game needs the X11, OpenGL and ALSA librar
 sudo apt install libx11-6 libgl1 libglx-mesa0 libxcursor1 libxi6 libxinerama1 libxrandr2 libxrender1 libxext6 libasound2t64
 ```
 
-Rabbit Run needs Go 1.25 or later. CI tests Go 1.25, 1.26, 1.27 and the latest release on Linux, macOS and Windows.
+Rabbit Run needs Go 1.26.6 or later. CI tests Go 1.26.6 and the latest release on Linux, macOS and Windows.
 
 ### Verifying release integrity
 
-Each release publishes `checksums.txt`, a cosign signature bundle for it, an SBOM for each archive, and GitHub build provenance.
+Each release publishes `checksums.txt`, a cosign signature bundle for it, an SBOM for each archive, SLSA build provenance (`multiple.intoto.jsonl`) and GitHub build provenance.
 
 ```shell
 # Verify the signature of checksums.txt (keyless, via Sigstore)
@@ -110,7 +110,14 @@ cosign verify-blob \
 # Check the archive you downloaded against it
 sha256sum --ignore-missing -c checksums.txt
 
-# Verify the build provenance of an archive
+# Verify the SLSA provenance of an archive
+slsa-verifier verify-artifact \
+  --provenance-path multiple.intoto.jsonl \
+  --source-uri github.com/nao1215/rabbitrun \
+  --source-tag v<version> \
+  rabbitrun_<version>_linux_amd64.tar.gz
+
+# Verify the GitHub build provenance of an archive
 gh attestation verify rabbitrun_<version>_linux_amd64.tar.gz --repo nao1215/rabbitrun
 ```
 

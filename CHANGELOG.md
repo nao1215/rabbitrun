@@ -19,3 +19,4 @@ All notable changes to this project are documented in this file. The format is b
 - Character select screen with a fanned hand of large cards, and a gallery of every portrait and illustration.
 - Keyboard (arrows, WASD or the vi keys HJKL) and gamepad support.
 - `--reset-save` to start the save data over (the old one is kept as `save.json.bak`), `--debug` to unlock everything without touching the save data, and `--record-demo` to record a run played by itself.
+- Release archives and Linux packages for Linux, macOS and Windows (amd64 and arm64), with a cosign-signed checksum file, an SBOM per archive, GitHub build provenance and the license texts of the linked Go modules under `THIRD_PARTY_LICENSES/`.

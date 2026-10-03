@@ -11,10 +11,10 @@ permissions:
   contents: read
 
 jobs:
-  # Pinned toolchains: the Go versions rabbitrun promises to build with. go.mod
-  # declares 1.25 because Ebitengine's dependencies (golang.org/x/*) require it.
-  # Keep this list in sync with the "Supported Go versions" section of README.md
-  # and with govulncheck.yml.
+  # Pinned toolchain: the minimum Go rabbitrun promises to build with, equal to
+  # the go directive in go.mod. golang.org/x/* require Go 1.26, and 1.26.6 is the
+  # first patch whose standard library has no advisory govulncheck reaches.
+  # Keep it in sync with README.md, CONTRIBUTING.md and govulncheck.yml.
   unit_test:
     name: Unit test (${{ matrix.os }}, Go ${{ matrix.go }})
 
@@ -25,9 +25,7 @@ jobs:
           - "windows-latest"
           - "macos-latest"
         go:
-          - "1.25"
-          - "1.26"
-          - "1.27"
+          - "1.26.6"
       fail-fast: false
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
