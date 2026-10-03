@@ -173,23 +173,8 @@ func (g *Game) buildThemedRow() (Row, int, int) {
 	if g.still++; g.shifted {
 		g.still = 0
 	}
-	left := g.center - g.width/2
-	right := left + g.width - 1
-	if left < 0 {
-		left, right = 0, g.width-1
-	}
-	if right > W-1 {
-		right, left = W-1, W-g.width
-	}
-	// the middle follows the road kept on the screen: the next row (of this course or the
-	// next, which may build its rows another way) goes on from where this one is
-	g.center = left + g.width/2
-	var row Row
-	for x := range W {
-		if x < left || x > right {
-			row[x].Wall = g.WallColor()
-		}
-	}
+	left, right := g.keepOnScreen()
+	row := g.walled(left, right)
 	walls := row // the road alone, without the theme's blocks
 	if g.settle > 0 {
 		// just after a vault or a feast (or rows not themed) the road comes back to the theme

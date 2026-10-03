@@ -167,7 +167,6 @@ const (
 	alcoveChance    = 0.3             // of the things placed: in a dent in the wall, to be fetched in a hurry
 )
 
-// New starts a game: an open road with the player in the middle.
 // Profile is the character of a road: how it wanders, how wide and fast it is, and
 // what lies on it. Each playable character has her own profile.
 type Profile struct {
@@ -272,12 +271,8 @@ func (g *Game) bombRowOf(stage int) int {
 	if r.Float64() >= BombChance(stage) {
 		return -1
 	}
-	courses := Courses
-	if g.TotalCourses > 0 {
-		courses = max(1, min(Courses, g.TotalCourses-(stage-1)*Courses))
-	}
 	rows := 0
-	for lv := (stage-1)*Courses + 1; lv < (stage-1)*Courses+1+courses; lv++ {
+	for lv := (stage-1)*Courses + 1; lv < (stage-1)*Courses+1+g.coursesIn(stage); lv++ {
 		rows += g.lenOf(lv)
 	}
 	return r.IntN(max(1, rows))
@@ -302,21 +297,16 @@ func (g *Game) pushRow() {
 	g.Ahead = g.buildRow(true)
 }
 
-// courseLen is the length in rows of the course being built.
-func (g *Game) courseLen() int {
-	if g.CourseRowsFor != nil {
-		return max(1, g.CourseRowsFor(g.Level))
-	}
-	return CourseRows
-}
-
 // StageCourses is how many courses the current stage has: four, or what is left of the
 // game in the last stage.
-func (g *Game) StageCourses() int {
+func (g *Game) StageCourses() int { return g.coursesIn(g.Stage) }
+
+// coursesIn is how many courses the stage has (see StageCourses).
+func (g *Game) coursesIn(stage int) int {
 	if g.TotalCourses <= 0 {
 		return Courses
 	}
-	return max(1, min(Courses, g.TotalCourses-(g.Stage-1)*Courses))
+	return max(1, min(Courses, g.TotalCourses-(stage-1)*Courses))
 }
 
 // WallColor is the color of the walls of the current course. A short last stage takes the
@@ -343,7 +333,7 @@ func (g *Game) buildRow(withThings bool) Row {
 			g.openRun[x] = 0
 		}
 	}
-	if g.Colorful() {
+	if g.Bonus() { // a bonus course is walled in every candy color
 		for x := range row {
 			if row[x].Wall != 0 {
 				row[x].Wall = colorfulWall(g.Level, g.courseRow, x)
@@ -412,10 +402,6 @@ const trapSideRun = 6
 // side of the block leads on.
 const trapHold = 3
 
-// Colorful reports whether the walls of the current course are of many colors: the
-// bonus courses (Bonus). The others are of one color (WallColor).
-func (g *Game) Colorful() bool { return g.Bonus() }
-
 // bonusSweets is how many times the sweets there are on a bonus course.
 func bonusSweets(bonus bool) float64 {
 	if bonus {
@@ -436,6 +422,41 @@ func colorfulWall(level, r, x int) int8 {
 	h *= 0x2c1b3c6d
 	h ^= h >> 13
 	return int8(1 + h%7)
+}
+
+// roadSpan is the first and last open columns of a road width cells wide around the
+// column center, kept on the screen.
+func roadSpan(center, width int) (left, right int) {
+	left = center - width/2
+	right = left + width - 1
+	if left < 0 {
+		left, right = 0, width-1
+	}
+	if right > W-1 {
+		right, left = W-1, W-width
+	}
+	return left, right
+}
+
+// keepOnScreen works out where the road being built lies (roadSpan) and moves its middle
+// there: the next row (of this course or the next, which may build its rows another way)
+// goes on from where this one is.
+func (g *Game) keepOnScreen() (left, right int) {
+	left, right = roadSpan(g.center, g.width)
+	g.center = left + g.width/2
+	return left, right
+}
+
+// walled is a row of road open from left to right and walled in the course's color
+// (WallColor) on both sides.
+func (g *Game) walled(left, right int) Row {
+	var row Row
+	for x := range W {
+		if x < left || x > right {
+			row[x].Wall = g.WallColor()
+		}
+	}
+	return row
 }
 
 // buildRoad builds the next row with the walls in the course's own color (WallColor).
@@ -585,23 +606,8 @@ func (g *Game) buildRoad(withThings bool) Row {
 	if g.still++; g.shifted {
 		g.still = 0
 	}
-	left := g.center - g.width/2
-	right := left + g.width - 1
-	if left < 0 {
-		left, right = 0, g.width-1
-	}
-	if right > W-1 {
-		right, left = W-1, W-g.width
-	}
-	// the middle follows the road kept on the screen: the next row (of this course or the
-	// next, which may build its rows another way) goes on from where this one is
-	g.center = left + g.width/2
-	var row Row
-	for x := range W {
-		if x < left || x > right {
-			row[x].Wall = g.WallColor()
-		}
-	}
+	left, right := g.keepOnScreen()
+	row := g.walled(left, right)
 	if slalom >= 0 {
 		from := left
 		if slalom == 1 {
@@ -822,7 +828,7 @@ func (g *Game) nextCourse() {
 		}
 		return
 	}
-	if g.courseRow < g.courseLen() {
+	if g.courseRow < g.lenOf(g.Level) {
 		return
 	}
 	g.courseRow = 0
