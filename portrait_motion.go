@@ -355,3 +355,20 @@ func portraitEntries(c *Character) []*ImageEntry {
 	}
 	return out
 }
+
+// releasePortraitsExcept frees the portraits (and cut-ins) of every character but c on the
+// GPU: they load again when that character is played, instead of piling up as one
+// character after another is played.
+func releasePortraitsExcept(c *Character) {
+	for _, o := range characters {
+		if o == c {
+			continue
+		}
+		keep := o.selectEntry() // the select screen and the title keep showing it
+		for _, e := range portraitEntries(o) {
+			if e != keep {
+				e.ReleaseImg()
+			}
+		}
+	}
+}

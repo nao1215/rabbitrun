@@ -150,6 +150,7 @@ func newPlayScene(c *Character) *PlayScene {
 		expr:  ExprNormal, prevExpr: ExprNormal, exprID: ExprNormal, prevID: ExprNormal, exprFade: 1,
 		popFrame: -1,
 	}
+	releasePortraitsExcept(c)
 	s.portraits = portraitEntries(c)
 	prefetchImgs(s.portraits)
 	// Each run starts on the sweets background; illustrations appear as the run earns them.
