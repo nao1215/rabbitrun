@@ -248,7 +248,7 @@ func (s *PlayScene) Update(g *Game) {
 	} else {
 		// Sideways moves are smooth: she slides while a direction is held, slowly at
 		// first and faster the longer it is held (SlideSpeed).
-		dir := boolInt(g.in.Held(ActRight)) - boolInt(g.in.Held(ActLeft))
+		dir := g.in.Side()
 		if dir != s.holdDir {
 			s.holdDir, s.holdFrames = dir, 0
 		}
