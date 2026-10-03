@@ -130,13 +130,13 @@ const (
 // Tempo per intensity stage: relaxed when calm, a drum-and-bass 174 at full intensity.
 var intensityBPM = [3]float64{148, 162, 174}
 
-// setBGMState sets the tempo from the intensity stage and level (higher levels are slightly faster).
-func setBGMState(intensity, level int) {
+// setBGMState sets the intensity stage and its tempo (the screens other than play).
+func setBGMState(intensity int) {
 	if bgm == nil {
 		return
 	}
 	bgm.setIntensity(intensity)
-	bgm.setBPM(intensityBPM[intensity] + math.Min(float64(level-1), 10))
+	bgm.setBPM(intensityBPM[intensity])
 }
 
 // setBGMTempo sets the intensity stage and the tempo directly (the play screen follows

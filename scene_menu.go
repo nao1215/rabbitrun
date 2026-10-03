@@ -65,7 +65,7 @@ func (s *TitleScene) Update(g *Game) {
 	if bgmSong != titleSong {
 		startBGM(titleSong)
 	}
-	setBGMState(0, 1)
+	setBGMState(0)
 	bg.set(popPink)
 	bg.setImage("title")
 	if titleComplete() {
@@ -306,7 +306,7 @@ func (s *CharSelectScene) Update(g *Game) {
 		startBGM(selectSong)
 	}
 	// The longer the player stays on this screen, the faster and busier the music gets.
-	setBGMState(selectIntensity(s.frame), 1)
+	setBGMState(selectIntensity(s.frame))
 	bg.set(popYellow)
 	bg.setImage("select")
 	n := len(characters)

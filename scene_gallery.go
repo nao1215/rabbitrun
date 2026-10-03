@@ -112,7 +112,7 @@ func (s *GalleryScene) Update(g *Game) {
 	if bgmSong != gallerySong {
 		startBGM(gallerySong)
 	}
-	setBGMState(0, 1) // calm: the pictures are looked at slowly
+	setBGMState(0) // calm: the pictures are looked at slowly
 	bg.set(popCream)
 	bg.setImage("gallery")
 	items := s.items()
