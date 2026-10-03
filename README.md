@@ -14,9 +14,9 @@ Rabbit Run is a short road runner with sweets. A bunny hops up a road of gummy b
 | :---: | :---: | :---: |
 | ![vault](./doc/img/play_vault.png) | ![feast](./doc/img/play_feast.png) | ![hammer](./doc/img/play_cutin.png) |
 
-| Miss | Game over | Gallery |
+| An illustration behind the road | Game over | Gallery |
 | :---: | :---: | :---: |
-| ![miss](./doc/img/play_miss.png) | ![game over](./doc/img/gameover.png) | ![gallery](./doc/img/gallery.png) |
+| ![illustration behind the road](./doc/img/play_cg.png) | ![game over](./doc/img/gameover.png) | ![gallery](./doc/img/gallery.png) |
 
 ## About this game
 
@@ -38,6 +38,10 @@ Slide the bunny left and right, pick up macarons and keep off the walls. The roa
 From the second stage on, one course per stage is a bonus course with candy-colored blocks: a wider road, twice the macarons, and a stretch covered in them.
 
 Each course you clear unlocks an illustration of your character, which becomes the background of the next course. The gallery shows everything you have unlocked.
+
+| An unlocked illustration | Behind the next course |
+| :---: | :---: |
+| <img src="./doc/img/illustration.jpg" width="240" alt="illustration"> | <img src="./doc/img/play_cg.png" width="300" alt="the illustration behind the road"> |
 
 Your character stands beside the road and reacts to the run: she relaxes on a wide road, gets nervous when it narrows, cheers at a glowing macaron or a cleared stage, and cries at a miss. Her face counts your lives. The bunny you steer is the same for every character.
 
