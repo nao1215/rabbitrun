@@ -21,6 +21,9 @@ type GalleryScene struct {
 	sel     int
 	viewing bool
 	frame   int
+	// pan is how far down an illustration is scrolled while viewed (0: its top, 1: its
+	// bottom): it fills the width of the window, so up and down move along it.
+	pan float64
 
 	scroll, scrollView float64 // vertical grid scroll (target and displayed value)
 	pull               []float64
@@ -83,11 +86,17 @@ func (s *GalleryScene) listFor() {
 	c := s.char()
 	cgs := c.GalleryCGs()
 	s.list = make([]galleryItem, 0, len(c.Expressions)+len(cgs))
+	// only entries with a picture: an unlocked illustration not drawn yet showed as a
+	// locked tile among the unlocked ones
 	for i := range c.Expressions {
-		s.list = append(s.list, galleryItem{e: &c.Expressions[i]})
+		if c.Expressions[i].HasImage() {
+			s.list = append(s.list, galleryItem{e: &c.Expressions[i]})
+		}
 	}
 	for i := range cgs {
-		s.list = append(s.list, galleryItem{e: &cgs[i], cg: true})
+		if cgs[i].HasImage() {
+			s.list = append(s.list, galleryItem{e: &cgs[i], cg: true})
+		}
 	}
 	s.open = make([]bool, len(s.list))
 	for i, it := range s.list {
@@ -126,12 +135,22 @@ func (s *GalleryScene) Update(g *Game) {
 		if g.in.Repeat(ActRight) {
 			step = 1
 		}
+		if items[s.sel].cg {
+			const panSpeed = 0.02 // of the picture's spare height a frame
+			if g.in.Held(ActUp) {
+				s.pan = max(0, s.pan-panSpeed)
+			}
+			if g.in.Held(ActDown) {
+				s.pan = min(1, s.pan+panSpeed)
+			}
+		}
 		if step != 0 {
 			for i := 1; i < n; i++ {
 				j := (s.sel + step*i + n*n) % n
 				if s.open[j] {
 					s.releaseViewed(items)
 					s.sel = j
+					s.pan = 0
 					playSE(seMove)
 					break
 				}
@@ -187,7 +206,7 @@ func (s *GalleryScene) Update(g *Game) {
 	s.scrollView += (s.scroll - s.scrollView) * 0.25
 	if g.in.Pressed(ActConfirm) {
 		if s.open[s.sel] {
-			s.viewing = true
+			s.viewing, s.pan = true, 0
 			playSE(seConfirm)
 		} else {
 			playSE(seDenied)
@@ -220,7 +239,12 @@ func (s *GalleryScene) Draw(screen *ebiten.Image) {
 		dimScreen(screen, 0xf0)
 		it := items[s.sel]
 		if it.cg {
-			drawImageFit(screen, it.e.Full(), 0, 0, ScreenW, ScreenH, 1)
+			// as wide as the window (no bands at the sides), scrolled up and down by pan
+			if img := it.e.Full(); img != nil {
+				iw, ih := float64(img.Bounds().Dx()), float64(img.Bounds().Dy())
+				sc := ScreenW / iw
+				drawImageScaled(screen, img, 0, -max(0, ih*sc-ScreenH)*s.pan, sc, 1)
+			}
 		} else {
 			if bgImg := uiImage("frame_" + family(it.e.State)); bgImg != nil {
 				drawImageCover(screen, bgImg, 0, 0, ScreenW, ScreenH, 0.9)

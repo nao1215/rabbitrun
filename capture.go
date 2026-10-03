@@ -256,6 +256,16 @@ var captureSteps = []captureStep{
 	{"gameover_curtain", gameOverScene, 55}, // the curtain coming down
 	{"gameover", gameOverScene, 130},
 	{"gallery", func(g *Game) { g.SetScene(newGalleryScene()) }, 120},
+	{"gallery_cg", func(g *Game) {
+		s := newGalleryScene()
+		for i, it := range s.items() {
+			if it.cg && s.open[i] {
+				s.sel, s.viewing, s.pan = i, true, 0.3
+				break
+			}
+		}
+		g.SetScene(s)
+	}, 60},
 }
 
 type captureState struct {
