@@ -1264,19 +1264,34 @@ var macaronClash = map[int8]string{1: macMint, 2: macLemon, 4: macMint, 5: macPi
 
 // macaronImage is the macaron of the i-th color (the colors take turns).
 func macaronImage(i int) *ebiten.Image {
-	return uiImage("macaron_" + macaronColors[i%len(macaronColors)])
+	return uiImage(macaronNames(-1)[i%len(macaronColors)])
 }
 
 // macaronFor is the macaron for column i among walls of the color wall: the colors take
 // turns across the road, leaving out the one that looks like the walls.
 func macaronFor(i int, wall int8) *ebiten.Image {
-	colors := make([]string, 0, len(macaronColors))
+	names := macaronNames(wall)
+	return uiImage(names[i%len(names)])
+}
+
+// macaronSets are the artwork names of the macaron colors that go with each wall color
+// (all of them under -1), worked out once: every sweet on the road asks every frame.
+var macaronSets = map[int8][]string{}
+
+// macaronNames returns the artwork names of the macaron colors, in turn, leaving out the
+// one that looks like walls of the color wall (-1 leaves none out).
+func macaronNames(wall int8) []string {
+	if names, ok := macaronSets[wall]; ok {
+		return names
+	}
+	names := make([]string, 0, len(macaronColors))
 	for _, c := range macaronColors {
-		if c != macaronClash[wall] {
-			colors = append(colors, c)
+		if wall < 0 || c != macaronClash[wall] {
+			names = append(names, "macaron_"+c)
 		}
 	}
-	return uiImage("macaron_" + colors[i%len(colors)])
+	macaronSets[wall] = names
+	return names
 }
 
 // cgVeil is how strongly the illustration behind the road is washed with white: light,
