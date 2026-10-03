@@ -62,7 +62,10 @@ func drawTextOutline(dst *ebiten.Image, str string, x, y, size float64, clr colo
 // faded by alpha (dark outlines read on a dark screen).
 func drawTextOutlineColor(dst *ebiten.Image, str string, x, y, size float64, fill, outline color.Color, alpha float32) {
 	fade := func(c color.Color) color.Color {
-		n := color.NRGBAModel.Convert(c).(color.NRGBA) //nolint:errcheck,forcetypeassert // NRGBAModel always returns NRGBA
+		n, ok := color.NRGBAModel.Convert(c).(color.NRGBA)
+		if !ok {
+			return c // NRGBAModel always returns NRGBA; drawn unfaded if that ever changes
+		}
 		n.A = uint8(float32(n.A) * alpha)
 		return n
 	}
