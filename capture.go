@@ -233,10 +233,9 @@ var captureSteps = []captureStep{
 		s.restartBackground()
 		g.SetScene(s)
 	}, 2},
-	{"play_intro", introScene, 40},
-	{"play_show", introScene, introFrames + showHold/2},
-	{"play_show_cutin", introScene, introFrames + showHold + cutinFrames/2},
-	{"play_show_break", introScene, introFrames + showHold + cutinFrames + 20},
+	{"play_show", introScene, showHold / 2},
+	{"play_show_cutin", introScene, showHold + cutinFrames/2},
+	{"play_show_break", introScene, showHold + cutinFrames + 20},
 	{"play_break", func(g *Game) {
 		s := newPlayScene(characters[defaultCharIndex()])
 		s.ready = 0
@@ -382,9 +381,9 @@ func gameOverScene(g *Game) {
 	g.SetScene(s)
 }
 
-// introScene starts a run with its intro and the hammer show after it.
+// introScene starts a run with the hammer show at its start.
 func introScene(g *Game) {
 	s := newPlayScene(characters[defaultCharIndex()])
-	s.startIntro()
+	s.startHammerShow()
 	g.SetScene(s)
 }

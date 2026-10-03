@@ -79,7 +79,7 @@ func (s *PlayScene) updatePause(g *Game) {
 			stopBGM()
 			s.commitRun()
 			p := newPlayScene(s.char)
-			p.startIntro()
+			p.startHammerShow()
 			g.SetScene(p)
 			return
 		case 2:

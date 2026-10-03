@@ -108,7 +108,6 @@ type PlayScene struct {
 	// The hammer: the frames since the walls it blew away began to break (0: not breaking),
 	// the frames left of its cut-in, and those walls (drawn breaking).
 	crumble     int
-	intro       int  // frames left of the intro before READY (see play_intro.go)
 	showHold    int  // frames the hammer show's blocks stand before the hammer (play_intro.go)
 	showing     bool // the hammer show is on
 	cutin       int
@@ -178,7 +177,7 @@ func (s *PlayScene) Update(g *Game) {
 	bg.set(moodBackground[family(s.expr)])
 	bg.setImage("play")
 
-	if s.updateIntro(g) {
+	if s.updateHammerShow() {
 		return
 	}
 	if s.allClear {
@@ -442,7 +441,7 @@ func (s *PlayScene) Draw(screen *ebiten.Image) {
 	s.drawPopups(screen)
 	s.drawCutin(screen)
 
-	if s.ready > 0 && s.intro == 0 && !s.showing {
+	if s.ready > 0 && !s.showing {
 		msg := "READY"
 		if s.ready < goFrames {
 			msg = "GO"
@@ -461,7 +460,6 @@ func (s *PlayScene) Draw(screen *ebiten.Image) {
 	} else if s.eng.Over() {
 		s.drawGameOver(screen)
 	}
-	s.drawIntro(screen)
 }
 
 // charFace is the character's face, cut from her usual portrait: shown with the lives, on

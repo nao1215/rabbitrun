@@ -326,13 +326,9 @@ type Character struct {
 	Cutin       *ImageEntry  `json:"-"`      // the big cut-in when a hammer is swung (images/cutin.png)
 	// Ending and EndingExtra are the pictures of the all clear, of the regular and of the
 	// extra stages (images/ending, images/ending_extra): the shape of the window, to fill it.
-	Ending      *ImageEntry `json:"-"`
-	EndingExtra *ImageEntry `json:"-"`
-	// Start and StartExtra are the pictures of the intro before a run (images/start,
-	// images/start_extra): she and the bunny getting ready, the shape of the window.
-	Start      *ImageEntry  `json:"-"`
-	StartExtra *ImageEntry  `json:"-"`
-	CGs        []ImageEntry `json:"cgs"` //nolint:tagliatelle // key used by the existing game.json files
+	Ending      *ImageEntry  `json:"-"`
+	EndingExtra *ImageEntry  `json:"-"`
+	CGs         []ImageEntry `json:"cgs"` //nolint:tagliatelle // key used by the existing game.json files
 }
 
 // selectEntry returns the portrait used for character select: the select image, or the normal expression.
@@ -473,8 +469,6 @@ func readCharacters(fsys fs.FS) ([]*Character, error) {
 		c.Cutin = &ImageEntry{ID: "cutin", State: ExprExcited, base: base}
 		c.Ending = &ImageEntry{ID: "ending", State: ExprPerfect, base: base}
 		c.EndingExtra = &ImageEntry{ID: "ending_extra", State: ExprPerfect, base: base}
-		c.Start = &ImageEntry{ID: "start", State: ExprExcited, base: base}
-		c.StartExtra = &ImageEntry{ID: "start_extra", State: ExprExcited, base: base}
 		for i := range c.CGs {
 			e := &c.CGs[i]
 			e.base = base
