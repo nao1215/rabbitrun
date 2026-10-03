@@ -119,7 +119,7 @@ func (r *recorder) start(g *Game) error {
 	s := newPlayScene(c)
 	s.auto = &autoPlayer{}
 	if st := *recordStage; st > 1 {
-		s.eng.G.Stage, s.eng.G.Level = st, (st-1)*road.Courses+1
+		s.eng.G.StartAt((st-1)*road.Courses + 1)
 	}
 	g.SetScene(s)
 	r.drawn = true
@@ -199,7 +199,7 @@ var captureSteps = []captureStep{
 		s.ready = 0
 		s.auto = &autoPlayer{}
 		s.eng.G.Lives = 1
-		s.eng.G.Level = 12 // a narrow, fast road on the last life
+		s.eng.G.StartAt(12) // a narrow, fast road on the last life
 		g.SetScene(s)
 	}, 240},
 	{"play_flash", func(g *Game) {
@@ -208,7 +208,7 @@ var captureSteps = []captureStep{
 		s.ready = 0
 		s.auto = &autoPlayer{}
 		// The second stage: the first illustration with a picture is the background.
-		s.eng.G.Stage = 2
+		s.eng.G.StartAt(road.Courses + 1)
 		for i := range c.CGs {
 			if c.CGs[i].HasImage() {
 				s.setStageCG(&c.CGs[i])
@@ -229,9 +229,7 @@ var captureSteps = []captureStep{
 		s := newPlayScene(characters[defaultCharIndex()])
 		s.ready = 0
 		e := s.eng
-		e.G.Level, e.G.Stage, e.G.Course = 3, 1, 2 // the first vault's course
-		e.G.Missed, e.G.Lives = true, e.G.Lives+1
-		e.Restart()
+		e.G.StartAt(3)     // the first vault's course
 		e.G.Safe = 1 << 30 // run ahead to the vault (walls pass through)
 		for f := 0; f < 60*60 && !vaultOnScreen(e.G); f++ {
 			e.Tick(false)
@@ -243,9 +241,9 @@ var captureSteps = []captureStep{
 	{"play_retry", func(g *Game) {
 		s := newPlayScene(characters[defaultCharIndex()])
 		e := s.eng
-		e.G.Level, e.G.Stage, e.G.Course = 6, 1, 5 // a miss on course 1-6
+		e.G.StartAt(6) // a miss just into course 2-2
 		e.G.Missed = true
-		e.Restart() // back to 1-5
+		e.Restart() // back to the end of 2-1
 		s.ready = readyFr
 		s.restartBackground()
 		s.handleEvents()
@@ -255,9 +253,7 @@ var captureSteps = []captureStep{
 		s := newPlayScene(characters[defaultCharIndex()])
 		s.ready = 0
 		e := s.eng
-		e.G.Level, e.G.Stage, e.G.Course = 5, 1, 4 // back to the end of course 4; course 5 has a feast
-		e.G.Missed, e.G.Lives = true, e.G.Lives+1
-		e.Restart()
+		e.G.StartAt(5) // course 5 has a feast
 		e.G.Safe = 1 << 30
 		for f := 0; f < 60*60 && !feastOnScreen(e.G); f++ {
 			e.Tick(false)
@@ -393,9 +389,7 @@ func allClearScene(g *Game) {
 	s := newPlayScene(characters[defaultCharIndex()])
 	s.ready = 0
 	e := s.eng
-	e.G.Level, e.G.Stage, e.G.Course = GameCourses, (GameCourses-1)/road.Courses+1, (GameCourses-1)%road.Courses
-	e.G.Missed, e.G.Lives = true, e.G.Lives+1
-	e.Restart() // the road of the last course, from its start
+	e.G.StartAt(GameCourses) // the road of the last course, from its start
 	e.G.Safe = 1 << 30
 	for f := 0; f < 60*60 && e.G.Level <= GameCourses; f++ {
 		e.Tick(false)
