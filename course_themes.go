@@ -31,7 +31,9 @@ const (
 // on the extra stages. Each character's roads have a character of their own: most of her
 // courses come from a few themes that suit her, with a few others between them.
 //
-//   - cool: roads that test the aim (gates, stepping gates, corridors, slaloms, edge runs)
+//   - cool: roads that test the aim (gates, stepping gates, slaloms, pillars), with swings
+//     and scattered blocks between them; the corridor only on the extra stages: six
+//     courses of gates a side and a corridor made her roads plainly the hardest
 //   - cute: soft curves (snakes, swings, wobbles, funnels, diamonds)
 //   - gyal: busy, restless roads (scattered blocks, chicanes, pillars, stairs, slaloms; one
 //     checkers course a side: three of them were too much)
@@ -42,8 +44,8 @@ const (
 // road.Game.HardFrom on (every course on the extra stages, see newRun).
 var courseThemes = map[string][2][GameCourses]road.Theme{
 	"cool": {
-		{tWarm, tGate, tSlal, tPill, tGate, tCorr, tStep, tEdge, tSlal, tSnake, tStep, tCorr, tCheck, tEdge, tStep, tMix},
-		{tWarm, tSlal, tStep, tCorr, tGate, tEdge, tDiam, tStep, tCorr, tGate, tEdge, tChic, tStep, tCorr, tEdge, tMix},
+		{tWarm, tGate, tSlal, tPill, tSwing, tHour, tStep, tSwing, tSlal, tSnake, tPill, tRain, tCheck, tEdge, tGate, tMix},
+		{tWarm, tSlal, tStep, tCorr, tGate, tEdge, tDiam, tSwing, tPill, tGate, tSwing, tChic, tStep, tRain, tPill, tMix},
 	},
 	"cute": {
 		{tWarm, tSwing, tSnake, tDiam, tWobb, tFunn, tPill, tSwing, tSnake, tDiam, tWobb, tLane, tFunn, tSnake, tSwing, tMix},
@@ -65,7 +67,7 @@ var courseThemes = map[string][2][GameCourses]road.Theme{
 
 // charSpeed is how much faster than the others each character's road runs: the restless
 // gyaru and the secret bunny a little faster, the soft cute road at the usual speed.
-var charSpeed = map[string]float64{"cool": 1.04, "cute": 1, heroID: 1.06, streetID: 1, "bunny": 1.08}
+var charSpeed = map[string]float64{"cool": 1.02, "cute": 1, heroID: 1.06, streetID: 1, "bunny": 1.08}
 
 // streetID is the Taisho romance character.
 const streetID = "street"
