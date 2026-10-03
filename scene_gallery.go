@@ -3,7 +3,6 @@ package main
 import (
 	"image"
 	"image/color"
-	"image/draw"
 	"math"
 	"runtime"
 
@@ -353,10 +352,8 @@ func drawTilePicture(l *ebiten.Image, it galleryItem, pic image.Image) {
 	}
 	// a portrait is drawn as in the play screen's frame (see drawPortrait)
 	b := pic.Bounds()
-	rgba := image.NewRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
-	draw.Draw(rgba, rgba.Bounds(), pic, b.Min, draw.Src)
-	img := ebiten.NewImageFromImage(rgba)
-	drawPortraitFigure(l, img, measureFigure(rgba.Pix, b.Dx(), b.Dy()), lw, lh, 1, 1, 0, 0, 1, 0, 0)
+	img := ebiten.NewImageFromImage(pic)
+	drawPortraitFigure(l, img, measureFigure(alphaPixels(pic), b.Dx(), b.Dy()), lw, lh, 1, 1, 0, 0, 1, 0, 0)
 	img.Deallocate()
 }
 

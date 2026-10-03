@@ -298,11 +298,7 @@ func loadScaledImage(base, id, label string, maxH int) *ebiten.Image {
 // touches the CPU, so it may run on any goroutine. It returns nil if the image is missing.
 func decodeScaled(base, id string, maxH int) image.Image {
 	for _, ext := range imageExts {
-		raw, err := assetFS.ReadFile(path.Join(base, "images", id+ext))
-		if err != nil {
-			continue
-		}
-		img, _, err := image.Decode(bytes.NewReader(raw))
+		img, err := decodeAsset(path.Join(base, "images", id+ext))
 		if err != nil {
 			continue
 		}
@@ -321,11 +317,10 @@ func decodeScaled(base, id string, maxH int) image.Image {
 // loadCharImage reads images/<id>.jpg (or .png). If missing, it returns a placeholder.
 func loadCharImage(base, id, label string) *ebiten.Image {
 	for _, ext := range imageExts {
-		raw, err := assetFS.ReadFile(path.Join(base, "images", id+ext))
-		if err != nil {
+		img, err := decodeAsset(path.Join(base, "images", id+ext))
+		if errors.Is(err, fs.ErrNotExist) {
 			continue
 		}
-		img, _, err := image.Decode(bytes.NewReader(raw))
 		if err != nil {
 			log.Printf("%s%s: %v", id, ext, err)
 			continue
@@ -333,6 +328,18 @@ func loadCharImage(base, id, label string) *ebiten.Image {
 		return ebiten.NewImageFromImage(img)
 	}
 	return placeholderImage(label)
+}
+
+// decodeAsset decodes the embedded image name. It reads the embedded bytes in place:
+// assetFS.ReadFile would first copy the whole file. A missing file gives an error
+// wrapping fs.ErrNotExist.
+func decodeAsset(name string) (image.Image, error) {
+	f, err := assetFS.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	img, _, err := image.Decode(f)
+	return img, errors.Join(err, f.Close())
 }
 
 // placeholderImage is the stand-in (a human silhouette) used when an image is missing.

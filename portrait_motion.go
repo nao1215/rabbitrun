@@ -276,6 +276,29 @@ func figureOf(img *ebiten.Image) figure {
 	return f
 }
 
+// alphaPixels returns the pixels of img as rows of 4*w bytes with the alpha at offset 3,
+// as measureFigure and portraitBox read them. A decoded picture (*image.RGBA or
+// *image.NRGBA, whose alpha is the same) is used as it is, without a copy.
+func alphaPixels(img image.Image) []byte {
+	b := img.Bounds()
+	w, h := b.Dx(), b.Dy()
+	if b.Min == (image.Point{}) {
+		switch p := img.(type) {
+		case *image.RGBA:
+			if p.Stride == 4*w && len(p.Pix) == 4*w*h {
+				return p.Pix
+			}
+		case *image.NRGBA:
+			if p.Stride == 4*w && len(p.Pix) == 4*w*h {
+				return p.Pix
+			}
+		}
+	}
+	rgba := image.NewRGBA(image.Rect(0, 0, w, h))
+	draw.Draw(rgba, rgba.Bounds(), img, b.Min, draw.Src)
+	return rgba.Pix
+}
+
 // measureFigure finds the figure in RGBA pixels of size w x h.
 func measureFigure(pix []byte, w, h int) figure {
 	opaque := func(x, y int) bool { return pix[(y*w+x)*4+3] > 24 }
@@ -341,9 +364,7 @@ func preloadPortraits(c *Character) chan decodedPortrait {
 			img := decodeScaled(e.base, e.ID, standingMaxH)
 			var fig figure
 			if img != nil {
-				rgba := image.NewRGBA(img.Bounds())
-				draw.Draw(rgba, rgba.Bounds(), img, img.Bounds().Min, draw.Src)
-				fig = measureFigure(rgba.Pix, rgba.Bounds().Dx(), rgba.Bounds().Dy())
+				fig = measureFigure(alphaPixels(img), img.Bounds().Dx(), img.Bounds().Dy())
 			}
 			<-tileDecoders
 			out <- decodedPortrait{e, img, fig}

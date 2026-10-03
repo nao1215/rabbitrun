@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"image"
 	"image/color"
@@ -326,11 +325,7 @@ func uiImage(name string) *ebiten.Image {
 	}
 	var img *ebiten.Image
 	for _, ext := range imageExts {
-		raw, err := assetFS.ReadFile("assets/ui/" + name + ext)
-		if err != nil {
-			continue
-		}
-		if dec, _, err := image.Decode(bytes.NewReader(raw)); err == nil {
+		if dec, err := decodeAsset("assets/ui/" + name + ext); err == nil {
 			img = ebiten.NewImageFromImage(dec)
 			break
 		}

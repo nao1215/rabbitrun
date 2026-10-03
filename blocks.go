@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"image"
 	"image/color"
 	"math"
@@ -33,11 +32,9 @@ var kindNames = map[Kind]string{KindSoda: "soda", KindLemon: "lemon", KindGrape:
 // Missing ones fall back to procedurally drawn glossy blocks.
 func initBlocks() {
 	for k := KindSoda; k <= KindOrange; k++ {
-		if raw, err := assetFS.ReadFile("assets/blocks/" + kindNames[k] + ".png"); err == nil {
-			if img, _, err := image.Decode(bytes.NewReader(raw)); err == nil {
-				blockImages[k] = ebiten.NewImageFromImage(img)
-				continue
-			}
+		if img, err := decodeAsset("assets/blocks/" + kindNames[k] + ".png"); err == nil {
+			blockImages[k] = ebiten.NewImageFromImage(img)
+			continue
 		}
 		blockImages[k] = ebiten.NewImageFromImage(renderGlossyBlock(kindColors[k], blockTex))
 	}
