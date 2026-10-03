@@ -35,7 +35,14 @@ type Game struct {
 	rec   *recorder
 }
 
-func (g *Game) SetScene(s Scene) { g.scene = s }
+// SetScene switches to the scene s. The scene left frees what it holds on the GPU, if it
+// has a release method.
+func (g *Game) SetScene(s Scene) {
+	if r, ok := g.scene.(interface{ release() }); ok && g.scene != s {
+		r.release()
+	}
+	g.scene = s
+}
 
 func (g *Game) Update() error {
 	if g.rec != nil && g.rec.skipUpdate() {

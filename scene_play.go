@@ -641,6 +641,22 @@ func (s *PlayScene) ending() *ImageEntry {
 	return s.char.Ending
 }
 
+// release frees the scene's pictures on the GPU when it is left (Game.SetScene): the
+// illustrations behind the road and those decoded ahead, the ending and the layers.
+// Otherwise every run left them behind.
+func (s *PlayScene) release() {
+	for _, e := range append(s.prefetched, s.stageCG, s.prevCG, s.ending()) {
+		if e != nil {
+			e.ReleaseFull()
+		}
+	}
+	for _, l := range []*ebiten.Image{s.fadeLayer, s.frameLayer, s.endLayer} {
+		if l != nil {
+			l.Deallocate()
+		}
+	}
+}
+
 // Reaction strengths: a weaker reaction never interrupts a stronger one that is still showing.
 const (
 	rankHint    = iota // a passing look: level up, a wall brushing past
