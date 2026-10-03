@@ -19,11 +19,8 @@ const (
 	actionCount
 )
 
-const (
-	dasFrames = 10 // delayed auto shift for horizontal movement (about 167ms)
-	arrFrames = 2  // repeat interval after the DAS delay
-	stickDead = 0.5
-)
+// stickDead is how far the stick must be pushed to count as a direction.
+const stickDead = 0.5
 
 // keyMap maps actions to keys: the arrows, WASD and the vi keys (HJKL), so a keyboard
 // without arrows works too.
@@ -138,22 +135,16 @@ func (in *Input) Repeat(a Action) bool {
 	return f == 1 || (f > 20 && f%5 == 0)
 }
 
-// Shift returns the horizontal move for this frame (-1, 0, +1), honoring DAS/ARR.
-// When left and right are both held, the one pressed last wins.
-func (in *Input) Shift() int {
-	l, r := in.holdFrames[ActLeft], in.holdFrames[ActRight]
-	dir, f := 0, 0
-	switch {
-	case l > 0 && (r == 0 || l < r):
-		dir, f = -1, l
-	case r > 0:
-		dir, f = 1, r
+// menuNav moves the selection sel of a menu of n items with key repeat: prev steps it back
+// and next forward, wrapping around at the ends, each step with a click.
+func (in *Input) menuNav(sel, n int, prev, next Action) int {
+	if in.Repeat(prev) {
+		sel = (sel + n - 1) % n
+		playSE(seMove)
 	}
-	if dir == 0 {
-		return 0
+	if in.Repeat(next) {
+		sel = (sel + 1) % n
+		playSE(seMove)
 	}
-	if f == 1 || (f >= dasFrames && (f-dasFrames)%arrFrames == 0) {
-		return dir
-	}
-	return 0
+	return sel
 }

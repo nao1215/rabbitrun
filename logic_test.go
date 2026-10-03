@@ -30,34 +30,6 @@ func TestStickHit(t *testing.T) {
 	}
 }
 
-func TestInputShiftDASAndARR(t *testing.T) {
-	t.Parallel()
-	cases := []struct {
-		name        string
-		left, right int
-		want        int
-	}{
-		{"nothing held", 0, 0, 0},
-		{"left first frame", 1, 0, -1},
-		{"right first frame", 0, 1, 1},
-		{"waiting for DAS", 5, 0, 0},
-		{"DAS reached", dasFrames, 0, -1},
-		{"between repeats", dasFrames + 1, 0, 0},
-		{"repeat", dasFrames + arrFrames, 0, -1},
-		{"right repeat", 0, dasFrames + 2*arrFrames, 1},
-		{"both held, left pressed last", 1, 30, -1},
-		{"both held, right pressed last", 30, 1, 1},
-		{"both pressed together", 1, 1, 1},
-	}
-	for _, tc := range cases {
-		var in Input
-		in.holdFrames[ActLeft], in.holdFrames[ActRight] = tc.left, tc.right
-		if got := in.Shift(); got != tc.want {
-			t.Errorf("%s: Shift = %d, want %d", tc.name, got, tc.want)
-		}
-	}
-}
-
 func TestInputRepeatAndPress(t *testing.T) {
 	t.Parallel()
 	var fired []int
@@ -338,5 +310,22 @@ func TestSelectMusicSpeedsUpOverTime(t *testing.T) {
 		if got := selectIntensity(tc.frames); got != tc.want {
 			t.Errorf("selectIntensity(%d) = %d, want %d", tc.frames, got, tc.want)
 		}
+	}
+}
+
+func TestMenuNavWrapsAround(t *testing.T) {
+	t.Parallel()
+	var in Input
+	in.holdFrames[ActUp] = 1
+	if got := in.menuNav(0, 3, ActUp, ActDown); got != 2 {
+		t.Fatalf("up from the top went to %d, want the bottom (2)", got)
+	}
+	in.holdFrames[ActUp], in.holdFrames[ActDown] = 0, 1
+	if got := in.menuNav(2, 3, ActUp, ActDown); got != 0 {
+		t.Fatalf("down from the bottom went to %d, want the top (0)", got)
+	}
+	in.holdFrames[ActDown] = 2 // held, not repeating yet
+	if got := in.menuNav(1, 3, ActUp, ActDown); got != 1 {
+		t.Fatalf("a held key moved the menu to %d before repeating", got)
 	}
 }

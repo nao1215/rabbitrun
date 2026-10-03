@@ -106,3 +106,27 @@ func themesFor(id string, extra bool) []road.Theme {
 	out := t[side]
 	return out[:]
 }
+
+// roadSeed builds the roads: the same seed every game, so every course is the same road
+// each time (it can be learned, and a retry runs the same road again).
+const roadSeed = 20261002
+
+// newGameEngine starts a game for the character id: her roads, her course themes, and
+// the extra stages' tighter ones when they are being played.
+func newGameEngine(id string) *Engine { return newRun(id, extraMode()) }
+
+// roadSeedFor is the seed of a character's roads: each character runs roads of her own
+// (as hard as the others, shaped differently), the same every time.
+func roadSeedFor(id string) uint64 {
+	h := uint64(14695981039346656037) // FNV-1a
+	for _, b := range []byte(id) {
+		h = (h ^ uint64(b)) * 1099511628211
+	}
+	return roadSeed ^ h
+}
+
+// GameCourses is how many courses the game has: four stages of four (about three
+// minutes; longer games dragged). The
+// illustrations are shared out over the first GameCourses-1 courses, one a course; the
+// last course leads to the ending.
+const GameCourses = MainCGCount + 1

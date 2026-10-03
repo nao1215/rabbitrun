@@ -15,7 +15,7 @@ import (
 
 // GalleryScene is the screen for browsing portraits and illustrations, reached from the title.
 // Small character cards along the top switch characters (LB/RB, Q/E); the grid below lists portraits then illustrations.
-// Only portraits seen during play and illustrations unlocked by cumulative score can be viewed.
+// Only portraits seen during play and illustrations earned in play can be viewed.
 type GalleryScene struct {
 	charIdx int
 	sel     int
@@ -112,7 +112,7 @@ func (s *GalleryScene) Update(g *Game) {
 	if bgmSong != gallerySong {
 		startBGM(gallerySong)
 	}
-	setBGMState(0, 1) // calm: the pictures are looked at slowly
+	setBGMState(0) // calm: the pictures are looked at slowly
 	bg.set(popCream)
 	bg.setImage("gallery")
 	items := s.items()

@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/binary"
+	"log"
 	"math"
 	"sort"
 	"sync"
@@ -91,6 +92,7 @@ func startBGM(name string) {
 	bgm = newMusicStream(sg)
 	p, err := audioCtx.NewPlayerF32(bgm)
 	if err != nil {
+		log.Printf("cannot play the music: %v", err) // the game goes on without it
 		return
 	}
 	p.SetBufferSize(80e6) // 80ms; kept short so tempo changes take effect quickly
@@ -130,13 +132,13 @@ const (
 // Tempo per intensity stage: relaxed when calm, a drum-and-bass 174 at full intensity.
 var intensityBPM = [3]float64{148, 162, 174}
 
-// setBGMState sets the tempo from the intensity stage and level (higher levels are slightly faster).
-func setBGMState(intensity, level int) {
+// setBGMState sets the intensity stage and its tempo (the screens other than play).
+func setBGMState(intensity int) {
 	if bgm == nil {
 		return
 	}
 	bgm.setIntensity(intensity)
-	bgm.setBPM(intensityBPM[intensity] + math.Min(float64(level-1), 10))
+	bgm.setBPM(intensityBPM[intensity])
 }
 
 // setBGMTempo sets the intensity stage and the tempo directly (the play screen follows
@@ -167,8 +169,8 @@ const (
 	seReady
 	seGo
 	sePause
-	seBomb  // the hammer goes off: an explosion
-	seBreak // a row of walls breaks after the hammer: a short crack
+	seHammer // the hammer goes off: an explosion
+	seBreak  // a row of walls breaks after the hammer: a short crack
 	seCount
 )
 
@@ -193,9 +195,9 @@ var seSynthed = make(chan struct{})
 
 // synthEffects synthesizes every sound effect into d.
 func synthEffects(d *[seCount][]byte) {
-	// Moving and placing gummies uses soft sine waves with falling pitch (squishy, bouncy).
+	// The menu cursor clicks with a soft sine wave of falling pitch (squishy, bouncy).
 	d[seMove] = synth(0.05, func(t float64) float64 { return glide(t, 1100, 800, 60) * soft(t, 0.002, 70) * .18 })
-	d[seBomb] = bombSound()
+	d[seHammer] = hammerSound()
 	d[seBreak] = breakSound()
 	d[sePick] = arp([]int{72, 76, 79, 84}, 0.05, 0.3)
 	d[seStreak] = arp([]int{72, 76, 79, 84, 88, 91, 96}, 0.045, 0.35)
@@ -222,9 +224,9 @@ func synthEffects(d *[seCount][]byte) {
 	d[sePause] = arp([]int{84, 79, 84}, 0.06, 0.25)
 }
 
-// bombSound is an explosion: a deep boom falling in pitch, a burst of noise that darkens
+// hammerSound is an explosion: a deep boom falling in pitch, a burst of noise that darkens
 // as it fades (a low-pass filter closing), and crackles of debris scattering after it.
-func bombSound() []byte {
+func hammerSound() []byte {
 	seed := uint32(0x9e3779b9)
 	rnd := func() float64 { // a small deterministic noise source
 		seed ^= seed << 13

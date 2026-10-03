@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -17,28 +18,6 @@ var allStates = []string{
 	ExprNormal, ExprRelaxed, ExprHappy, ExprGreat, ExprExcited, ExprTreat, ExprCombo,
 	ExprPerfect, ExprWorried, ExprNervous, ExprPanic, ExprCrying, ExprGameOver,
 	ExprOops, ExprBlocked, ExprReady, ExprWaiting, ExprRelief, ExprLevelUp, ExprDrought, ExprComeback,
-}
-
-func TestFormatScore(t *testing.T) {
-	t.Parallel()
-	cases := []struct {
-		in   int
-		want string
-	}{
-		{0, "0"},
-		{7, "7"},
-		{999, "999"},
-		{1000, "1,000"},
-		{12345, "12,345"},
-		{123456, "123,456"},
-		{1234567, "1,234,567"},
-		{1000000000, "1,000,000,000"},
-	}
-	for _, tc := range cases {
-		if got := formatScore(tc.in); got != tc.want {
-			t.Errorf("formatScore(%d) = %q, want %q", tc.in, got, tc.want)
-		}
-	}
 }
 
 func TestProgressDefaults(t *testing.T) {
@@ -146,7 +125,8 @@ func useTempConfig(t *testing.T) {
 	t.Setenv("AppData", dir)         // Windows
 	old := save
 	save = &SaveData{Characters: map[string]*CharProgress{}}
-	t.Cleanup(func() { save = old })
+	saveDirty = false
+	t.Cleanup(func() { save, saveDirty = old, false })
 }
 
 //nolint:paralleltest // uses t.Setenv and the package-level save data
@@ -251,11 +231,11 @@ func TestCharacterManifests(t *testing.T) {
 		}
 		cgIDs := map[string]bool{}
 		for j, cg := range c.CGs {
-			if j > 0 && c.CGs[j-1].Score >= cg.Score {
-				t.Errorf("%s: CG scores not strictly ascending at %d (%d then %d)", c.ID, j, c.CGs[j-1].Score, cg.Score)
+			if j > 0 && c.CGs[j-1].Order >= cg.Order {
+				t.Errorf("%s: CG orders not strictly ascending at %d (%d then %d)", c.ID, j, c.CGs[j-1].Order, cg.Order)
 			}
-			if cg.Score <= 0 {
-				t.Errorf("%s: CG %q unlocks at score %d", c.ID, cg.ID, cg.Score)
+			if cg.Order <= 0 {
+				t.Errorf("%s: CG %q has order %d", c.ID, cg.ID, cg.Order)
 			}
 			if cgIDs[cg.ID] || exprIDs[cg.ID] {
 				t.Errorf("%s: CG id %q is duplicated", c.ID, cg.ID)
@@ -362,5 +342,72 @@ func TestResetSaveStartsOverAndKeepsABackup(t *testing.T) {
 	}
 	if _, err := os.Stat(savePath() + ".bak"); err != nil {
 		t.Fatalf("no backup of the old save: %v", err)
+	}
+}
+
+//nolint:paralleltest // uses t.Setenv and the package-level save data
+func TestMarkedSaveIsWrittenOnFlush(t *testing.T) {
+	useTempConfig(t)
+	progress(heroID).Cleared = true
+	markSave()
+	if _, err := os.Stat(savePath()); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("the save was written before the flush: %v", err)
+	}
+	flushSave()
+	if _, err := os.Stat(savePath()); err != nil {
+		t.Fatalf("the flush did not write the save: %v", err)
+	}
+	if saveDirty {
+		t.Fatal("the save is still marked after the flush")
+	}
+	if err := os.Remove(savePath()); err != nil {
+		t.Fatal(err)
+	}
+	flushSave()
+	if _, err := os.Stat(savePath()); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("a flush with nothing changed wrote the save: %v", err)
+	}
+}
+
+func TestDecodeImageTriesEachExtension(t *testing.T) {
+	t.Parallel()
+	if img, err := decodeImage("assets/ui/hammer"); err != nil || img == nil {
+		t.Fatalf("the hammer (a .png) did not decode: %v", err)
+	}
+	if img, err := decodeImage("assets/ui/title"); err != nil || img == nil {
+		t.Fatalf("the title art (a .jpg) did not decode: %v", err)
+	}
+	if _, err := decodeImage("assets/ui/no_such_picture"); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("a missing picture gave %v, want fs.ErrNotExist", err)
+	}
+}
+
+// TestExpressionFamilies pins the family (background color and frame) of every
+// expression, and checks that a reaction's family is that of the situation whose
+// portraits stand in for it (exprFallback), so the two tables cannot drift apart.
+func TestExpressionFamilies(t *testing.T) {
+	t.Parallel()
+	want := map[string]string{
+		ExprNormal: ExprNormal, ExprRelaxed: ExprNormal, ExprRelief: ExprNormal,
+		ExprHappy: ExprHappy, ExprGreat: ExprHappy, ExprReady: ExprHappy, ExprLevelUp: ExprHappy,
+		ExprExcited: ExprExcited, ExprTreat: ExprExcited, ExprCombo: ExprExcited, ExprPerfect: ExprExcited,
+		ExprWaiting: ExprExcited, ExprComeback: ExprExcited,
+		ExprWorried: ExprWorried, ExprNervous: ExprWorried, ExprOops: ExprWorried, ExprBlocked: ExprWorried,
+		ExprDrought: ExprWorried,
+		ExprPanic:   ExprPanic, ExprCrying: ExprPanic,
+		ExprGameOver: ExprGameOver,
+	}
+	for _, st := range allStates {
+		if got := family(st); got != want[st] {
+			t.Errorf("family(%s) = %s, want %s", st, got, want[st])
+		}
+		if _, ok := moodBackground[family(st)]; !ok {
+			t.Errorf("%s: no background color for its family %s", st, family(st))
+		}
+	}
+	for reaction, stand := range exprFallback {
+		if family(reaction) != family(stand) {
+			t.Errorf("%s is in family %s, but its stand-in %s is in %s", reaction, family(reaction), stand, family(stand))
+		}
 	}
 }

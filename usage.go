@@ -9,9 +9,6 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
-// showHelp: -h / --help prints the usage and exits.
-var showHelp = flag.BoolP("help", "h", false, "show this help and exit")
-
 // printUsage prints a short help to stderr (used when an option is wrong).
 func printUsage() { writeUsage(os.Stderr) }
 

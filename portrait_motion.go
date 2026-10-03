@@ -234,10 +234,10 @@ func scaleOr(scale, fallback float64) float64 {
 	return fallback
 }
 
-// portraitScale is the character's standing size in the frame (picture pixels to frame
-// pixels) for the crouching poses: a figure of a typical standing height (standingHeight
-// of the picture) fills portraitFill of the frame.
-func (s *PlayScene) portraitScale(_, h float64) float64 {
+// portraitScale is the character's standing size in a frame h pixels tall (picture
+// pixels to frame pixels) for the crouching poses: a figure of a typical standing height
+// (standingHeight of the picture) fills portraitFill of the frame.
+func (s *PlayScene) portraitScale(h float64) float64 {
 	if s.charScale > 0 {
 		return s.charScale
 	}

@@ -9,7 +9,7 @@ import (
 // testCGID is an illustration ID used by the tests.
 const testCGID = "cg_peace"
 
-// The stage tests below share the package-level save data (stageClear writes it), so
+// The stage tests below share the package-level save data (courseClear changes it), so
 // they do not run in parallel.
 
 // stageScene is a play scene on a test character with n illustrations that all have a picture.

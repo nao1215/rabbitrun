@@ -4,32 +4,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// groupCommand is the secret word: typing it on the title screen switches to the extra
-// stages (and back), with a picture of all the characters together as the title background.
-// It is in capitals only, as the game tells it ("RABBITRUN").
-const groupCommand = "RABBITRUN"
-
-// commandBuffer remembers the last letters typed on the title screen.
-type commandBuffer struct {
-	typed []rune
-}
-
-// feed adds the letters typed this frame and reports whether the command was completed.
-func (b *commandBuffer) feed(chars []rune) bool {
-	done := false
-	for _, r := range chars {
-		b.typed = append(b.typed, r)
-		if len(b.typed) > len(groupCommand) {
-			b.typed = b.typed[len(b.typed)-len(groupCommand):]
-		}
-		if string(b.typed) == groupCommand {
-			done = true
-			b.typed = b.typed[:0]
-		}
-	}
-	return done
-}
-
 // groupTop is where the group picture's figures may start: below the one-line title.
 const groupTop = 78.0
 
