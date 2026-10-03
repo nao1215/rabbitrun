@@ -107,16 +107,16 @@ brew install --cask nao1215/tap/rabbitrun
 
 ```shell
 # Debian, Ubuntu
-$ sudo dpkg -i rabbitrun_1.0.0_linux_amd64.deb
+$ sudo dpkg -i rabbitrun_0.1.0_linux_amd64.deb
 
 # Fedora, RHEL, openSUSE
-$ sudo rpm -Uvh rabbitrun_1.0.0_linux_amd64.rpm
+$ sudo rpm -Uvh rabbitrun_0.1.0_linux_amd64.rpm
 
 # Alpine Linux
-$ sudo apk add --allow-untrusted rabbitrun_1.0.0_linux_amd64.apk
+$ sudo apk add --allow-untrusted rabbitrun_0.1.0_linux_amd64.apk
 ```
 
-Replace `1.0.0` with the release you downloaded and `amd64` with `arm64` where applicable.
+Replace `0.1.0` with the release you downloaded and `amd64` with `arm64` where applicable.
 
 ### Verifying release integrity
 
@@ -137,11 +137,11 @@ sha256sum --ignore-missing -c checksums.txt
 slsa-verifier verify-artifact \
   --provenance-path multiple.intoto.jsonl \
   --source-uri github.com/nao1215/rabbitrun \
-  --source-tag v<version> \
-  rabbitrun_<version>_linux_amd64.tar.gz
+  --source-tag v0.1.0 \
+  rabbitrun_0.1.0_linux_amd64.tar.gz
 
 # Verify the GitHub build provenance of an archive
-gh attestation verify rabbitrun_<version>_linux_amd64.tar.gz --repo nao1215/rabbitrun
+gh attestation verify rabbitrun_0.1.0_linux_amd64.tar.gz --repo nao1215/rabbitrun
 ```
 
 ## Contributing
