@@ -43,10 +43,9 @@ func (s *PlayScene) drawBoard(screen *ebiten.Image) {
 	// The road: gummy walls and sweets, moving down smoothly between steps. It is drawn
 	// on a layer the size of the road's frame, so nothing pokes out of it.
 	layer := offscreen(&s.fadeLayer)
+	// the road stays where it stopped, also after the game is over (drawing it at a whole
+	// row there made the walls and the sweets jump up to a row at the miss)
 	scroll := e.Scroll()
-	if e.Over() {
-		scroll = 0
-	}
 	// whole pixels only: at a fraction of a pixel the seams of the blocks shimmer as lines
 	rowY := func(y int) float64 { return math.Round((float64(y) + scroll - 1) * cell) }
 	g := e.G

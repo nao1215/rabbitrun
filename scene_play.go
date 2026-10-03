@@ -240,6 +240,13 @@ func (s *PlayScene) Update(g *Game) {
 		}
 		if g.in.Pressed(ActConfirm) && s.cutin == 0 { // Space or Enter, the A button on a pad
 			s.useHammer()
+			if s.cutin > 0 {
+				// the road holds from this frame on: a step now moved the sweets a row away
+				// from the walls kept for the breaking
+				s.handleEvents()
+				s.updateExpression()
+				return
+			}
 		}
 		accel = g.in.Held(ActUp) // speeds the road up for good
 	}
