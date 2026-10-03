@@ -30,34 +30,6 @@ func TestStickHit(t *testing.T) {
 	}
 }
 
-func TestInputShiftDASAndARR(t *testing.T) {
-	t.Parallel()
-	cases := []struct {
-		name        string
-		left, right int
-		want        int
-	}{
-		{"nothing held", 0, 0, 0},
-		{"left first frame", 1, 0, -1},
-		{"right first frame", 0, 1, 1},
-		{"waiting for DAS", 5, 0, 0},
-		{"DAS reached", dasFrames, 0, -1},
-		{"between repeats", dasFrames + 1, 0, 0},
-		{"repeat", dasFrames + arrFrames, 0, -1},
-		{"right repeat", 0, dasFrames + 2*arrFrames, 1},
-		{"both held, left pressed last", 1, 30, -1},
-		{"both held, right pressed last", 30, 1, 1},
-		{"both pressed together", 1, 1, 1},
-	}
-	for _, tc := range cases {
-		var in Input
-		in.holdFrames[ActLeft], in.holdFrames[ActRight] = tc.left, tc.right
-		if got := in.Shift(); got != tc.want {
-			t.Errorf("%s: Shift = %d, want %d", tc.name, got, tc.want)
-		}
-	}
-}
-
 func TestInputRepeatAndPress(t *testing.T) {
 	t.Parallel()
 	var fired []int

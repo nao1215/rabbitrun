@@ -19,11 +19,8 @@ const (
 	actionCount
 )
 
-const (
-	dasFrames = 10 // delayed auto shift for horizontal movement (about 167ms)
-	arrFrames = 2  // repeat interval after the DAS delay
-	stickDead = 0.5
-)
+// stickDead is how far the stick must be pushed to count as a direction.
+const stickDead = 0.5
 
 // keyMap maps actions to keys: the arrows, WASD and the vi keys (HJKL), so a keyboard
 // without arrows works too.
@@ -136,24 +133,4 @@ func (in *Input) Pressed(a Action) bool { return in.held[a] && !in.prev[a] }
 func (in *Input) Repeat(a Action) bool {
 	f := in.holdFrames[a]
 	return f == 1 || (f > 20 && f%5 == 0)
-}
-
-// Shift returns the horizontal move for this frame (-1, 0, +1), honoring DAS/ARR.
-// When left and right are both held, the one pressed last wins.
-func (in *Input) Shift() int {
-	l, r := in.holdFrames[ActLeft], in.holdFrames[ActRight]
-	dir, f := 0, 0
-	switch {
-	case l > 0 && (r == 0 || l < r):
-		dir, f = -1, l
-	case r > 0:
-		dir, f = 1, r
-	}
-	if dir == 0 {
-		return 0
-	}
-	if f == 1 || (f >= dasFrames && (f-dasFrames)%arrFrames == 0) {
-		return dir
-	}
-	return 0
 }
