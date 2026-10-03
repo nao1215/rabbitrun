@@ -1,0 +1,40 @@
+.PHONY: build run test vet fmt lint vuln licenses clean help
+
+APP         = rabbitrun
+VERSION     = $(shell git describe --tags --abbrev=0 2>/dev/null || echo dev)
+GO          = go
+GO_LDFLAGS  = -ldflags '-X main.version=$(VERSION)'
+
+build: ## Build the rabbitrun binary
+	$(GO) build $(GO_LDFLAGS) -o $(APP) .
+
+run: build ## Build and start the game
+	./$(APP)
+
+test: ## Run unit tests with coverage (writes cover.out / cover.html)
+	$(GO) test -race -cover -coverprofile=cover.out ./...
+	$(GO) tool cover -html=cover.out -o cover.html
+
+vet: ## Run go vet
+	$(GO) vet ./...
+
+fmt: ## Format Go source code
+	$(GO) fmt ./...
+
+lint: ## Run golangci-lint (same config as CI)
+	golangci-lint run ./...
+
+vuln: ## Scan for known vulnerabilities (requires govulncheck)
+	govulncheck ./...
+
+licenses: ## Check dependency licenses and collect their texts (requires go-licenses)
+	CGO_ENABLED=0 go-licenses check --disallowed_types=forbidden,restricted,unknown .
+	./scripts/third_party_licenses.sh
+
+clean: ## Remove build and coverage output
+	-rm -rf $(APP) $(APP).exe cover.out cover.html dist third_party_licenses
+
+.DEFAULT_GOAL := help
+help:
+	@grep -E '^[0-9a-zA-Z_-]+[[:blank:]]*:.*?## .*$$' $(MAKEFILE_LIST) | sort \
+	| awk 'BEGIN {FS = ":.*?## "}; {printf "\033[1;32m%-15s\033[0m %s\n", $$1, $$2}'

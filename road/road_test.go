@@ -1,0 +1,833 @@
+package road
+
+import (
+	"strings"
+	"testing"
+)
+
+// open reports the open (not walled) columns of a row.
+func open(r Row) []int {
+	var out []int
+	for x, c := range r {
+		if c.Wall == 0 {
+			out = append(out, x)
+		}
+	}
+	return out
+}
+
+func TestRoadStaysPassable(t *testing.T) {
+	t.Parallel()
+	profiles := []Profile{Standard,
+		{Speed: 1, MaxWidth: 7, Narrowing: 1, Wander: 0.16, Snake: true, Pillars: 0.1, SweetsRate: 0.2, OneUpRate: 0.05},
+		{Speed: 1, MaxWidth: 6, Narrowing: 2, Wander: 0.14, Snake: true, Pillars: 0.08, SweetsRate: 0.12, OneUpRate: 0.02}}
+	for seed := range uint64(30) {
+		g := NewWith(seed, profiles[seed%3])
+		for range 3000 {
+			g.Safe = 1 // keep the test player alive; only the road is checked here
+			g.Step()
+			top, next := open(g.Rows[0]), open(g.Rows[1])
+			if len(top) < minRoadWidth-1 { // a pillar may stand in the narrowest road
+				t.Fatalf("seed %d: road %v narrower than %d", seed, top, minRoadWidth)
+			}
+			// consecutive rows overlap, so the road can always be followed
+			overlap := false
+			for _, a := range top {
+				for _, b := range next {
+					overlap = overlap || a == b
+				}
+			}
+			if !overlap {
+				t.Fatalf("seed %d: rows %v and %v do not touch", seed, top, next)
+			}
+			for x, c := range g.Rows[0] {
+				if c.Sweet != 0 && c.Wall != 0 {
+					t.Fatalf("seed %d: sweet inside the wall at %d", seed, x)
+				}
+			}
+		}
+	}
+}
+
+func TestMissStopsAndRestartGoesBack(t *testing.T) {
+	t.Parallel()
+	g := New(1)
+	g.Stage, g.Course, g.Level = 2, 3, Courses+4
+	for x := range W {
+		g.Rows[PlayerRow-1][x].Wall = 1 // a full wall about to reach the player
+	}
+	g.Step()
+	g.ReachHalfway()
+	if !g.Missed || g.Over || g.Lives != StartLives {
+		t.Fatalf("missed %v over %v lives %d", g.Missed, g.Over, g.Lives)
+	}
+	before := g.Distance
+	g.Step()
+	if g.Distance != before || g.Move(1) {
+		t.Fatal("the road moved while waiting after the miss")
+	}
+	if !g.Restart() || g.Missed || g.Lives != StartLives-1 {
+		t.Fatalf("restart: missed %v lives %d", g.Missed, g.Lives)
+	}
+	if g.Stage != 2 || g.Course != 2 || g.Level != Courses+3 { // the course had only begun: back into the one before
+		t.Fatalf("restarted at stage %d course %d level %d", g.Stage, g.Course, g.Level)
+	}
+	walls := 0
+	for _, r := range g.Rows {
+		for _, c := range r {
+			if c.Wall != 0 {
+				walls++
+			}
+		}
+	}
+	if walls < W*Rows/4 {
+		t.Fatalf("restarted on a nearly empty screen (%d wall cells)", walls)
+	}
+	if g.blocked(g.X) || g.blockedIn(g.X, PlayerRow+1) {
+		t.Fatal("restarted inside a wall")
+	}
+}
+
+func TestAWallHitsHalfwayDown(t *testing.T) {
+	t.Parallel()
+	g := New(1)
+	g.Safe = 0
+	col := g.Col()
+	g.Rows[PlayerRow-1][col].Wall = 1 // a single block coming down on her
+	g.Step()
+	if g.Missed {
+		t.Fatal("a wall only touching the tips of her ears was a miss")
+	}
+	g.ReachHalfway()
+	if !g.Missed {
+		t.Fatal("a wall halfway down over her was not a miss")
+	}
+
+	g = New(1)
+	g.Safe = 0
+	col = g.Col()
+	g.Rows[PlayerRow-1][col].Wall = 1
+	g.Step()
+	g.Move(1) // she slides out from under it in time
+	g.ReachHalfway()
+	if g.Missed {
+		t.Fatal("she slid out from under the wall in time but it was a miss")
+	}
+}
+
+func TestMissWithoutLivesEndsTheGame(t *testing.T) {
+	t.Parallel()
+	g := New(1)
+	g.Lives = 0
+	for x := range W {
+		g.Rows[PlayerRow-1][x].Wall = 1
+	}
+	g.Step()
+	g.ReachHalfway()
+	if !g.Over || g.Restart() {
+		t.Fatal("the game did not end")
+	}
+}
+
+func TestPickingUpSweetsBuildsAStreak(t *testing.T) {
+	t.Parallel()
+	g := New(1)
+	for i := range 3 {
+		g.Rows[PlayerRow-1] = Row{}
+		g.Rows[PlayerRow-1][g.Col()].Sweet = SweetCandy
+		g.Step()
+		if g.Streak != i+1 {
+			t.Fatalf("streak %d after %d sweets", g.Streak, i+1)
+		}
+	}
+	// a sweet beside the player scrolls past: the streak ends
+	g.Rows[PlayerRow] = Row{}
+	g.Rows[PlayerRow][(g.Col()+2)%W].Sweet = SweetCandy
+	g.Step()
+	if g.Streak != 0 {
+		t.Fatalf("streak %d after a miss", g.Streak)
+	}
+}
+
+func TestTouchingAWallFromTheSideIsAMiss(t *testing.T) {
+	t.Parallel()
+	g := New(1)
+	g.Rows[PlayerRow] = Row{}
+	g.Rows[PlayerRow][g.Col()+1].Wall = 2
+	if !g.Move(-0.2) || g.Missed {
+		t.Fatal("could not move into the open")
+	}
+	g.Move(2)
+	if !g.Missed {
+		t.Fatal("touching the wall from the side was not a miss")
+	}
+	if g.Move(-1) {
+		t.Fatal("moved after the miss")
+	}
+}
+
+func TestCoursesChangeColorAndMakeAStage(t *testing.T) {
+	t.Parallel()
+	g := New(3)
+	g.Safe = 1 << 30
+	var courses, stages int
+	for range CourseRows*Courses + 5 {
+		g.Step()
+		for _, ev := range g.Events {
+			if ev.Kind == EventCourse {
+				courses++
+			}
+			if ev.Kind == EventStageClear {
+				stages++
+			}
+		}
+		g.Events = g.Events[:0]
+	}
+	if courses != Courses || stages != 1 || g.Stage != 2 || g.Course != 0 || g.Level != Courses+1 {
+		t.Fatalf("courses %d stages %d stage %d course %d level %d", courses, stages, g.Stage, g.Course, g.Level)
+	}
+	// the walls built now are the first color again
+	for _, c := range g.Ahead {
+		if c.Wall != 0 && c.Wall != CourseColors[0] {
+			t.Fatalf("wall color %d at the start of stage 2", c.Wall)
+		}
+	}
+}
+
+func TestLastCourseIsNarrower(t *testing.T) {
+	t.Parallel()
+	widest := func(level int) int {
+		g := New(5)
+		g.Level = level
+		g.Stage, g.Course = (level-1)/Courses+1, (level-1)%Courses
+		w := 0
+		for range 2000 {
+			r := g.buildRow(false)
+			open := 0
+			for _, c := range r {
+				if c.Wall == 0 {
+					open++
+				}
+			}
+			w += open
+		}
+		return w
+	}
+	if widest(4*Courses) >= widest(1) {
+		t.Fatal("the last course is not narrower than the first one")
+	}
+}
+
+func TestBombClearsTheWallsAndKeepsTheSweets(t *testing.T) {
+	t.Parallel()
+	g := New(2)
+	g.Rows[3][4].Sweet = SweetCandy
+	g.Rows[3][4].Wall = 0
+	if !g.UseBomb() || g.Bombs != StartBombs-1 {
+		t.Fatalf("bomb not used: %d left", g.Bombs)
+	}
+	for y, r := range g.Rows {
+		for x, c := range r {
+			if c.Wall != 0 {
+				t.Fatalf("wall left at %d,%d", x, y)
+			}
+		}
+	}
+	if g.Rows[3][4].Sweet != SweetCandy {
+		t.Fatal("the bomb took a sweet")
+	}
+	if g.UseBomb() {
+		t.Fatal("used a bomb with none in stock")
+	}
+}
+
+func TestSweetsAddUpToAnExtraLife(t *testing.T) {
+	t.Parallel()
+	g := New(2)
+	lives := g.Lives
+	pick := func(n int) {
+		for range n {
+			g.Rows[PlayerRow-1] = Row{}
+			g.Rows[PlayerRow-1][g.Col()].Sweet = SweetCandy
+			g.Step()
+		}
+	}
+	pick(FirstLifeSweets) // the first life comes sooner
+	if g.Lives != lives+1 || g.Sweets != 0 || g.SweetsForLife() != SweetsPerLife {
+		t.Fatalf("lives %d (was %d), sweets %d after %d sweets", g.Lives, lives, g.Sweets, FirstLifeSweets)
+	}
+	pick(SweetsPerLife)
+	if g.Lives != lives+2 {
+		t.Fatalf("lives %d after %d more sweets", g.Lives, SweetsPerLife)
+	}
+}
+
+func TestAtMostOneBombAStage(t *testing.T) {
+	t.Parallel()
+	for seed := range uint64(40) {
+		g := New(seed)
+		g.Safe = 1 << 30
+		bombs := 0
+		for range CourseRows*Courses - 20 {
+			g.Step()
+			for _, c := range g.Ahead {
+				if c.Sweet == SweetBomb {
+					bombs++
+				}
+			}
+		}
+		if bombs > 1 {
+			t.Fatalf("seed %d: %d bombs in one stage", seed, bombs)
+		}
+	}
+}
+
+func TestBombChanceFallsWithTheStage(t *testing.T) {
+	t.Parallel()
+	prev := 1.0
+	for stage := 1; stage <= 12; stage++ {
+		c := BombChance(stage)
+		if c > prev || c < 0.1 {
+			t.Fatalf("stage %d: chance %v after %v", stage, c, prev)
+		}
+		prev = c
+	}
+}
+
+func TestShortLastStageAndAllClear(t *testing.T) {
+	t.Parallel()
+	g := New(4)
+	g.TotalCourses = Courses + 3 // a full stage, then a short stage of three
+	g.CourseRowsFor = func(int) int { return 5 }
+	g.Safe = 1 << 30
+	var stage2Colors []int8
+	allClear := 0
+	for range 5 * 12 {
+		g.Step()
+		if g.Stage == 2 && (len(stage2Colors) == 0 || stage2Colors[len(stage2Colors)-1] != g.WallColor()) {
+			stage2Colors = append(stage2Colors, g.WallColor())
+		}
+		for _, ev := range g.Events {
+			if ev.Kind == EventAllClear {
+				allClear++
+				for y := 0; y <= PlayerRow+1; y++ {
+					for x := range W {
+						if g.Rows[y][x].Wall != 0 {
+							t.Fatalf("all clear with a wall at row %d (she has not run out onto the open road)", y)
+						}
+					}
+				}
+			}
+		}
+		g.Events = g.Events[:0]
+	}
+	if allClear != 1 || !g.AllClear {
+		t.Fatalf("all clear events %d, AllClear %v", allClear, g.AllClear)
+	}
+	want := CourseColors[Courses-3:]
+	if len(stage2Colors) != 3 || stage2Colors[0] != want[0] || stage2Colors[2] != want[2] {
+		t.Fatalf("last stage colors %v, want %v", stage2Colors, want)
+	}
+}
+
+// TestRoadCanBeFollowedAllTheWay builds long roads (with every kind of section) and
+// checks with a search over the whole road that a player who slides at most one
+// cell while one row passes (only over open cells of the row she is on) can always
+// get through.
+func TestRoadCanBeFollowedAllTheWay(t *testing.T) {
+	t.Parallel()
+	regular := Profile{Speed: 1, MaxWidth: 5, Narrowing: 2, Wander: 0.16, Mixed: true, Pillars: 0.07, Gates: 0.05, SweetsRate: 0.16, OneUpRate: 0.03}
+	extra := Profile{Speed: 1, MaxWidth: 5, Narrowing: 2, Wander: 0.2, Mixed: true, Pillars: 0.1, Gates: 0.08, SweetsRate: 0.16, OneUpRate: 0.03}
+	for seed := range uint64(24) {
+		p := regular
+		if seed%2 == 1 {
+			p = extra
+		}
+		g := NewWith(seed, p)
+		g.Safe = 1 << 30
+		g.Level, g.Course, g.Stage = 15, 2, 4 // a late, hard course
+		rows := make([]Row, 0, 3000)
+		for range 3000 {
+			g.Step()
+			rows = append(rows, g.Rows[0])
+			g.Events = g.Events[:0]
+		}
+		// rows[i] comes after rows[i+1]... the newest row is last; walk from the oldest
+		reach := 1
+		var can [W]bool
+		for x, c := range rows[0] {
+			can[x] = c.Wall == 0
+		}
+		for i := 1; i < len(rows); i++ {
+			cur, next := rows[i-1], rows[i]
+			var nxt [W]bool
+			any := false
+			for x := range W {
+				if !can[x] {
+					continue
+				}
+				// slide along cur (open cells only) up to reach cells, to a cell open in next
+				for dir := -1; dir <= 1; dir += 2 {
+					for d := 0; d <= reach; d++ {
+						nx := x + dir*d
+						if nx < 0 || nx >= W || cur[nx].Wall != 0 {
+							break
+						}
+						if next[nx].Wall == 0 {
+							nxt[nx] = true
+							any = true
+						}
+					}
+				}
+			}
+			if !any {
+				for j := max(0, i-8); j <= i; j++ {
+					var line strings.Builder
+					for _, c := range rows[j] {
+						if c.Wall != 0 {
+							line.WriteByte('#')
+						} else {
+							line.WriteByte('.')
+						}
+					}
+					t.Logf("row %d %s", j, line.String())
+				}
+				t.Fatalf("seed %d: no way from row %d to row %d", seed, i-1, i)
+			}
+			can = nxt
+		}
+	}
+}
+
+func TestTheGameOpensWithATrailOfSweets(t *testing.T) {
+	t.Parallel()
+	g := New(1)
+	g.Safe = 1 << 30
+	n := 0
+	for range trailRows + 10 {
+		g.Step()
+		for _, c := range g.Rows[0] {
+			if c.Sweet == SweetCandy {
+				n++
+			}
+		}
+	}
+	if n < FirstLifeSweets {
+		t.Fatalf("%d sweets on the trail, want at least %d", n, FirstLifeSweets)
+	}
+}
+
+func TestTheFirstCourseRestartsOnItself(t *testing.T) {
+	t.Parallel()
+	g := New(1)
+	g.courseRow = 5
+	g.Missed = true
+	if !g.Restart() || g.Level != 1 || g.Stage != 1 || g.Course != 0 {
+		t.Fatalf("restarted at stage %d course %d level %d", g.Stage, g.Course, g.Level)
+	}
+}
+
+// buildCourse builds the road of course level (from its start) and returns its rows.
+func buildCourse(g *Game, level, n int) []Row {
+	g.Level = level
+	g.Stage, g.Course = (level-1)/Courses+1, (level-1)%Courses
+	g.startCourse()
+	g.courseRow = 0
+	rows := make([]Row, 0, n)
+	for range n {
+		rows = append(rows, g.buildRow(true))
+		g.courseRow++ // as nextCourse counts them
+	}
+	return rows
+}
+
+func TestEveryCourseIsTheSameRoadEveryTime(t *testing.T) {
+	t.Parallel()
+	a := buildCourse(New(7), 5, 80)
+	b := buildCourse(New(7), 5, 80)
+	for i := range a {
+		if a[i] != b[i] {
+			t.Fatalf("row %d differs: %v / %v", i, a[i], b[i])
+		}
+	}
+}
+
+// TestRetryRunsTheSameRoadAgain plays on, misses, and checks that after the retry the
+// screen shows the walls it showed when the run was there the first time (the courses run
+// on from each other, so the retry must start the course before where it began).
+func TestRetryRunsTheSameRoadAgain(t *testing.T) {
+	t.Parallel()
+	for seed := uint64(1); seed <= 12; seed++ {
+		g := New(seed)
+		g.TotalCourses = 16
+		g.Themes = make([]Theme, 16)
+		for i := range g.Themes {
+			g.Themes[i] = Theme(1 + (int(seed)+i)%int(themeCount-1))
+		}
+		g.CourseRowsFor = func(int) int { return 40 }
+		g.Safe = 1 << 30
+		type key struct{ level, row int }
+		seen := map[key][Rows + 1]Row{}
+		walls := func() [Rows + 1]Row {
+			var out [Rows + 1]Row
+			for y := range Rows {
+				for x := range W {
+					out[y][x].Wall = g.Rows[y][x].Wall
+				}
+			}
+			for x := range W {
+				out[Rows][x].Wall = g.Ahead[x].Wall
+			}
+			return out
+		}
+		for range 150 + int(seed)*17 {
+			g.Step()
+			seen[key{g.Level, g.courseRow}] = walls()
+		}
+		g.Safe = 0
+		g.crash()
+		if !g.Restart() {
+			t.Fatalf("seed %d: no retry", seed)
+		}
+		want, ok := seen[key{g.Level, g.courseRow}]
+		if !ok {
+			t.Fatalf("seed %d: the retry starts where the run never was (level %d row %d)", seed, g.Level, g.courseRow)
+		}
+		if got := walls(); got != want {
+			t.Fatalf("seed %d: the retry at level %d row %d shows another road", seed, g.Level, g.courseRow)
+		}
+	}
+}
+
+func TestVaultsHoldTwoPrizesOnlyABombOpens(t *testing.T) {
+	t.Parallel()
+	for level, prizes := range Vaults {
+		g := New(9)
+		g.TotalCourses = 16
+		rows := buildCourse(g, level, CourseRows)
+		found := false
+		for i := 1; i+1 < len(rows); i++ {
+			for x := 1; x+2 < W; x++ {
+				r := rows[i]
+				if r[x].Sweet != prizes[0] || r[x+1].Sweet != prizes[1] {
+					continue
+				}
+				// walled in: a block on each side, and blocks above and below both
+				if r[x-1].Wall == 0 || r[x+2].Wall == 0 || rows[i-1][x].Wall == 0 || rows[i-1][x+1].Wall == 0 ||
+					rows[i+1][x].Wall == 0 || rows[i+1][x+1].Wall == 0 {
+					continue
+				}
+				found = true
+				open := 0
+				for _, c := range r {
+					if c.Wall == 0 && c.Sweet == SweetNone {
+						open++
+					}
+				}
+				if open < 2 {
+					t.Fatalf("level %d: no way past the vault (%d open)", level, open)
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("level %d: no walled-in %v found", level, prizes)
+		}
+		// worth more than the bomb it takes
+		if prizes[0] != SweetOneUp && prizes[0] != SweetBomb || prizes[1] != SweetOneUp && prizes[1] != SweetBomb {
+			t.Fatalf("level %d: prizes %v", level, prizes)
+		}
+	}
+}
+
+func TestRoadsWithVaultsCanBeFollowed(t *testing.T) {
+	t.Parallel()
+	p := Profile{Speed: 1, MaxWidth: 5, Narrowing: 2, Wander: 0.16, Mixed: true, Pillars: 0.07, Gates: 0.05, SweetsRate: 0.16, OneUpRate: 0.03}
+	levels := make([]int, 0, len(Vaults)+len(Feasts))
+	for level := range Vaults {
+		levels = append(levels, level)
+	}
+	for level := range Feasts {
+		levels = append(levels, level)
+	}
+	for _, level := range levels {
+		g := NewWith(4, p)
+		g.TotalCourses = 21
+		rows := buildCourse(g, level, CourseRows)
+		var can [W]bool
+		for x, c := range rows[0] {
+			can[x] = c.Wall == 0
+		}
+		for i := 1; i < len(rows); i++ {
+			var nxt [W]bool
+			ok := false
+			for x := range W {
+				for d := -1; d <= 1 && can[x]; d++ {
+					if nx := x + d; nx >= 0 && nx < W && rows[i-1][nx].Wall == 0 && rows[i][nx].Wall == 0 {
+						nxt[nx], ok = true, true
+					}
+				}
+			}
+			if !ok {
+				t.Fatalf("level %d: stuck at row %d", level, i)
+			}
+			can = nxt
+		}
+	}
+}
+
+func TestRestartGoesBackTenRowsOnTheSameRoad(t *testing.T) {
+	t.Parallel()
+	for _, crashAt := range []int{30, 3} { // in the middle of a course, and just after one started
+		g := New(5)
+		g.Safe = 1 << 30
+		var before [Rows]Row
+		target := -1
+		for g.Level < 6 || g.courseRow < crashAt {
+			if g.Level == 6 && g.courseRow == crashAt-RewindRows || (crashAt < RewindRows && g.Level == 5 && g.courseRow == g.lenOf(5)+crashAt-RewindRows) {
+				before, target = g.Rows, g.Distance
+			}
+			g.Step()
+		}
+		if target < 0 {
+			t.Fatalf("crash at %d: never saw the place to go back to", crashAt)
+		}
+		g.Safe = 0
+		g.Missed = true
+		wantLevel := 6
+		if crashAt < RewindRows {
+			wantLevel = 5
+		}
+		if !g.Restart() || g.Level != wantLevel {
+			t.Fatalf("crash at %d: restarted at level %d, want %d", crashAt, g.Level, wantLevel)
+		}
+		// the road ahead of her is what it was ten rows back (behind her, sweets were picked up)
+		for y := range PlayerRow {
+			for x := range W {
+				if g.Rows[y][x].Wall != before[y][x].Wall {
+					t.Fatalf("crash at %d: row %d differs from the road ten rows back", crashAt, y)
+				}
+			}
+		}
+		if g.blocked(g.X) || g.Rows[PlayerRow-1][g.Col()].Wall != 0 {
+			t.Fatalf("crash at %d: restarted on or right under a wall", crashAt)
+		}
+	}
+}
+
+func TestFeastsFillTheRoadWithSweets(t *testing.T) {
+	t.Parallel()
+	for level := range Feasts {
+		g := New(2)
+		g.TotalCourses = 16
+		full := 0
+		for _, r := range buildCourse(g, level, CourseRows) {
+			n := 0
+			for _, c := range r {
+				if c.Sweet == SweetCandy {
+					n++
+				}
+			}
+			if n >= 6 {
+				full++
+			}
+		}
+		if full != feastRows {
+			t.Fatalf("level %d: %d rows full of sweets, want %d", level, full, feastRows)
+		}
+	}
+}
+
+// TestVaultsAndFeastsFitInShortCourses builds the special courses at the length they
+// have in the game (about 40 rows): the cage and the sweets are all there.
+func TestVaultsAndFeastsFitInShortCourses(t *testing.T) {
+	t.Parallel()
+	for level, prizes := range Vaults {
+		g := New(9)
+		g.TotalCourses = 16
+		n := 0
+		for _, r := range buildCourse(g, level, 40) {
+			for x := 0; x+1 < W; x++ {
+				if r[x].Sweet == prizes[0] && r[x+1].Sweet == prizes[1] {
+					n++
+				}
+			}
+		}
+		if n != 1 {
+			t.Fatalf("level %d: %d vault rows in a 40-row course", level, n)
+		}
+	}
+	for level := range Feasts {
+		g := New(9)
+		g.TotalCourses = 16
+		full := 0
+		for _, r := range buildCourse(g, level, 40) {
+			k := 0
+			for _, c := range r {
+				if c.Sweet == SweetCandy {
+					k++
+				}
+			}
+			if k >= 6 {
+				full++
+			}
+		}
+		if full != feastRows {
+			t.Fatalf("level %d: %d rows of sweets in a 40-row course", level, full)
+		}
+	}
+}
+
+// TestEveryThemeCanBeFollowed builds courses of every theme (both the regular and the hard
+// ones) and checks with a search over the whole road that a player who slides at most one
+// cell while a row passes can always get through.
+func TestEveryThemeCanBeFollowed(t *testing.T) {
+	t.Parallel()
+	p := Profile{Speed: 1, MaxWidth: 5, Narrowing: 2, Wander: 0.16, Mixed: true, Pillars: 0.07, Gates: 0.05, SweetsRate: 0.16, OneUpRate: 0.03}
+	for th := range themeCount {
+		for _, hard := range []bool{false, true} {
+			for seed := range uint64(4) {
+				g := NewWith(seed, p)
+				g.TotalCourses = 16
+				g.Hard = hard
+				g.Themes = make([]Theme, 16)
+				for i := range g.Themes {
+					g.Themes[i] = th
+				}
+				var rows []Row
+				for level := 1; level <= 16; level++ {
+					rows = append(rows, buildCourse(g, level, 45)...)
+				}
+				var can [W]bool
+				for x, c := range rows[0] {
+					can[x] = c.Wall == 0
+				}
+				for i := 1; i < len(rows); i++ {
+					var nxt [W]bool
+					ok := false
+					for x := range W {
+						for d := -1; d <= 1 && can[x]; d++ {
+							if nx := x + d; nx >= 0 && nx < W && rows[i-1][nx].Wall == 0 && rows[i][nx].Wall == 0 {
+								nxt[nx], ok = true, true
+							}
+						}
+					}
+					if !ok {
+						t.Fatalf("theme %d hard %v seed %d: stuck at row %d", th, hard, seed, i)
+					}
+					can = nxt
+				}
+			}
+		}
+	}
+}
+
+func TestRetriesNeverStartInAWall(t *testing.T) {
+	t.Parallel()
+	for seed := uint64(1); seed <= 40; seed++ {
+		g := New(seed)
+		g.Hard = seed%2 == 0
+		for i := range 60 + int(seed)*37 {
+			_ = i
+			g.Safe = 1 // run through the walls to somewhere along the road
+			g.Step()
+		}
+		g.Safe = 0
+		g.crash()
+		if !g.Restart() {
+			t.Fatalf("seed %d: no retry", seed)
+		}
+		if g.blocked(g.X) || g.blockedIn(g.X, PlayerRow+1) {
+			t.Fatalf("seed %d: retried inside a wall at level %d", seed, g.Level)
+		}
+	}
+}
+
+func TestBonusCoursesAreColorfulAndOnlyThem(t *testing.T) {
+	t.Parallel()
+	for level := 1; level <= 4*Courses; level++ {
+		g := New(1)
+		g.TotalCourses = 4 * Courses
+		g.Level = level
+		g.Stage, g.Course = (level-1)/Courses+1, (level-1)%Courses
+		g.startCourse()
+		colors := map[int8]bool{}
+		for range 200 {
+			for _, c := range g.buildRow(true) {
+				if c.Wall != 0 {
+					colors[c.Wall] = true
+				}
+			}
+		}
+		if g.Bonus() != Feasts[level] || (len(colors) > 1) != Feasts[level] {
+			t.Fatalf("level %d: bonus %v, %d wall colors", level, g.Bonus(), len(colors))
+		}
+	}
+}
+
+func TestRetryDoesNotBringBackTheSweetsOfTheRowsRun(t *testing.T) {
+	t.Parallel()
+	kept := 0
+	for seed := uint64(1); seed <= 10; seed++ {
+		g := New(seed)
+		g.Safe = 1 << 30
+		for range 300 {
+			g.Step()
+		}
+		g.Safe = 0
+		g.crash()
+		if !g.Restart() {
+			t.Fatal("no retry")
+		}
+		rows := append(g.Rows[:], g.Ahead)
+		ids := append(g.ids[:], g.aheadID)
+		for y, r := range rows {
+			for x, c := range r {
+				if c.Sweet == 0 {
+					continue
+				}
+				if g.taken[takenKey{ids[y], x}] {
+					t.Fatalf("seed %d: a sweet taken before came back at row %d, column %d", seed, y, x)
+				}
+				if y > PlayerRow-RewindRows && y <= PlayerRow {
+					kept++ // one she ran past without taking: still there to take
+				}
+			}
+		}
+	}
+	if kept == 0 {
+		t.Fatal("the retry took away the sweets she had not taken (a hammer ahead of her vanished)")
+	}
+}
+
+// TestLongStraightRunsEndInABlock runs a wide road with no blocks of its own (the warm-up
+// theme): a column she could run straight up for long gets one block in it, with room to
+// step aside on both sides.
+func TestLongStraightRunsEndInABlock(t *testing.T) {
+	t.Parallel()
+	g := New(5)
+	g.TotalCourses = 16
+	g.Themes = make([]Theme, 16)
+	for i := range g.Themes {
+		g.Themes[i] = ThemeWarmUp
+	}
+	traps := 0
+	var prev Row
+	for i := range 2000 {
+		row := g.buildRow(true)
+		g.courseRow++
+		for x := 1; x < W-1; x++ {
+			inner := row[x].Wall != 0 && row[x-1].Wall == 0 && row[x+1].Wall == 0
+			if !inner {
+				continue
+			}
+			traps++
+			if i > 0 && (prev[x-1].Wall != 0 || prev[x+1].Wall != 0) {
+				t.Fatalf("row %d: the block at %d has no room beside it in the row before", i, x)
+			}
+		}
+		prev = row
+	}
+	if traps == 0 {
+		t.Fatal("a long straight run never ended in a block")
+	}
+}

@@ -1,0 +1,94 @@
+name: MultiPlatformUnitTest
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  # Pinned toolchains: the Go versions rabbitrun promises to build with. go.mod
+  # declares 1.25 because Ebitengine's dependencies (golang.org/x/*) require it.
+  # Keep this list in sync with the "Supported Go versions" section of README.md
+  # and with govulncheck.yml.
+  unit_test:
+    name: Unit test (${{ matrix.os }}, Go ${{ matrix.go }})
+
+    strategy:
+      matrix:
+        os:
+          - "ubuntu-latest"
+          - "windows-latest"
+          - "macos-latest"
+        go:
+          - "1.25"
+          - "1.26"
+          - "1.27"
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Installs the OpenGL/X11/ALSA headers and Xvfb on Linux; a no-op on
+      # macOS and Windows.
+      - uses: nao1215/setup-ebitengine@v0
+        with:
+          xvfb: true
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Run tests with race detector (Linux, headless X server)
+        if: runner.os == 'Linux'
+        run: xvfb-run --auto-servernum go test -race ./...
+
+      - name: Run tests with race detector
+        if: runner.os != 'Linux'
+        run: go test -race ./...
+
+  # Latest Go: a separate, explicitly named job so a failure says whether the
+  # game broke on a supported version or on the toolchain that is about to
+  # become one. check-latest forces the newest released patch.
+  unit_test_latest_go:
+    name: Unit test (${{ matrix.os }}, latest Go)
+
+    strategy:
+      matrix:
+        os:
+          - "ubuntu-latest"
+          - "windows-latest"
+          - "macos-latest"
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: nao1215/setup-ebitengine@v0
+        with:
+          xvfb: true
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "stable"
+          check-latest: true
+
+      - name: Run tests with race detector (Linux, headless X server)
+        if: runner.os == 'Linux'
+        run: xvfb-run --auto-servernum go test -race ./...
+
+      - name: Run tests with race detector
+        if: runner.os != 'Linux'
+        run: go test -race ./...

@@ -1,0 +1,126 @@
+version: 2
+project_name: rabbitrun
+before:
+  hooks:
+    - go mod tidy
+    # Dependency license texts into third_party_licenses/<goos> (needs
+    # go-licenses v2; the release workflows install it).
+    - ./scripts/third_party_licenses.sh
+builds:
+  - main: .
+    binary: rabbitrun
+    ldflags:
+      - -s -w -X main.version=v{{ .Version }}
+    # Ebitengine loads OpenGL, X11 and the audio backend at run time through
+    # purego, so the game builds without cgo and every target below can be
+    # cross-compiled from one Linux runner. FreeBSD is left out: purego's
+    # fake-cgo runtime does not build there without a C toolchain.
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+archives:
+  - name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - LICENSE
+      - NOTICE.md
+      - README.md
+      - CHANGELOG.md
+      - assets/fonts/OFL-LilitaOne.txt
+      - assets/fonts/LICENSE-MPLUS.txt
+      # License texts of the linked Go modules, written by the before hook.
+      - src: "third_party_licenses/{{ .Os }}/**/*"
+        dst: THIRD_PARTY_LICENSES
+checksum:
+  name_template: "checksums.txt"
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+release:
+  header: |
+    ## rabbitrun {{ .Tag }}
+
+    A short, sweets-themed road runner: steer a bunny up a road of gummy blocks with a character who reacts to your run.
+
+    Every artifact is signed and ships with an SBOM and build provenance — see
+    [Verifying release integrity](https://github.com/nao1215/rabbitrun#verifying-release-integrity).
+  footer: |
+    **Full changelog**: https://github.com/nao1215/rabbitrun/compare/{{ .PreviousTag }}...{{ .Tag }}
+changelog:
+  sort: asc
+  use: github
+  groups:
+    - title: "Breaking changes"
+      regexp: '^.*?[a-zA-Z]+(\(.+\))??!:.+$'
+      order: 0
+    - title: "Features"
+      regexp: '^.*?feat(\(.+\))??!?:.+$'
+      order: 1
+    - title: "Bug fixes"
+      regexp: '^.*?fix(\(.+\))??!?:.+$'
+      order: 2
+    - title: "Performance"
+      regexp: '^.*?perf(\(.+\))??!?:.+$'
+      order: 3
+    - title: "Documentation"
+      regexp: '^.*?docs(\(.+\))??!?:.+$'
+      order: 4
+    - title: "Others"
+      order: 999
+  filters:
+    exclude:
+      - "^tests?(\\(.+\\))?!?:"
+      - "^chore(\\(.+\\))?!?:"
+      - "^style(\\(.+\\))?!?:"
+      - "^ci(\\(.+\\))?!?:"
+      - "Merge pull request"
+      - "Merge branch"
+# Software Bill of Materials for every release archive.
+sboms:
+  - artifacts: archive
+# Keyless artifact signing with cosign. Signing the checksums file transitively
+# covers every published artifact.
+signs:
+  - cmd: cosign
+    signature: "${artifact}.sigstore.json"
+    args:
+      - sign-blob
+      - "--bundle=${signature}"
+      - "${artifact}"
+      - "--yes"
+    artifacts: checksum
+    output: true
+nfpms:
+  - maintainer: "CHIKAMATSU Naohiro <n.chika156@gmail.com>"
+    description: "A short, sweets-themed road runner with characters who react to your run"
+    homepage: https://github.com/nao1215/rabbitrun
+    license: MIT
+    section: games
+    formats:
+      - deb
+      - rpm
+      - apk
+    contents:
+      - src: ./NOTICE.md
+        dst: /usr/share/doc/rabbitrun/NOTICE.md
+        file_info:
+          mode: 0644
+      - src: ./assets/fonts/OFL-LilitaOne.txt
+        dst: /usr/share/doc/rabbitrun/OFL-LilitaOne.txt
+        file_info:
+          mode: 0644
+      - src: ./assets/fonts/LICENSE-MPLUS.txt
+        dst: /usr/share/doc/rabbitrun/LICENSE-MPLUS.txt
+        file_info:
+          mode: 0644
+      - src: ./third_party_licenses/linux
+        dst: /usr/share/doc/rabbitrun/THIRD_PARTY_LICENSES
+        type: tree

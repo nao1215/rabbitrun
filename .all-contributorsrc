@@ -1,0 +1,28 @@
+{
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 64,
+  "commit": false,
+  "commitType": "docs",
+  "commitConvention": "angular",
+  "contributors": [
+    {
+      "login": "nao1215",
+      "name": "CHIKAMATSU Naohiro",
+      "avatar_url": "https://avatars.githubusercontent.com/u/22737008?v=4",
+      "profile": "https://debimate.jp/",
+      "contributions": [
+        "code",
+        "design",
+        "audio"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "projectName": "rabbitrun",
+  "projectOwner": "nao1215",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "skipCi": true
+}

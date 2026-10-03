@@ -1,0 +1,48 @@
+name: Coverage
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  coverage:
+    name: Coverage
+
+    # octocov reads/writes the Actions-artifact datastore (report/diff in
+    # .octocov.yml) and comments coverage on pull requests.
+    permissions:
+      contents: read
+      actions: write
+      pull-requests: write
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: nao1215/setup-ebitengine@v0
+        with:
+          xvfb: true
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "stable"
+          check-latest: true
+
+      - name: Run unit tests with coverage
+        run: xvfb-run --auto-servernum make test
+
+      - uses: k1LoW/octocov-action@a167dc0dee441b7ffc45e1b862ab55ec0d87f278 # v1.5.2
+        with:
+          config: .octocov.yml
+          work-dir: .
+          args: --report=cover.out

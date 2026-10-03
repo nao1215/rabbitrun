@@ -1,0 +1,587 @@
+{
+  "id": "cool",
+  "order": 1,
+  "secret": false,
+  "expressions": [
+    {
+      "id": "normal",
+      "state": "normal",
+      "label": "ふつう"
+    },
+    {
+      "id": "normal_2",
+      "state": "normal",
+      "label": "ふつう2"
+    },
+    {
+      "id": "normal_3",
+      "state": "normal",
+      "label": "ふつう3"
+    },
+    {
+      "id": "normal_4",
+      "state": "normal",
+      "label": "ふつう4"
+    },
+    {
+      "id": "relaxed",
+      "state": "relaxed",
+      "label": "余裕"
+    },
+    {
+      "id": "relaxed_2",
+      "state": "relaxed",
+      "label": "余裕2"
+    },
+    {
+      "id": "relaxed_3",
+      "state": "relaxed",
+      "label": "余裕3"
+    },
+    {
+      "id": "relaxed_4",
+      "state": "relaxed",
+      "label": "余裕4"
+    },
+    {
+      "id": "happy",
+      "state": "happy",
+      "label": "うれしい"
+    },
+    {
+      "id": "happy_2",
+      "state": "happy",
+      "label": "うれしい2"
+    },
+    {
+      "id": "happy_3",
+      "state": "happy",
+      "label": "うれしい3"
+    },
+    {
+      "id": "happy_4",
+      "state": "happy",
+      "label": "うれしい4"
+    },
+    {
+      "id": "happy_5",
+      "state": "happy",
+      "label": "うれしい5"
+    },
+    {
+      "id": "great",
+      "state": "great",
+      "label": "すごい"
+    },
+    {
+      "id": "great_2",
+      "state": "great",
+      "label": "すごい2"
+    },
+    {
+      "id": "great_3",
+      "state": "great",
+      "label": "すごい3"
+    },
+    {
+      "id": "great_4",
+      "state": "great",
+      "label": "すごい4"
+    },
+    {
+      "id": "great_5",
+      "state": "great",
+      "label": "やった5"
+    },
+    {
+      "id": "excited",
+      "state": "excited",
+      "label": "大興奮"
+    },
+    {
+      "id": "excited_2",
+      "state": "excited",
+      "label": "大興奮2"
+    },
+    {
+      "id": "excited_3",
+      "state": "excited",
+      "label": "大興奮3"
+    },
+    {
+      "id": "excited_4",
+      "state": "excited",
+      "label": "大興奮4"
+    },
+    {
+      "id": "treat",
+      "state": "treat",
+      "label": "ドヤ顔"
+    },
+    {
+      "id": "treat_2",
+      "state": "treat",
+      "label": "ドヤ顔2"
+    },
+    {
+      "id": "treat_3",
+      "state": "treat",
+      "label": "ドヤ顔3"
+    },
+    {
+      "id": "treat_4",
+      "state": "treat",
+      "label": "ドヤ顔4"
+    },
+    {
+      "id": "combo",
+      "state": "combo",
+      "label": "ノリノリ"
+    },
+    {
+      "id": "combo_2",
+      "state": "combo",
+      "label": "ノリノリ2"
+    },
+    {
+      "id": "combo_3",
+      "state": "combo",
+      "label": "ノリノリ3"
+    },
+    {
+      "id": "combo_4",
+      "state": "combo",
+      "label": "ノリノリ4"
+    },
+    {
+      "id": "perfect",
+      "state": "perfect",
+      "label": "最高"
+    },
+    {
+      "id": "perfect_2",
+      "state": "perfect",
+      "label": "最高2"
+    },
+    {
+      "id": "perfect_3",
+      "state": "perfect",
+      "label": "最高3"
+    },
+    {
+      "id": "perfect_4",
+      "state": "perfect",
+      "label": "最高4"
+    },
+    {
+      "id": "worried",
+      "state": "worried",
+      "label": "不安"
+    },
+    {
+      "id": "worried_2",
+      "state": "worried",
+      "label": "不安2"
+    },
+    {
+      "id": "worried_3",
+      "state": "worried",
+      "label": "不安3"
+    },
+    {
+      "id": "worried_4",
+      "state": "worried",
+      "label": "不安4"
+    },
+    {
+      "id": "nervous",
+      "state": "nervous",
+      "label": "焦り"
+    },
+    {
+      "id": "nervous_2",
+      "state": "nervous",
+      "label": "焦り2"
+    },
+    {
+      "id": "nervous_3",
+      "state": "nervous",
+      "label": "焦り3"
+    },
+    {
+      "id": "nervous_4",
+      "state": "nervous",
+      "label": "焦り4"
+    },
+    {
+      "id": "panic",
+      "state": "panic",
+      "label": "ピンチ"
+    },
+    {
+      "id": "panic_2",
+      "state": "panic",
+      "label": "ピンチ2"
+    },
+    {
+      "id": "panic_3",
+      "state": "panic",
+      "label": "ピンチ3"
+    },
+    {
+      "id": "panic_4",
+      "state": "panic",
+      "label": "ピンチ4"
+    },
+    {
+      "id": "crying",
+      "state": "crying",
+      "label": "半泣き"
+    },
+    {
+      "id": "crying_2",
+      "state": "crying",
+      "label": "半泣き2"
+    },
+    {
+      "id": "crying_3",
+      "state": "crying",
+      "label": "半泣き3"
+    },
+    {
+      "id": "crying_4",
+      "state": "crying",
+      "label": "半泣き4"
+    },
+    {
+      "id": "gameover",
+      "state": "gameover",
+      "label": "ゲームオーバー"
+    },
+    {
+      "id": "gameover_2",
+      "state": "gameover",
+      "label": "ゲームオーバー2"
+    },
+    {
+      "id": "gameover_3",
+      "state": "gameover",
+      "label": "ゲームオーバー3"
+    },
+    {
+      "id": "gameover_4",
+      "state": "gameover",
+      "label": "ゲームオーバー4"
+    },
+    {
+      "id": "oops",
+      "state": "oops",
+      "label": "うっかり"
+    },
+    {
+      "id": "oops_2",
+      "state": "oops",
+      "label": "うっかり2"
+    },
+    {
+      "id": "oops_3",
+      "state": "oops",
+      "label": "うっかり3"
+    },
+    {
+      "id": "oops_4",
+      "state": "oops",
+      "label": "うっかり4"
+    },
+    {
+      "id": "blocked",
+      "state": "blocked",
+      "label": "しまった"
+    },
+    {
+      "id": "blocked_2",
+      "state": "blocked",
+      "label": "しまった2"
+    },
+    {
+      "id": "blocked_3",
+      "state": "blocked",
+      "label": "しまった3"
+    },
+    {
+      "id": "blocked_4",
+      "state": "blocked",
+      "label": "しまった4"
+    },
+    {
+      "id": "ready",
+      "state": "ready",
+      "label": "準備OK"
+    },
+    {
+      "id": "ready_2",
+      "state": "ready",
+      "label": "準備OK2"
+    },
+    {
+      "id": "ready_3",
+      "state": "ready",
+      "label": "準備OK3"
+    },
+    {
+      "id": "ready_4",
+      "state": "ready",
+      "label": "準備OK4"
+    },
+    {
+      "id": "waiting",
+      "state": "waiting",
+      "label": "来た来た"
+    },
+    {
+      "id": "waiting_2",
+      "state": "waiting",
+      "label": "来た来た2"
+    },
+    {
+      "id": "waiting_3",
+      "state": "waiting",
+      "label": "来た来た3"
+    },
+    {
+      "id": "waiting_4",
+      "state": "waiting",
+      "label": "来た来た4"
+    },
+    {
+      "id": "relief",
+      "state": "relief",
+      "label": "ほっ"
+    },
+    {
+      "id": "relief_2",
+      "state": "relief",
+      "label": "ほっ2"
+    },
+    {
+      "id": "relief_3",
+      "state": "relief",
+      "label": "ほっ3"
+    },
+    {
+      "id": "relief_4",
+      "state": "relief",
+      "label": "ほっ4"
+    },
+    {
+      "id": "levelup",
+      "state": "levelup",
+      "label": "レベルアップ"
+    },
+    {
+      "id": "levelup_2",
+      "state": "levelup",
+      "label": "レベルアップ2"
+    },
+    {
+      "id": "levelup_3",
+      "state": "levelup",
+      "label": "レベルアップ3"
+    },
+    {
+      "id": "levelup_4",
+      "state": "levelup",
+      "label": "レベルアップ4"
+    },
+    {
+      "id": "drought",
+      "state": "drought",
+      "label": "まだ？"
+    },
+    {
+      "id": "drought_2",
+      "state": "drought",
+      "label": "まだ？2"
+    },
+    {
+      "id": "drought_3",
+      "state": "drought",
+      "label": "まだ？3"
+    },
+    {
+      "id": "drought_4",
+      "state": "drought",
+      "label": "まだ？4"
+    },
+    {
+      "id": "comeback",
+      "state": "comeback",
+      "label": "やるぞ"
+    },
+    {
+      "id": "comeback_2",
+      "state": "comeback",
+      "label": "やるぞ2"
+    }
+  ],
+  "cgs": [
+    {
+      "id": "cg_peace",
+      "title": "ピース",
+      "score": 1500
+    },
+    {
+      "id": "cg_look_up",
+      "title": "見上げて",
+      "score": 3500
+    },
+    {
+      "id": "cg_selfie",
+      "title": "自撮りいくよー",
+      "score": 6500
+    },
+    {
+      "id": "cg_look_back",
+      "title": "振り向き",
+      "score": 9000
+    },
+    {
+      "id": "cg_gaming",
+      "title": "ゲーム中",
+      "score": 12000
+    },
+    {
+      "id": "cg_bubble_tea",
+      "title": "タピオカ",
+      "score": 15500
+    },
+    {
+      "id": "cg_teddy_bear",
+      "title": "ぎゅー",
+      "score": 19000
+    },
+    {
+      "id": "cg_bubble_gum",
+      "title": "ふうせんガム",
+      "score": 22500
+    },
+    {
+      "id": "cg_dance",
+      "title": "ダンス",
+      "score": 26000
+    },
+    {
+      "id": "cg_kitten",
+      "title": "子猫",
+      "score": 30000
+    },
+    {
+      "id": "cg_rain",
+      "title": "雨の日",
+      "score": 34000
+    },
+    {
+      "id": "cg_peek",
+      "title": "のぞきこみ",
+      "score": 38000
+    },
+    {
+      "id": "cg_hug_knees",
+      "title": "体育座り",
+      "score": 42000
+    },
+    {
+      "id": "cg_ice_cream",
+      "title": "ソフトクリーム",
+      "score": 46500
+    },
+    {
+      "id": "cg_hey",
+      "title": "おーい",
+      "score": 50500
+    },
+    {
+      "id": "cg_here_you_go",
+      "title": "はい、どうぞ",
+      "score": 55000
+    },
+    {
+      "id": "cg_tea_time",
+      "title": "お茶の時間",
+      "score": 59500
+    },
+    {
+      "id": "cg_stretch",
+      "title": "のびー",
+      "score": 64500
+    },
+    {
+      "id": "cg_heart",
+      "title": "ハート",
+      "score": 69000
+    },
+    {
+      "id": "cg_swing",
+      "title": "ブランコ",
+      "score": 73500
+    },
+    {
+      "id": "cg_too_hot",
+      "title": "ちょっと暑い",
+      "score": 78500
+    },
+    {
+      "id": "cg_shoulder",
+      "title": "肩出し",
+      "score": 83500
+    },
+    {
+      "id": "cg_navel",
+      "title": "おへそ",
+      "score": 88500
+    },
+    {
+      "id": "cg_kneel_up",
+      "title": "見上げて",
+      "score": 93500
+    },
+    {
+      "id": "cg_glimpse",
+      "title": "ちらり",
+      "score": 98500
+    },
+    {
+      "id": "cg_on_bed",
+      "title": "ベッドの上",
+      "score": 103500
+    },
+    {
+      "id": "cg_kneel_bed",
+      "title": "ひざ立ち",
+      "score": 109000
+    },
+    {
+      "id": "cg_lie_back",
+      "title": "寝ころび",
+      "score": 114000
+    },
+    {
+      "id": "cg_secret",
+      "title": "ないしょ",
+      "score": 119500
+    },
+    {
+      "id": "cg_together",
+      "title": "いっしょに",
+      "score": 125000
+    }
+  ],
+  "select": {
+    "id": "select",
+    "label": "キャラ選択"
+  },
+  "group": {
+    "id": "group",
+    "label": "みんなで"
+  }
+}
