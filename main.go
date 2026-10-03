@@ -199,8 +199,14 @@ var bg *background
 
 // ---- Drawing helpers ----
 
+// roundPath is the path roundRectPath fills in. One is enough, as the path is copied when
+// it is filled or stroked, and a frame draws dozens of rounded rectangles.
+var roundPath vector.Path
+
+// roundRectPath returns the path of a rounded rectangle, valid until the next call.
 func roundRectPath(x, y, w, h, r float32) *vector.Path {
-	p := &vector.Path{}
+	p := &roundPath
+	p.Reset()
 	p.MoveTo(x+r, y)
 	p.LineTo(x+w-r, y)
 	p.ArcTo(x+w, y, x+w, y+r, r)
