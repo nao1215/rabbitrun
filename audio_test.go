@@ -149,15 +149,16 @@ func TestFourSeasonsOpenings(t *testing.T) {
 		name  string
 		start float64 // beat of the first melody note
 		notes []int   // its first notes (MIDI)
+		key   [3]int  // the first chord
 	}{
 		// E major: E | G# G# G# F#-E B (the pickup E closes the loop, see below)
-		{"spring", 0, []int{80, 80, 80, 78, 76, 83}},
+		{"spring", 0, []int{80, 80, 80, 78, 76, 83}, [3]int{52, 56, 59}},
 		// G minor, 3/8: the languid sighing figures after an eighth rest
-		{"summer", 1, []int{82, 81, 70, 69, 72, 74, 75}},
+		{"summer", 1, []int{82, 81, 70, 69, 72, 74, 75}, [3]int{55, 58, 62}},
 		// F major: the peasants' dance, A A A Bb A
-		{"autumn", 0, []int{81, 81, 81, 82, 81}},
+		{"autumn", 0, []int{81, 81, 81, 82, 81}, [3]int{53, 57, 60}},
 		// F minor: the solo violin's repeated B-flats over the cello's F pedal (bar 4)
-		{"winter", 24, []int{82, 82, 82, 82, 82, 82, 82, 82}},
+		{"winter", 24, []int{82, 82, 82, 82, 82, 82, 82, 82}, [3]int{53, 56, 60}},
 	}
 	for _, c := range cases {
 		sg := songs[c.name]
@@ -168,6 +169,9 @@ func TestFourSeasonsOpenings(t *testing.T) {
 			if got := midiOf(sg.melody[i].freq); got != want {
 				t.Errorf("%s: note %d is %d, want %d", c.name, i, got, want)
 			}
+		}
+		if got := [3]int(sg.chords[0]); got != c.key {
+			t.Errorf("%s: first chord %v, want %v", c.name, got, c.key)
 		}
 	}
 	// Spring's pickup E sits on the last beat of the loop and leads into bar 1.
@@ -212,5 +216,24 @@ func TestLeadPitch(t *testing.T) {
 	}
 	if math.Abs(best-440) > 1.5 {
 		t.Fatalf("the lead's strongest frequency is %v Hz, want 440", best)
+	}
+}
+
+// Where a beat sounds a chord's root and fifth but not its third, the third follows the
+// music around it (or the key), not a major third by default.
+func TestChordThirdsFollowTheKey(t *testing.T) {
+	t.Parallel()
+	for _, c := range []struct {
+		name  string
+		chord int
+		want  [3]int
+	}{
+		{"winter", 0, [3]int{53, 56, 60}},   // F minor: the cello's F pedal alone
+		{"spring", 240, [3]int{49, 52, 56}}, // C# minor: the solo's long trill on C# (bar 61)
+		{"summer", 312, [3]int{55, 58, 62}}, // G minor: the closing unisons
+	} {
+		if got := [3]int(songs[c.name].chords[c.chord]); got != c.want {
+			t.Errorf("%s: chord %d is %v, want %v", c.name, c.chord, got, c.want)
+		}
 	}
 }
