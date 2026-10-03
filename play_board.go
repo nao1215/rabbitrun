@@ -257,14 +257,9 @@ func drawSweet(dst *ebiten.Image, kind, wall int8, sd *ebiten.Image, cx, cy, cel
 		}
 		return
 	}
-	// Every sweet is a macaron of the same size in one of three colors; the precious one
-	// (worth three) glows softly and twinkles.
+	// Every sweet is a macaron of the same size in one of three colors.
 	img := macaronFor(int(cx/cell), wall)
 	size := cell * 0.8
-	if kind == road.SweetCake {
-		pulse := 0.75 + 0.25*math.Sin(float64(frame)*0.15+cx)
-		drawEllipse(dst, cx, cy+bob, cell*0.62, cell*0.55, color.NRGBA{0xff, 0xf3, 0xa0, 0xa0}, float32(pulse))
-	}
 	drawImageFit(dst, img, cx-size/2, cy-size/2+bob, size, size, 1)
 }
 

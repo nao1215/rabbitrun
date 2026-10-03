@@ -35,7 +35,7 @@ const (
 	ExprHappy    = "happy"    // picked up a sweet
 	ExprGreat    = "great"    // picked up a macaron
 	ExprExcited  = "excited"  // a hammer swung, an extra life picked up
-	ExprTreat    = "treat"    // picked up the precious sweet (worth three)
+	ExprTreat    = "treat"    // picked up an extra life on the road
 	ExprCombo    = "combo"    // five sweets in a row
 	ExprPerfect  = "perfect"  // a stage cleared
 	ExprWorried  = "worried"  // the road is getting narrow
@@ -46,7 +46,7 @@ const (
 
 	// Reactions to the road and to events (see PlayScene.readRoad and handleEvents).
 	// blocked and ready are not reacted to in play; their portraits show in the gallery.
-	ExprOops    = "oops"    // the precious sweet got away
+	ExprOops    = "oops"    // an extra life on the road got away
 	ExprBlocked = "blocked" // the road ahead is shut by a gate or a wall across
 	ExprReady   = "ready"   // the countdown before the road moves
 	ExprWaiting = "waiting" // a sweet is coming up ahead

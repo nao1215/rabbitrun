@@ -24,8 +24,7 @@ Slide the bunny left and right, pick up macarons and keep off the walls. The roa
 
 | | Item | What it does |
 | :---: | --- | --- |
-| <img src="./doc/img/items/macaron.png" width="40" alt="macaron"> | Macaron | Lives come from macarons: the first after 20 (the first course lays a trail of them), then one every 150. Macarons you go back over on a retry do not come back. |
-| <img src="./doc/img/items/macaron_glow.png" width="40" alt="glowing macaron"> | Glowing macaron | Counts as three. |
+| <img src="./doc/img/items/macaron.png" width="40" alt="macaron"> | Macaron | Every 100 macarons give a life. Some lie in lines that trace the way along the road. Macarons you go back over on a retry do not come back. |
 | <img src="./doc/img/items/hammer.png" width="40" alt="hammer"> | Hammer | Smashes every wall on the screen. You start with one; more lie on the road now and then, fewer in later stages. |
 | <img src="./doc/img/items/oneup.png" width="28" alt="1UP"> | 1UP | An extra life. |
 | <img src="./doc/img/items/vault.png" width="72" alt="vault"> | Vault | A 1UP and a hammer locked in blocks. Only a hammer opens it, and you get that hammer back. |
@@ -44,7 +43,7 @@ Each course you clear unlocks an illustration of your character, which becomes t
 
 ### Characters
 
-Your character stands beside the road and reacts to the run: she relaxes on a wide road, gets nervous when it narrows, cheers at a glowing macaron or a cleared stage, and cries at a miss. Her face counts your lives. The bunny you steer is the same for every character.
+Your character stands beside the road and reacts to the run: she relaxes on a wide road, gets nervous when it narrows, cheers at an extra life or a cleared stage, and cries at a miss. Her face counts your lives. The bunny you steer is the same for every character.
 
 ![reactions](./doc/img/reactions.webp)
 

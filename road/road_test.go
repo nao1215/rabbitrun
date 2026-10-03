@@ -252,9 +252,9 @@ func TestSweetsAddUpToAnExtraLife(t *testing.T) {
 			g.Step()
 		}
 	}
-	pick(FirstLifeSweets) // the first life comes sooner
+	pick(SweetsPerLife) // every life takes the same number
 	if g.Lives != lives+1 || g.Sweets != 0 || g.SweetsForLife() != SweetsPerLife {
-		t.Fatalf("lives %d (was %d), sweets %d after %d sweets", g.Lives, lives, g.Sweets, FirstLifeSweets)
+		t.Fatalf("lives %d (was %d), sweets %d after %d sweets", g.Lives, lives, g.Sweets, SweetsPerLife)
 	}
 	pick(SweetsPerLife)
 	if g.Lives != lives+2 {
@@ -412,8 +412,8 @@ func TestTheGameOpensWithATrailOfSweets(t *testing.T) {
 			}
 		}
 	}
-	if n < FirstLifeSweets {
-		t.Fatalf("%d sweets on the trail, want at least %d", n, FirstLifeSweets)
+	if n < trailRows {
+		t.Fatalf("%d sweets on the trail, want at least %d", n, trailRows)
 	}
 }
 
@@ -835,13 +835,13 @@ func TestLongStraightRunsEndInABlock(t *testing.T) {
 func TestSweetAheadFindsAKindAmongOthers(t *testing.T) {
 	t.Parallel()
 	g := New(1)
-	g.Rows[PlayerRow-3][2].Sweet = SweetCake
-	g.Rows[PlayerRow-2][5].Sweet = SweetBomb // a hammer nearer must not hide the cake
-	if !g.SweetAhead(10, SweetCake) {
-		t.Fatal("the cake ahead was not found because a hammer was also ahead")
+	g.Rows[PlayerRow-3][2].Sweet = SweetOneUp
+	g.Rows[PlayerRow-2][5].Sweet = SweetBomb // a hammer nearer must not hide the extra life
+	if !g.SweetAhead(10, SweetOneUp) {
+		t.Fatal("the extra life ahead was not found because a hammer was also ahead")
 	}
-	if g.SweetAhead(1, SweetCake) {
-		t.Fatal("a cake three rows ahead was found within one row")
+	if g.SweetAhead(1, SweetOneUp) {
+		t.Fatal("an extra life three rows ahead was found within one row")
 	}
 }
 

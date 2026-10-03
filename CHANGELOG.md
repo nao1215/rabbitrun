@@ -7,7 +7,7 @@ All notable changes to this project are documented in this file. The format is b
 ### Added
 - Rabbit Run: a portrait (720x900) road runner built with Ebitengine. A bunny hops up a road of gummy blocks; slide her left and right, pick up macarons and stay off the walls. A run is four stages of four courses, about three minutes.
 - Course themes: every course has one of twenty-one themes (a winding narrow road, wide swings from side to side, slaloms, gates, pillars that step across the road, lanes, a checkerboard, a funnel and more). Each character runs roads of her own, the same every time, and a long straight run ends with a block to dodge.
-- Macarons that add up to extra lives (the first after 20, then every 150), and vaults with an extra life that only the hammer opens.
+- Macarons that add up to extra lives (every 100), some laid in lines along the way, and vaults with an extra life that only the hammer opens.
 - Bonus courses: one course in each stage after the first is walled with blocks of every candy color, with a wider road, twice the sweets and a feast of macarons.
 - The hammer: a squeaky toy hammer that smashes every wall on the screen, with a cut-in of the character.
 - Holding up speeds the road up for the rest of the stage; the music follows the speed of the road.

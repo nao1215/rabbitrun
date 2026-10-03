@@ -32,12 +32,11 @@ type Cell struct {
 // Row is one row of the road.
 type Row [W]Cell
 
-// Sweet kinds. The rare cake counts for three toward the next extra life.
+// Sweet kinds.
 const (
 	SweetNone int8 = iota
 	SweetCandy
 	SweetMacaron
-	SweetCake  // rare
 	SweetOneUp // an extra life (very rare)
 	SweetBomb  // a hammer for the stock (rare)
 )
@@ -139,6 +138,8 @@ type Game struct {
 	sinceObs    int  // rows since the last pillar or gate (they need room between them)
 	targetWidth int  // the width the road is heading for
 	sweetLives  int  // extra lives earned with sweets so far
+	pathLeft    int  // sweets left to lay in the line of sweets being laid (see pathLine)
+	pathX       int  // where the line of sweets is
 	lastRow     Row  // the row built before (a gate's gap must be reachable from it)
 	// A section is a stretch built to a pattern (a narrow zigzag, a slalom, a narrow
 	// tunnel): its kind, the rows it still runs once the road has narrowed to it, and a
@@ -150,22 +151,23 @@ type Game struct {
 
 // Tuning.
 const (
-	StartLives      = 3
-	CourseRows      = 110 // rows of road in a course
-	Courses         = 4   // courses in a stage
-	minRoadWidth    = 3   // narrowest road at high levels
-	maxRoadWidth    = 6
-	sweetChance     = 0.16
-	cakeChance      = 0.08 // of the sweets
-	macaronChance   = 0.35
-	oneUpChance     = 0.03 // of the sweets
-	MaxLives        = 9
-	StartBombs      = 1
-	MaxBombs        = 3
-	SweetsPerLife   = 150             // sweets for an extra life (a cake counts for three); 100 gave too many lives
-	FirstLifeSweets = 20              // the first extra life comes sooner, so the player learns what sweets are for
-	trailRows       = FirstLifeSweets // the first course opens with a trail of sweets down the middle of the road, one a row
-	alcoveChance    = 0.3             // of the things placed: in a dent in the wall, to be fetched in a hurry
+	StartLives    = 3
+	CourseRows    = 110 // rows of road in a course
+	Courses       = 4   // courses in a stage
+	minRoadWidth  = 3   // narrowest road at high levels
+	maxRoadWidth  = 6
+	sweetChance   = 0.16
+	macaronChance = 0.35
+	oneUpChance   = 0.03 // of the sweets
+	MaxLives      = 9
+	StartBombs    = 1
+	MaxBombs      = 3
+	SweetsPerLife = 100   // sweets for an extra life, the same every time (20 and then 150 was hard to follow; 50 gave four or five a run)
+	trailRows     = 20    // the first course opens with a trail of sweets down the middle of the road, one a row
+	pathChance    = 0.012 // of the rows with no line of sweets: one starts there
+	pathMin       = 5     // a line of sweets is pathMin to pathMin+pathSpread-1 long
+	pathSpread    = 5
+	alcoveChance  = 0.3 // of the things placed: in a dent in the wall, to be fetched in a hurry
 )
 
 // Profile is the character of a road: how it wanders, how wide and fast it is, and
@@ -750,9 +752,7 @@ func (g *Game) addThings(row Row, left, right int) Row {
 		switch r := g.rng.Float64(); {
 		case r < p.OneUpRate && g.Lives < MaxLives:
 			thing = SweetOneUp
-		case r < p.OneUpRate+cakeChance:
-			thing = SweetCake
-		case r < p.OneUpRate+cakeChance+macaronChance:
+		case r < p.OneUpRate+macaronChance:
 			thing = SweetMacaron
 		default:
 			thing = SweetCandy
@@ -761,14 +761,63 @@ func (g *Game) addThings(row Row, left, right int) Row {
 	if thing != SweetNone {
 		g.place(&row, left, right, thing)
 	}
+	g.pathLine(&row, left, right)
 	return row
+}
+
+// pathLine lays lines of sweets that trace the way along the road, like the coins of the
+// old platform games: a line starts now and then and puts a sweet a row in the middle of
+// the road (or the open cell next to it, when a pillar stands there), so following the
+// line picks them all up.
+func (g *Game) pathLine(row *Row, left, right int) {
+	if g.section != sectionNone {
+		g.pathLeft = 0
+		return
+	}
+	// its own numbers from the seed and the row, so the lines leave the road and the other
+	// sweets exactly as they were (the roads can be learned)
+	h := pathHash(g.seed, g.Stage, g.stageRow)
+	if g.pathLeft == 0 {
+		if float64(h%1000)/1000 >= pathChance {
+			return
+		}
+		g.pathLeft = pathMin + int(h/1000%pathSpread)
+		g.pathX = (left + right) / 2
+	}
+	mid := (left + right) / 2
+	best := -1
+	for _, x := range []int{g.pathX, g.pathX - 1, g.pathX + 1} {
+		if x < left || x > right || x < 0 || x >= W || row[x].Wall != 0 {
+			continue
+		}
+		if best < 0 || abs(x-mid) < abs(best-mid) {
+			best = x
+		}
+	}
+	if best < 0 {
+		g.pathLeft = 0 // the way is shut here: the line ends
+		return
+	}
+	if row[best].Sweet == SweetNone { // a sweet or an item already there is part of the line
+		row[best].Sweet = SweetCandy
+	}
+	g.pathX = best
+	g.pathLeft--
+}
+
+// pathHash mixes the seed, the stage and the row into the numbers of pathLine.
+func pathHash(seed uint64, stage, row int) uint64 {
+	x := seed ^ uint64(stage)*0x9e3779b97f4a7c15 ^ uint64(row)*0xbf58476d1ce4e5b9 //nolint:gosec // G115: small non-negative numbers
+	x ^= x >> 31
+	x *= 0x94d049bb133111eb
+	return x ^ x>>29
 }
 
 // place puts a thing on the road where it tempts the player into a risk: often right by
 // a wall or a pillar, and sometimes in a dent in the wall that she must dart into and out
 // of before the wall comes back. Extra lives and hammers go to the risky places more often.
 func (g *Game) place(row *Row, left, right int, thing int8) {
-	precious := thing == SweetOneUp || thing == SweetBomb || thing == SweetCake
+	precious := thing == SweetOneUp || thing == SweetBomb
 	dent := alcoveChance
 	if precious {
 		dent *= 2
@@ -810,16 +859,19 @@ type roadShape struct {
 	reach                                     [W]bool
 	openRun                                   [W]int
 	sinceTrap, hold                           int
+	pathLeft, pathX                           int
 }
 
 func shapeOf(g *Game) roadShape {
 	return roadShape{center: g.center, width: g.width, targetWidth: g.targetWidth, still: g.still,
-		settle: g.settle, shifted: g.shifted, lastRow: g.lastRow, reach: g.reach, openRun: g.openRun, sinceTrap: g.sinceTrap, hold: g.hold}
+		settle: g.settle, shifted: g.shifted, lastRow: g.lastRow, reach: g.reach, openRun: g.openRun, sinceTrap: g.sinceTrap, hold: g.hold,
+		pathLeft: g.pathLeft, pathX: g.pathX}
 }
 
 func (s roadShape) restore(g *Game) {
 	g.center, g.width, g.targetWidth, g.still, g.settle = s.center, s.width, s.targetWidth, s.still, s.settle
 	g.shifted, g.lastRow, g.reach, g.openRun, g.sinceTrap, g.hold = s.shifted, s.lastRow, s.reach, s.openRun, s.sinceTrap, s.hold
+	g.pathLeft, g.pathX = s.pathLeft, s.pathX
 }
 
 // specialAt is the row of a course where its vault or feast starts: early, so it is all
@@ -977,7 +1029,11 @@ func (g *Game) Step() {
 	}
 	// a sweet that scrolls past the player is missed
 	for _, c := range g.Rows[PlayerRow] {
-		if c.Sweet != 0 && c.Sweet != SweetOneUp && c.Sweet != SweetBomb {
+		switch c.Sweet {
+		case SweetNone, SweetBomb:
+		case SweetOneUp: // an extra life let go by: told, but the streak of sweets holds
+			g.Events = append(g.Events, Event{Kind: EventMiss, Sweet: c.Sweet})
+		default:
 			g.Streak = 0
 			g.Events = append(g.Events, Event{Kind: EventMiss, Sweet: c.Sweet})
 		}
@@ -1023,7 +1079,7 @@ func (g *Game) pickAt(col int) {
 	switch c.Sweet {
 	case SweetOneUp:
 		g.Lives = min(MaxLives, g.Lives+1)
-		g.Events = append(g.Events, Event{Kind: EventOneUp})
+		g.Events = append(g.Events, Event{Kind: EventOneUp, Sweet: SweetOneUp}) // picked up, not earned with sweets
 		c.Sweet = 0
 		return
 	case SweetBomb:
@@ -1034,9 +1090,6 @@ func (g *Game) pickAt(col int) {
 	g.Streak++
 	g.Events = append(g.Events, Event{Kind: EventPick, Sweet: c.Sweet, Streak: g.Streak})
 	g.Sweets++
-	if c.Sweet == SweetCake {
-		g.Sweets += 2 // a cake counts for three
-	}
 	if need := g.SweetsForLife(); g.Sweets >= need {
 		g.Sweets -= need
 		g.sweetLives++
@@ -1088,14 +1141,8 @@ func (g *Game) crash() {
 	g.Missed = true
 }
 
-// SweetsForLife is how many sweets the next extra life takes: FirstLifeSweets for the
-// first, SweetsPerLife after that.
-func (g *Game) SweetsForLife() int {
-	if g.sweetLives == 0 {
-		return FirstLifeSweets
-	}
-	return SweetsPerLife
-}
+// SweetsForLife is how many sweets the next extra life takes (SweetsPerLife).
+func (g *Game) SweetsForLife() int { return SweetsPerLife }
 
 // GiveUp ends the game after a miss instead of using a life.
 func (g *Game) GiveUp() {
@@ -1260,4 +1307,11 @@ func (g *Game) SweetAhead(n int, kind int8) bool {
 		}
 	}
 	return false
+}
+
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
 }

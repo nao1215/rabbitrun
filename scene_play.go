@@ -292,9 +292,6 @@ func (s *PlayScene) handleEvents() {
 			s.droughtSeen = false
 			s.landing = 1 // a little squish for each sweet
 			switch {
-			case ev.Sweet == road.SweetCake:
-				playSE(seTreat)
-				s.react(ExprTreat, 150, rankBig) // the rare sweet: the big moment
 			case ev.Streak >= 5 && ev.Streak%5 == 0:
 				playSE(seStreak)
 				s.comboStep = ev.Streak/5 - 1 // each five in a row shows the next combo pose
@@ -309,10 +306,15 @@ func (s *PlayScene) handleEvents() {
 		case road.EventOneUp:
 			playSE(seLevelUp)
 			s.popups = append(s.popups, popup{text: "1UP", timer: 60})
-			s.react(ExprExcited, 100, rankGood)
+			if ev.Sweet == road.SweetOneUp {
+				playSE(seTreat)
+				s.react(ExprTreat, 150, rankBig) // an extra life picked up off the road: the big moment
+			} else {
+				s.react(ExprExcited, 100, rankGood)
+			}
 		case road.EventMiss:
-			if ev.Sweet == road.SweetCake {
-				s.react(ExprOops, 90, rankGood) // the rare one got away
+			if ev.Sweet == road.SweetOneUp {
+				s.react(ExprOops, 90, rankGood) // the extra life got away
 			}
 		case road.EventNearMiss:
 			s.react(ExprNervous, 50, rankHint)
