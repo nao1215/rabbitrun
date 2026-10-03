@@ -45,13 +45,15 @@ Each course you clear unlocks an illustration of your character, which becomes t
 
 Your character stands beside the road and reacts to the run: she relaxes on a wide road, gets nervous when it narrows, cheers at a glowing macaron or a cleared stage, and cries at a miss. Her face counts your lives. The bunny you steer is the same for every character.
 
-| Character | Look | Portraits | Illustrations |
-| --- | --- | :---: | :---: |
-| Cool | Silver bob, white leather jacket, black leather pants | 86 | 15 + α |
-| Cute | Wavy mint hair, white beret, lavender cardigan, mint pencil skirt | 86 | 15 + α |
-| Gyaru | Tan skin, long blond hair, pink hoodie, rainbow thighhighs (gyaru: a Japanese flashy fashion style) | 87 | 15 + α |
-| Taisho | Black hair with red inside, arrow-pattern kimono, hakama, lace-up boots (Taisho roman: a Japanese retro style of the 1910s and 1920s) | 86 | 15 + α |
-| Secret | ? | 86 | 15 + α |
+![reactions](./doc/img/reactions.webp)
+
+| Character | Portraits | Illustrations |
+| :---: | :---: | :---: |
+| <img src="./doc/img/faces/cool.png" width="64" alt="cool"> | 86 | 15 + α |
+| <img src="./doc/img/faces/cute.png" width="64" alt="cute"> | 86 | 15 + α |
+| <img src="./doc/img/faces/gyal.png" width="64" alt="gyaru"> | 87 | 15 + α |
+| <img src="./doc/img/faces/street.png" width="64" alt="Taisho"> | 86 | 15 + α |
+| <img src="./doc/img/faces/secret.png" width="64" alt="secret"> | 86 | 15 + α |
 
 The portraits cover about twenty situations (a sweet picked up, a narrow road, a miss, a retry and more), with several poses each. Some are still being drawn. α is what the secrets unlock.
 
