@@ -70,12 +70,12 @@ func (s *PlayScene) readRoad() {
 	}
 	s.danger = d
 	if e.G.SweetAhead(10, road.SweetOneUp) {
-		if !s.cakeSeen {
-			s.cakeSeen = true
+		if !s.oneUpSeen {
+			s.oneUpSeen = true
 			s.react(ExprWaiting, 80, rankHint) // an extra life is coming
 		}
 	} else {
-		s.cakeSeen = false
+		s.oneUpSeen = false
 	}
 	if s.eng.Steps != s.lastSteps {
 		s.sinceSweet += s.eng.Steps - s.lastSteps

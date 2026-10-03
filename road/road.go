@@ -1297,7 +1297,7 @@ func (g *Game) RoadWidthAhead(n int) int {
 }
 
 // SweetAhead reports whether a sweet of the kind lies within the next n rows above the player
-// (by kind, not by the largest kind number: a hammer nearby hid a cake).
+// (by kind, not by the largest kind number: a hammer nearby hid an extra life).
 func (g *Game) SweetAhead(n int, kind int8) bool {
 	for y := max(0, PlayerRow-n); y < PlayerRow; y++ {
 		for x := range W {
