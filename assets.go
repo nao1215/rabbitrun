@@ -17,6 +17,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"sync"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
@@ -76,10 +77,11 @@ type ImageEntry struct {
 
 	Image *ebiten.Image `json:"-"` // portraits load lazily via Img; illustrations load on demand via Full / Thumb
 
-	base string
-	full *ebiten.Image
-	tile *ebiten.Image // finished gallery tile (see GalleryScene.tileOf)
-	has  int8          // HasImage cache: 0 unknown, 1 yes, -1 no (the assets are embedded and never change)
+	base    string
+	full    *ebiten.Image
+	pending chan decodedImg // the portrait being decoded in the background (prefetchImgs)
+	tile    *ebiten.Image   // finished gallery tile (see GalleryScene.tileOf)
+	has     int8            // HasImage cache: 0 unknown, 1 yes, -1 no (the assets are embedded and never change)
 }
 
 // HasImage reports whether the image file exists (otherwise a placeholder is used).
@@ -100,15 +102,169 @@ func (e *ImageEntry) HasImage() bool {
 const standingMaxH = 800
 
 // Img loads the portrait (expression or character-select image) scaled down on first use.
+// If the picture is being decoded in the background (prefetchImgs), it waits for that
+// rather than decoding it twice (unless it has not started yet).
 func (e *ImageEntry) Img() *ebiten.Image {
 	if e.Image == nil {
-		name := e.Label
-		if name == "" {
-			name = e.ID
+		if e.pending != nil && !unqueue(e, false) {
+			e.upload(<-e.pending)
+		} else {
+			e.pending = nil
+			e.Image = loadScaledImage(e.base, e.ID, e.name(), standingMaxH)
 		}
-		e.Image = loadScaledImage(e.base, e.ID, name, standingMaxH)
 	}
 	return e.Image
+}
+
+// ImgReady is Img without the wait: nil while the picture is still being decoded in the
+// background.
+func (e *ImageEntry) ImgReady() *ebiten.Image {
+	if e.Image == nil && e.pending != nil {
+		select {
+		case d := <-e.pending:
+			e.upload(d)
+		default:
+			unqueue(e, true) // wanted now: decoded next
+			return nil
+		}
+	}
+	return e.Img()
+}
+
+// name is what the placeholder of a missing picture says.
+func (e *ImageEntry) name() string {
+	if e.Label != "" {
+		return e.Label
+	}
+	return e.ID
+}
+
+// upload hands a picture decoded in the background to the GPU, with its figure measured.
+func (e *ImageEntry) upload(d decodedImg) {
+	e.pending = nil
+	if d.img == nil {
+		e.Image = placeholderImage(e.name())
+		return
+	}
+	e.Image = ebiten.NewImageFromImage(d.img)
+	figureCache[e.Image] = d.fig
+}
+
+// ReleaseImg frees the loaded portrait on the GPU (and drops one being decoded); Img
+// loads it again when it is wanted.
+func (e *ImageEntry) ReleaseImg() {
+	if e.pending != nil {
+		unqueue(e, false)
+		e.pending = nil
+	}
+	if e.Image != nil {
+		delete(figureCache, e.Image)
+		e.Image.Deallocate()
+		e.Image = nil
+	}
+}
+
+// decodedImg is a picture decoded off the main goroutine, with its figure measured there
+// too (so it is not read back from the GPU).
+type decodedImg struct {
+	img image.Image
+	fig figure
+}
+
+// prefetchImgs decodes the pictures of entries, as Img loads them, in the background: in
+// the order given, a few at a time. Img then only uploads them (and uploadPrefetched does it
+// a few a frame ahead of use). A picture already loaded or on its way is left alone.
+func prefetchImgs(entries []*ImageEntry) {
+	prefetchQueue.Lock()
+	defer prefetchQueue.Unlock()
+	for _, e := range entries {
+		if e == nil || e.Image != nil || e.pending != nil || !e.HasImage() {
+			continue
+		}
+		ch := make(chan decodedImg, 1)
+		e.pending = ch
+		prefetchQueue.jobs = append(prefetchQueue.jobs, prefetchJob{e, e.base, e.ID, ch})
+	}
+	for ; prefetchQueue.workers < min(len(prefetchQueue.jobs), cap(tileDecoders)); prefetchQueue.workers++ {
+		go prefetchWorker()
+	}
+}
+
+// prefetchQueue holds the pictures waiting to be decoded in the background, and how many
+// workers are decoding them.
+var prefetchQueue struct {
+	sync.Mutex
+	jobs    []prefetchJob
+	workers int
+}
+
+// prefetchJob is a picture to decode. The worker reads only base and id; e only tells
+// the jobs apart.
+type prefetchJob struct {
+	e        *ImageEntry
+	base, id string
+	out      chan<- decodedImg
+}
+
+// prefetchWorker decodes queued pictures until the queue is empty.
+func prefetchWorker() {
+	for {
+		prefetchQueue.Lock()
+		if len(prefetchQueue.jobs) == 0 {
+			prefetchQueue.workers--
+			prefetchQueue.Unlock()
+			return
+		}
+		j := prefetchQueue.jobs[0]
+		prefetchQueue.jobs = prefetchQueue.jobs[1:]
+		prefetchQueue.Unlock()
+		tileDecoders <- struct{}{}
+		var d decodedImg
+		if d.img = decodeScaled(j.base, j.id, standingMaxH); d.img != nil {
+			d.fig = measureFigure(alphaPixels(d.img), d.img.Bounds().Dx(), d.img.Bounds().Dy())
+		}
+		<-tileDecoders
+		j.out <- d
+	}
+}
+
+// unqueue takes e's picture out of the queue (keep: put it first instead, as it is wanted
+// now). It reports whether it was still waiting there.
+func unqueue(e *ImageEntry, keep bool) bool {
+	prefetchQueue.Lock()
+	defer prefetchQueue.Unlock()
+	q := prefetchQueue.jobs
+	for i, j := range q {
+		if j.e == e {
+			copy(q[1:i+1], q[:i]) // the jobs before it move back one
+			if !keep {
+				prefetchQueue.jobs = q[1:]
+				return true
+			}
+			q[0] = j
+			return true
+		}
+	}
+	return false
+}
+
+// uploadPrefetched uploads up to n of the entries' pictures that finished decoding
+// (uploading is quick, but capped so a frame never stalls).
+func uploadPrefetched(entries []*ImageEntry, n int) {
+	for _, e := range entries {
+		if n == 0 {
+			return
+		}
+		if e == nil || e.Image != nil || e.pending == nil {
+			continue
+		}
+		select {
+		case d := <-e.pending:
+			e.upload(d)
+			n--
+		default:
+		}
+	}
 }
 
 // Full loads the illustration at full size (for the gallery's enlarged view). Free it with ReleaseFull.

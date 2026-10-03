@@ -61,14 +61,14 @@ type PlayScene struct {
 	popFrame       int      // frames since the current pose popped in (-1: it cross-faded in)
 	montage        []string // poses still to flash by in a montage
 	montageTimer   int
-	comboStep      int     // combo reactions so far in this chain (picks the next combo pose)
-	popNext        bool    // the next pose change pops in (a reaction) instead of cross-fading
-	windup         int     // frames left of the crouch before a strong reaction springs out
-	slideDir       float64 // side the next popping pose slides in from (alternates)
-	landing        float64 // squash when a sweet is picked up (1 just now, fades out)
-	intensity      int     // music intensity stage (for the beat bounce)
-	portraits      chan decodedPortrait
-	charScale      float64 // the character's fixed size in the frame (portraitScale)
+	comboStep      int           // combo reactions so far in this chain (picks the next combo pose)
+	popNext        bool          // the next pose change pops in (a reaction) instead of cross-fading
+	windup         int           // frames left of the crouch before a strong reaction springs out
+	slideDir       float64       // side the next popping pose slides in from (alternates)
+	landing        float64       // squash when a sweet is picked up (1 just now, fades out)
+	intensity      int           // music intensity stage (for the beat bounce)
+	portraits      []*ImageEntry // the character's pictures, decoded in the background
+	charScale      float64       // the character's fixed size in the frame (portraitScale)
 
 	// Reading the road for the reactions: the danger level last frame, and whether the
 	// "a big sweet is coming" look was shown for the sweet in sight.
@@ -150,14 +150,15 @@ func newPlayScene(c *Character) *PlayScene {
 		expr:  ExprNormal, prevExpr: ExprNormal, exprID: ExprNormal, prevID: ExprNormal, exprFade: 1,
 		popFrame: -1,
 	}
-	s.portraits = preloadPortraits(c)
+	s.portraits = portraitEntries(c)
+	prefetchImgs(s.portraits)
 	// Each run starts on the sweets background; illustrations appear as the run earns them.
 	return s
 }
 
 func (s *PlayScene) Update(g *Game) {
 	s.frame++
-	uploadPortraits(s.portraits)
+	uploadPrefetched(s.portraits, 3)
 	s.updateEffects()
 	s.updateMusic()
 	bg.set(moodBackground[family(s.expr)])
@@ -1236,9 +1237,22 @@ func (s *PlayScene) drawCharacter(screen *ebiten.Image) {
 	l.Clear()
 	fw, fh := float64(iw), float64(ih)
 	m := s.motion()
-	drawLayer := func(expr, id string, alpha float32, cur bool) {
+	// A pose still being decoded in the background is not waited for: the pose before it
+	// stays until it is ready (only with nothing to show is it waited for).
+	img := s.char.Expression(s.exprID).ImgReady()
+	prev := s.char.Expression(s.prevID).ImgReady()
+	if img == nil {
+		img = prev
+	}
+	if img == nil {
+		img = s.char.Expression(s.exprID).Img()
+	}
+	drawLayer := func(expr string, pic *ebiten.Image, alpha float32, cur bool) {
 		if bgImg := uiImage("frame_" + family(expr)); bgImg != nil {
 			drawImageCover(l, bgImg, 0, 0, fw, fh, alpha)
+		}
+		if pic == nil {
+			return
 		}
 		sx, sy, dx := m.sx, m.sy, 0.0
 		if cur {
@@ -1246,12 +1260,12 @@ func (s *PlayScene) drawCharacter(screen *ebiten.Image) {
 			sx, sy = sx*p, sy*p
 			dx = s.slideDir * popSlide(s.popFrame)
 		}
-		drawPortrait(l, s.char.Expression(id).Img(), fw, fh, sx, sy, dx, m.lift, alpha, m.gray, s.portraitScale(fw, fh))
+		drawPortrait(l, pic, fw, fh, sx, sy, dx, m.lift, alpha, m.gray, s.portraitScale(fw, fh))
 	}
 	if s.exprFade < 1 {
-		drawLayer(s.prevExpr, s.prevID, 1, false)
+		drawLayer(s.prevExpr, prev, 1, false)
 	}
-	drawLayer(s.expr, s.exprID, float32(s.exprFade), true)
+	drawLayer(s.expr, img, float32(s.exprFade), true)
 
 	fillRoundRect(screen, frameX+8, frameY+10, frameW, frameH, 22, shadowColor())
 	fillRoundRect(screen, frameX, frameY, frameW, frameH, 22, panelFill)

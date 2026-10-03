@@ -340,51 +340,18 @@ func measureFigure(pix []byte, w, h int) figure {
 // ---- Loading the portraits ahead ----
 
 // A portrait loads the first time it is shown, which takes a moment (decoding the PNG) and
-// would stall a montage. Play loads all of the character's portraits in the background.
+// would stall a montage. Play decodes all of the character's portraits in the background
+// (prefetchImgs) and uploads them a few a frame (uploadPrefetched).
 
-type decodedPortrait struct {
-	e   *ImageEntry
-	img image.Image
-	fig figure
-}
-
-// preloadPortraits starts decoding every portrait of c that is not loaded yet; the results
-// arrive on the returned channel and are uploaded by uploadPortraits.
-func preloadPortraits(c *Character) chan decodedPortrait {
-	var todo []*ImageEntry
+// portraitEntries are the pictures play shows of c, in the order they are wanted: the
+// usual pose (shown first), the cut-in of the hammer, then every other pose.
+func portraitEntries(c *Character) []*ImageEntry {
+	first := c.Expression(ExprNormal)
+	out := []*ImageEntry{first, c.Cutin}
 	for i := range c.Expressions {
-		if e := &c.Expressions[i]; e.Image == nil && e.HasImage() {
-			todo = append(todo, e)
+		if e := &c.Expressions[i]; e != first {
+			out = append(out, e)
 		}
-	}
-	out := make(chan decodedPortrait, len(todo))
-	for _, e := range todo {
-		go func() {
-			tileDecoders <- struct{}{}
-			img := decodeScaled(e.base, e.ID, standingMaxH)
-			var fig figure
-			if img != nil {
-				fig = measureFigure(alphaPixels(img), img.Bounds().Dx(), img.Bounds().Dy())
-			}
-			<-tileDecoders
-			out <- decodedPortrait{e, img, fig}
-		}()
 	}
 	return out
-}
-
-// uploadPortraits hands up to a few decoded portraits to the GPU (cheap, but capped so a
-// frame never stalls).
-func uploadPortraits(ch chan decodedPortrait) {
-	for range 3 {
-		select {
-		case d := <-ch:
-			if d.e.Image == nil && d.img != nil {
-				d.e.Image = ebiten.NewImageFromImage(d.img)
-				figureCache[d.e.Image] = d.fig
-			}
-		default:
-			return
-		}
-	}
 }
