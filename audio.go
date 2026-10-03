@@ -16,7 +16,23 @@ const sampleRate = 44100
 
 var audioCtx *audio.Context
 
-func noteFreq(midi int) float64 { return 440 * math.Pow(2, float64(midi-69)/12) }
+func noteFreq(midi int) float64 {
+	if midi >= 0 && midi < len(noteFreqs) {
+		return noteFreqs[midi]
+	}
+	return noteFreqOf(midi)
+}
+
+func noteFreqOf(midi int) float64 { return 440 * math.Pow(2, float64(midi-69)/12) }
+
+// noteFreqs are the frequencies of the notes, worked out once: the synthesizer asks for
+// them several times a sample, and math.Pow there was a third of its time.
+var noteFreqs = func() (t [192]float64) {
+	for i := range t {
+		t[i] = noteFreqOf(i)
+	}
+	return t
+}()
 
 type event struct {
 	start, dur float64 // in beats

@@ -44,11 +44,15 @@ func chordOf(root int) []int {
 
 // ---- Small building blocks ----
 
-type onePole struct{ y float64 }
+// onePole is a first-order low-pass filter. Its coefficient is worked out again only when
+// the cutoff changes (math.Exp on every sample was a large part of the synthesizer's time).
+type onePole struct{ y, cut, a float64 }
 
 func (f *onePole) lp(x, cutoff float64) float64 {
-	a := 1 - math.Exp(-2*math.Pi*cutoff/sampleRate)
-	f.y += a * (x - f.y)
+	if cutoff != f.cut || f.a == 0 {
+		f.cut, f.a = cutoff, 1-math.Exp(-2*math.Pi*cutoff/sampleRate)
+	}
+	f.y += f.a * (x - f.y)
 	return f.y
 }
 
@@ -339,7 +343,12 @@ func (m *musicStream) Read(p []byte) (int, error) {
 		if pt, _, on := gate(math.Mod(b, 2), prh); on {
 			pt *= spb
 			env := math.Min(1, pt/0.003) * math.Exp(-pt*4)
-			for _, nte := range append(chord, chord[0]+12) {
+			// the chord and its root an octave up (without building a new slice every sample)
+			for i := 0; i <= len(chord); i++ {
+				nte := chord[0] + 12
+				if i < len(chord) {
+					nte = chord[i]
+				}
 				f := noteFreq(nte + 12)
 				piano += (math.Sin(2*math.Pi*f*pt) + 0.35*math.Sin(2*math.Pi*2*f*pt)*math.Exp(-pt*8) +
 					0.15*math.Sin(2*math.Pi*3*f*pt)*math.Exp(-pt*12)) * env
