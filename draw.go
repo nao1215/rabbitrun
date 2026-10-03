@@ -84,26 +84,27 @@ func dimScreen(dst *ebiten.Image, a uint8) {
 	vector.FillRect(dst, 0, 0, ScreenW, ScreenH, color.NRGBA{c.R, c.G, c.B, a}, false)
 }
 
+// drawImageCover scales img to fill the box and crops the overflow evenly on every side.
+func drawImageCover(dst, img *ebiten.Image, x, y, w, h float64, alpha float32) {
+	drawImageCropped(dst, img, x, y, w, h, alpha, false)
+}
+
 // drawImageCoverTop scales img to fill the box. Overflow is cropped evenly left and right,
 // and from the bottom vertically (top-aligned so faces stay visible).
 func drawImageCoverTop(dst, img *ebiten.Image, x, y, w, h float64, alpha float32) {
-	iw, ih := float64(img.Bounds().Dx()), float64(img.Bounds().Dy())
-	s := math.Max(w/iw, h/ih)
-	sw, sh := w/s, h/s
-	sx := (iw - sw) / 2
-	sub, ok := img.SubImage(image.Rect(int(sx), 0, int(sx+sw), int(sh))).(*ebiten.Image)
-	if !ok {
-		return
-	}
-	drawImageScaled(dst, sub, x, y, s, alpha)
+	drawImageCropped(dst, img, x, y, w, h, alpha, true)
 }
 
-// drawImageCover scales img to fill the box and crops the overflow.
-func drawImageCover(dst, img *ebiten.Image, x, y, w, h float64, alpha float32) {
+// drawImageCropped scales img to fill the box, cropping the overflow evenly left and
+// right, and vertically either evenly or (top) from the bottom only.
+func drawImageCropped(dst, img *ebiten.Image, x, y, w, h float64, alpha float32, top bool) {
 	iw, ih := float64(img.Bounds().Dx()), float64(img.Bounds().Dy())
 	s := math.Max(w/iw, h/ih)
 	sw, sh := w/s, h/s
 	sx, sy := (iw-sw)/2, (ih-sh)/2
+	if top {
+		sy = 0
+	}
 	sub, ok := img.SubImage(image.Rect(int(sx), int(sy), int(sx+sw), int(sy+sh))).(*ebiten.Image)
 	if !ok {
 		return
