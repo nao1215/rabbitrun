@@ -6,7 +6,6 @@ import (
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/colorm"
 )
 
 const blockTex = 64 // block texture resolution; scaled down when drawn
@@ -126,7 +125,6 @@ type gummyCell struct {
 	kind  Kind
 	id    int32 // adjacent cells with the same ID are joined into one gummy
 	alpha float32
-	gray  bool
 }
 
 // drawGummyGrid draws a w x h grid from (ox, oy) with size spacing, skipping cells where at returns kind=Empty.
@@ -154,7 +152,7 @@ func drawGummyGrid(dst *ebiten.Image, w, h int, at func(x, y int) gummyCell, ox,
 			// once from its finished picture, the same pixels as its nine parts. (See-through,
 			// the parts drawn one by one show faint seams where they meet; the fading walls of
 			// a game over keep them.)
-			if !l && !r && !u && !d && !c.gray && c.alpha == 1 && whole(px) && whole(py) && whole(size) {
+			if !l && !r && !u && !d && c.alpha == 1 && whole(px) && whole(py) && whole(size) {
 				op := &ebiten.DrawImageOptions{}
 				op.GeoM.Translate(px, py)
 				dst.DrawImage(loneGummy(c.kind, int(size)), op)
@@ -230,15 +228,6 @@ func drawGummyPart(dst *ebiten.Image, c gummyCell, u0, v0, u1, v1, x, y, w, h fl
 		return
 	}
 	sw, sh := (u1-u0)*iw, (v1-v0)*ih
-	if c.gray {
-		var cm colorm.ColorM
-		cm.ChangeHSV(0, 0, 0.9)
-		op := &colorm.DrawImageOptions{Filter: ebiten.FilterLinear}
-		op.GeoM.Scale(w/sw, h/sh)
-		op.GeoM.Translate(x, y)
-		colorm.DrawImage(dst, src, cm, op)
-		return
-	}
 	op := &ebiten.DrawImageOptions{Filter: ebiten.FilterLinear}
 	op.GeoM.Scale(w/sw, h/sh)
 	op.GeoM.Translate(x, y)
