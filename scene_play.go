@@ -369,7 +369,7 @@ func (s *PlayScene) commitScore() {
 	s.committed = true
 	s.prog.BestStage = max(s.prog.BestStage, s.eng.G.Stage)
 	s.prog.PlaySeconds += s.eng.PlayFrames / 60
-	writeSave()
+	markSave()
 }
 
 func (s *PlayScene) updateEffects() {

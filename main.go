@@ -37,6 +37,7 @@ func (g *Game) SetScene(s Scene) {
 	if r, ok := g.scene.(interface{ release() }); ok && g.scene != s {
 		r.release()
 	}
+	flushSave()
 	g.scene = s
 }
 
@@ -55,6 +56,7 @@ func (g *Game) Update() error {
 		g.cap.update(g)
 	}
 	g.scene.Update(g)
+	flushSave()
 	if quitRequested {
 		return ebiten.Termination
 	}
@@ -137,7 +139,9 @@ func main() {
 		}
 		audioMuted = true
 	}
-	if err := ebiten.RunGame(g); err != nil {
+	err := ebiten.RunGame(g)
+	flushSave() // the window was closed: whatever changed last is written
+	if err != nil {
 		log.Fatal(err)
 	}
 }

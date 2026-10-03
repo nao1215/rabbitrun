@@ -82,7 +82,7 @@ func (s *TitleScene) Update(g *Game) {
 				save.Announced = map[string]bool{}
 			}
 			save.Announced[characters[s.reveal].ID] = true
-			writeSave()
+			markSave()
 			s.reveal = -1
 		}
 		return
@@ -95,7 +95,7 @@ func (s *TitleScene) Update(g *Game) {
 		if s.wordFrame > wordWait && g.in.Pressed(ActConfirm) {
 			playSE(seConfirm)
 			save.WordTold = true
-			writeSave()
+			markSave()
 			s.word = false
 		}
 		return
@@ -282,7 +282,7 @@ func (s *CharSelectScene) leave() {
 			save.Announced = map[string]bool{}
 		}
 		save.Announced[characters[s.announce].ID] = true
-		writeSave()
+		markSave()
 	}
 }
 

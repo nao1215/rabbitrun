@@ -81,6 +81,6 @@ func (b *commandBuffer) feed(chars []rune) bool {
 func toggleExtra() bool {
 	save.ExtraFound = true
 	save.ExtraMode = !save.ExtraMode
-	writeSave()
+	markSave()
 	return save.ExtraMode
 }

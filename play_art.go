@@ -49,7 +49,7 @@ func (s *PlayScene) courseClear(n int) {
 		cg := &cgs[i]
 		if !s.prog.UnlockedCG[cg.ID] {
 			s.prog.UnlockedCG[cg.ID] = true
-			writeSave()
+			markSave()
 			if cg.HasImage() {
 				playSE(seUnlock)
 			}
@@ -79,7 +79,7 @@ func (s *PlayScene) allClearNow() {
 	} else {
 		s.prog.Cleared = true
 	}
-	writeSave()
+	markSave()
 }
 
 func (s *PlayScene) setStageCG(cg *ImageEntry) {

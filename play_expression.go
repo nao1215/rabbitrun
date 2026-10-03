@@ -184,7 +184,7 @@ func (s *PlayScene) setPose(expr, id string, pop bool) {
 	}
 	if !s.prog.SeenExpr[s.exprID] {
 		s.prog.SeenExpr[s.exprID] = true
-		writeSave()
+		markSave()
 	}
 }
 

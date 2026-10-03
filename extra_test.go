@@ -50,9 +50,7 @@ func TestExtraRoadIsFaster(t *testing.T) {
 }
 
 func TestTheSecretWordSwitchesTheStages(t *testing.T) { //nolint:paralleltest // swaps the global save
-	old := save
-	t.Cleanup(func() { save = old })
-	save = &SaveData{Characters: map[string]*CharProgress{}}
+	useTempConfig(t)
 	if !toggleExtra() || !extraMode() || !save.ExtraFound {
 		t.Fatal("the word did not switch to the extra stages")
 	}

@@ -124,7 +124,8 @@ func useTempConfig(t *testing.T) {
 	t.Setenv("AppData", dir)         // Windows
 	old := save
 	save = &SaveData{Characters: map[string]*CharProgress{}}
-	t.Cleanup(func() { save = old })
+	saveDirty = false
+	t.Cleanup(func() { save, saveDirty = old, false })
 }
 
 //nolint:paralleltest // uses t.Setenv and the package-level save data
@@ -340,5 +341,29 @@ func TestResetSaveStartsOverAndKeepsABackup(t *testing.T) {
 	}
 	if _, err := os.Stat(savePath() + ".bak"); err != nil {
 		t.Fatalf("no backup of the old save: %v", err)
+	}
+}
+
+//nolint:paralleltest // uses t.Setenv and the package-level save data
+func TestMarkedSaveIsWrittenOnFlush(t *testing.T) {
+	useTempConfig(t)
+	progress(heroID).Cleared = true
+	markSave()
+	if _, err := os.Stat(savePath()); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("the save was written before the flush: %v", err)
+	}
+	flushSave()
+	if _, err := os.Stat(savePath()); err != nil {
+		t.Fatalf("the flush did not write the save: %v", err)
+	}
+	if saveDirty {
+		t.Fatal("the save is still marked after the flush")
+	}
+	if err := os.Remove(savePath()); err != nil {
+		t.Fatal(err)
+	}
+	flushSave()
+	if _, err := os.Stat(savePath()); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("a flush with nothing changed wrote the save: %v", err)
 	}
 }

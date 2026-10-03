@@ -90,6 +90,26 @@ func decodeSave(dst *SaveData, raw []byte) error {
 	return err
 }
 
+// saveDirty is set when the save data has changed and not been written yet.
+var saveDirty bool
+
+// markSave records that the save data changed. It is written once, at the end of the
+// frame (flushSave): one action can change it several times (a course cleared unlocks
+// illustrations, shows new poses and records the run), and each change wrote the file.
+func markSave() { saveDirty = true }
+
+// flushSave writes the save data if it changed. Game.Update calls it after every frame,
+// and it is called again on a scene change and when the game exits, so nothing is lost.
+func flushSave() {
+	if !saveDirty {
+		return
+	}
+	saveDirty = false
+	writeSave()
+}
+
+// writeSave writes the save data at once. It goes through a temporary file renamed over
+// the old one, so a crash while writing leaves the old save whole.
 func writeSave() {
 	raw, err := json.MarshalIndent(save, "", "  ")
 	if err != nil {
