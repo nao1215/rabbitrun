@@ -261,6 +261,11 @@ func defaultCharIndex() int {
 // when it has just been unlocked (selected with a chime the first time only).
 func newCharSelectScene(mode int) *CharSelectScene {
 	s := &CharSelectScene{mode: mode, sel: defaultCharIndex(), announce: -1}
+	if mode == modePlay {
+		// the play screen's artwork, so its first frame (the hammer show) only uploads it:
+		// decoding it as play started held that frame for 30 to 50 ms
+		prefetchUI(playArtwork...)
+	}
 	for i, c := range characters {
 		if c.Secret && !c.locked() && !save.Announced[c.ID] {
 			s.sel, s.announce = i, i // the most recently opened secret wins (rightmost)
@@ -295,6 +300,11 @@ func (s *CharSelectScene) Update(g *Game) {
 	bg.setImage("select")
 	n := len(characters)
 	s.sel = g.in.menuNav(s.sel, n, ActLeft, ActRight)
+	if c := characters[s.sel]; s.mode == modePlay && !c.locked() {
+		// her usual pose and the cut-in, decoded while she is chosen: play's first frame
+		// waited 30 to 40 ms for the pose otherwise (the rest decode as play starts)
+		prefetchImgs([]*ImageEntry{c.Expression(ExprNormal), c.Cutin})
+	}
 	if g.in.Pressed(ActCancel) {
 		playSE(seCancel)
 		stopBGM()

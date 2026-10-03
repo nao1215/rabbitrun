@@ -345,12 +345,24 @@ func measureFigure(pix []byte, w, h int) figure {
 // (prefetchImgs) and uploads them a few a frame (uploadPrefetched).
 
 // portraitEntries are the pictures play shows of c, in the order they are wanted: the
-// usual pose (shown first), the cut-in of the hammer, then every other pose.
+// usual pose (shown first), the cut-in of the hammer, the poses of the hammer show at the
+// start of a run (blocked, then excited, which flashes through all its poses within a
+// second), then every other pose. Decoding them all takes a second or two, so the show's
+// poses come first or the show caught up with the decoding.
 func portraitEntries(c *Character) []*ImageEntry {
 	first := c.Expression(ExprNormal)
 	out := []*ImageEntry{first, c.Cutin}
+	seen := map[*ImageEntry]bool{first: true}
+	for _, state := range []string{ExprBlocked, ExprExcited} {
+		for _, e := range c.Variants(state) {
+			if !seen[e] {
+				seen[e] = true
+				out = append(out, e)
+			}
+		}
+	}
 	for i := range c.Expressions {
-		if e := &c.Expressions[i]; e != first {
+		if e := &c.Expressions[i]; !seen[e] {
 			out = append(out, e)
 		}
 	}
