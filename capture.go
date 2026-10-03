@@ -233,6 +233,11 @@ var captureSteps = []captureStep{
 		s.restartBackground()
 		g.SetScene(s)
 	}, 2},
+	{"play_intro", func(g *Game) {
+		s := newPlayScene(characters[defaultCharIndex()])
+		s.startIntro()
+		g.SetScene(s)
+	}, 40},
 	{"play_break", func(g *Game) {
 		s := newPlayScene(characters[defaultCharIndex()])
 		s.ready = 0

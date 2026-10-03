@@ -312,7 +312,9 @@ func (s *CharSelectScene) Update(g *Game) {
 		s.leave()
 		stopBGM() // play starts music after READY; the gallery plays sound effects only
 		if s.mode == modePlay {
-			g.SetScene(newPlayScene(c))
+			p := newPlayScene(c)
+			p.startIntro()
+			g.SetScene(p)
 		} else {
 			g.SetScene(newGalleryScene())
 		}

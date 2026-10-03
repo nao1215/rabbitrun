@@ -108,6 +108,7 @@ type PlayScene struct {
 	// The hammer: the frames since the walls it blew away began to break (0: not breaking),
 	// the frames left of its cut-in, and those walls (drawn breaking).
 	crumble     int
+	intro       int // frames left of the intro before READY (see play_intro.go)
 	cutin       int
 	hammerWalls [road.Rows + 1]road.Row
 	// allClear: the last course is done; the run ends on the ending's picture with a
@@ -175,6 +176,9 @@ func (s *PlayScene) Update(g *Game) {
 	bg.set(moodBackground[family(s.expr)])
 	bg.setImage("play")
 
+	if s.updateIntro(g) {
+		return
+	}
 	if s.allClear {
 		s.updateGameOver(g)
 		return
@@ -460,6 +464,7 @@ func (s *PlayScene) Draw(screen *ebiten.Image) {
 	} else if s.eng.Over() {
 		s.drawGameOver(screen)
 	}
+	s.drawIntro(screen)
 }
 
 // charFace is the character's face, cut from her usual portrait: shown with the lives, on
