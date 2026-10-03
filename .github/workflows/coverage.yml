@@ -29,7 +29,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: nao1215/setup-ebitengine@v0
+      - uses: nao1215/setup-ebitengine@cfefbee9dc7af161aebb2c8d36c07a0e1727271a # v1.0.0
         with:
           xvfb: true
 
