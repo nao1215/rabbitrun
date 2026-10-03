@@ -30,6 +30,7 @@ var titleItems = []string{"PLAY", "GALLERY", "EXIT"}
 
 func newTitleScene() *TitleScene {
 	s := &TitleScene{group: extraMode(), reveal: -1, word: wordDue()}
+	prefetchImgs(selectEntries())
 	for i, c := range characters {
 		if c.Secret && !c.locked() && !save.Announced[c.ID] {
 			s.reveal = i
@@ -48,8 +49,19 @@ const (
 	revealPortraitH   = 700
 )
 
+// selectEntries are the pictures of the character select cards. The title decodes them in
+// the background (decoding the five took the select screen's first frame 160ms).
+func selectEntries() []*ImageEntry {
+	out := make([]*ImageEntry, len(characters))
+	for i, c := range characters {
+		out[i] = c.selectEntry()
+	}
+	return out
+}
+
 func (s *TitleScene) Update(g *Game) {
 	s.frame++
+	uploadPrefetched(selectEntries(), 2)
 	if bgmSong != titleSong {
 		startBGM(titleSong)
 	}
