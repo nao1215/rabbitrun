@@ -229,11 +229,11 @@ func TestCharacterManifests(t *testing.T) {
 		}
 		cgIDs := map[string]bool{}
 		for j, cg := range c.CGs {
-			if j > 0 && c.CGs[j-1].Score >= cg.Score {
-				t.Errorf("%s: CG scores not strictly ascending at %d (%d then %d)", c.ID, j, c.CGs[j-1].Score, cg.Score)
+			if j > 0 && c.CGs[j-1].Order >= cg.Order {
+				t.Errorf("%s: CG orders not strictly ascending at %d (%d then %d)", c.ID, j, c.CGs[j-1].Order, cg.Order)
 			}
-			if cg.Score <= 0 {
-				t.Errorf("%s: CG %q unlocks at score %d", c.ID, cg.ID, cg.Score)
+			if cg.Order <= 0 {
+				t.Errorf("%s: CG %q has order %d", c.ID, cg.ID, cg.Order)
 			}
 			if cgIDs[cg.ID] || exprIDs[cg.ID] {
 				t.Errorf("%s: CG id %q is duplicated", c.ID, cg.ID)

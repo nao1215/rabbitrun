@@ -72,7 +72,9 @@ type ImageEntry struct {
 	State string `json:"state"` // state this portrait is for (a state can have several poses)
 	Label string `json:"label"`
 	Title string `json:"title"`
-	Score int    `json:"score"`
+	// Order sorts the illustrations (the order they unlock in). The key is still "score",
+	// from the old scored game where they unlocked at a score, so game.json files load.
+	Order int `json:"score"` //nolint:tagliatelle // key used by the existing game.json files
 
 	Image *ebiten.Image `json:"-"` // portraits load lazily via Img; illustrations load on demand via Full / Thumb
 
@@ -426,7 +428,7 @@ func hasNormalImage(fsys fs.FS, base string) bool {
 	return false
 }
 
-// Characters come back sorted by Order and each character's CGs by Score.
+// Characters come back sorted by Order and each character's CGs by their Order.
 // Images are not loaded; they load lazily on use.
 func readCharacters(fsys fs.FS) ([]*Character, error) {
 	dirs, err := fs.ReadDir(fsys, "assets/characters")
@@ -468,7 +470,7 @@ func readCharacters(fsys fs.FS) ([]*Character, error) {
 			e := &c.CGs[i]
 			e.base = base
 		}
-		sort.SliceStable(c.CGs, func(i, j int) bool { return c.CGs[i].Score < c.CGs[j].Score })
+		sort.SliceStable(c.CGs, func(i, j int) bool { return c.CGs[i].Order < c.CGs[j].Order })
 		chars = append(chars, c)
 	}
 	sort.SliceStable(chars, func(i, j int) bool { return chars[i].Order < chars[j].Order })
