@@ -111,7 +111,7 @@ func (e *ImageEntry) Img() *ebiten.Image {
 			e.upload(<-e.pending)
 		} else {
 			e.pending = nil
-			e.Image = loadScaledImage(e.base, e.ID, e.name(), standingMaxH)
+			e.upload(decodePortrait(e.base, e.ID))
 		}
 	}
 	return e.Image
@@ -172,6 +172,17 @@ type decodedImg struct {
 	fig figure
 }
 
+// decodePortrait decodes images/<id> as Img shows it (at most standingMaxH high) and
+// measures its figure on the CPU, so drawPortrait need not read it back from the GPU. It
+// may run on any goroutine.
+func decodePortrait(base, id string) decodedImg {
+	var d decodedImg
+	if d.img = decodeScaled(base, id, standingMaxH); d.img != nil {
+		d.fig = measureFigure(alphaPixels(d.img), d.img.Bounds().Dx(), d.img.Bounds().Dy())
+	}
+	return d
+}
+
 // prefetchImgs decodes the pictures of entries, as Img loads them, in the background: in
 // the order given, a few at a time. Img then only uploads them (and uploadPrefetched does it
 // a few a frame ahead of use). A picture already loaded or on its way is left alone.
@@ -220,10 +231,7 @@ func prefetchWorker() {
 		prefetchQueue.jobs = prefetchQueue.jobs[1:]
 		prefetchQueue.Unlock()
 		tileDecoders <- struct{}{}
-		var d decodedImg
-		if d.img = decodeScaled(j.base, j.id, standingMaxH); d.img != nil {
-			d.fig = measureFigure(alphaPixels(d.img), d.img.Bounds().Dx(), d.img.Bounds().Dy())
-		}
+		d := decodePortrait(j.base, j.id)
 		<-tileDecoders
 		j.out <- d
 	}
@@ -466,14 +474,6 @@ func readCharacters(fsys fs.FS) ([]*Character, error) {
 	}
 	sort.SliceStable(chars, func(i, j int) bool { return chars[i].Order < chars[j].Order })
 	return chars, nil
-}
-
-// loadScaledImage reads an image and, if taller than maxH, scales it down before uploading it to the GPU.
-func loadScaledImage(base, id, label string, maxH int) *ebiten.Image {
-	if img := decodeScaled(base, id, maxH); img != nil {
-		return ebiten.NewImageFromImage(img)
-	}
-	return placeholderImage(label)
 }
 
 // decodeScaled reads images/<id> and scales it down to at most maxH pixels high. It only

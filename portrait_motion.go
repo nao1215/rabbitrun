@@ -257,11 +257,12 @@ type figure struct {
 	bodyX int
 }
 
-// figureCache keeps the figure of each portrait (read from the GPU once).
+// figureCache keeps the figure of each portrait, measured when it was decoded (or read
+// from the GPU once).
 var figureCache = map[*ebiten.Image]figure{}
 
-// figureOf finds the figure in a portrait (read from the GPU once, unless the preloading
-// already measured it).
+// figureOf finds the figure in a portrait. Every portrait Img loads was measured on the
+// CPU as it was decoded; only another picture (a placeholder) is read back from the GPU.
 func figureOf(img *ebiten.Image) figure {
 	if f, ok := figureCache[img]; ok {
 		return f
