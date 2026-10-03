@@ -19,8 +19,8 @@ func open(r Row) []int {
 func TestRoadStaysPassable(t *testing.T) {
 	t.Parallel()
 	profiles := []Profile{Standard,
-		{Speed: 1, MaxWidth: 7, Narrowing: 1, Wander: 0.16, Snake: true, Pillars: 0.1, SweetsRate: 0.2, OneUpRate: 0.05},
-		{Speed: 1, MaxWidth: 6, Narrowing: 2, Wander: 0.14, Snake: true, Pillars: 0.08, SweetsRate: 0.12, OneUpRate: 0.02}}
+		{Speed: 1, MaxWidth: 7, Narrowing: 1, Wander: 0.16, Mixed: true, Pillars: 0.1, SweetsRate: 0.2, OneUpRate: 0.05},
+		{Speed: 1, MaxWidth: 6, Narrowing: 2, Wander: 0.14, Mixed: true, Pillars: 0.08, SweetsRate: 0.12, OneUpRate: 0.02}}
 	for seed := range uint64(30) {
 		g := NewWith(seed, profiles[seed%3])
 		for range 3000 {

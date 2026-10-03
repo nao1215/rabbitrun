@@ -37,7 +37,6 @@ const (
 	SweetCake  // rare
 	SweetOneUp // an extra life (very rare)
 	SweetBomb  // a bomb for the stock (rare)
-	sweetCount
 )
 
 // Event is something that happened in a step.
@@ -151,7 +150,6 @@ const (
 	StartLives      = 3
 	CourseRows      = 110 // rows of road in a course
 	Courses         = 4   // courses in a stage
-	MaxLevel        = 20  // the speed stops rising here
 	minRoadWidth    = 3   // narrowest road at high levels
 	maxRoadWidth    = 6
 	sweetChance     = 0.16
@@ -174,7 +172,6 @@ type Profile struct {
 	MaxWidth   int     // widest road
 	Narrowing  int     // how much narrower the road gets with the difficulty (1: standard)
 	Wander     float64 // how often the road shifts sideways (0.12 standard)
-	Snake      bool    // the road keeps shifting the same way until it meets a side (zigzag)
 	Mixed      bool    // the courses take turns: a zigzag, then a wandering road
 	Gates      float64 // chance per row of a gate: a row walled across but for a gap of two
 	Pillars    float64 // chance per row of a block standing in the road, to weave around
@@ -559,7 +556,7 @@ func (g *Game) buildRoad(withThings bool) Row {
 		g.width++
 		g.targetWidth = max(g.targetWidth, g.width)
 	default:
-		if p.Snake || (p.Mixed && g.Course%2 == 0) {
+		if p.Mixed && g.Course%2 == 0 {
 			// a zigzag: keep shifting one way, turn at the sides (and now and then on the way)
 			if (g.dir < 0 && !canLeft) || (g.dir > 0 && !canRight) || g.rng.Float64() < 0.04 {
 				g.dir = -g.dir

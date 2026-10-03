@@ -12,7 +12,6 @@ import (
 const (
 	BoardW      = road.W
 	VisibleRows = road.Rows
-	MaxLevel    = road.MaxLevel
 )
 
 type Engine struct {
