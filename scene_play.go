@@ -74,6 +74,7 @@ type PlayScene struct {
 	landing        float64       // squash when a sweet is picked up (1 just now, fades out)
 	intensity      int           // music intensity stage (for the beat bounce)
 	portraits      []*ImageEntry // the character's pictures, decoded in the background
+	shownPic       *ebiten.Image // the picture drawn last as the current pose (stands in while the next decodes)
 	charScale      float64       // the character's fixed size in the frame (portraitScale)
 
 	// Reading the road for the reactions: the danger level last frame, and whether the
@@ -489,8 +490,14 @@ func (s *PlayScene) drawCharacter(screen *ebiten.Image) {
 		img = prev
 	}
 	if img == nil {
+		// the pose before that may not be ready either (a montage flashes a new pose every
+		// few frames while the portraits are still decoding): the picture shown last stays
+		img = s.shownPic
+	}
+	if img == nil {
 		img = s.char.Expression(s.exprID).Img()
 	}
+	s.shownPic = img
 	drawLayer := func(expr string, pic *ebiten.Image, alpha float32, cur bool) {
 		if bgImg := uiImage("frame_" + family(expr)); bgImg != nil {
 			drawImageCover(l, bgImg, 0, 0, fw, fh, alpha)

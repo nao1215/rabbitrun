@@ -62,15 +62,13 @@ func (s *PlayScene) drawCutin(screen *ebiten.Image) {
 		}
 		vector.FillRect(screen, float32(x+lx-length), float32(ly), float32(length), 4, color.NRGBA{0xff, 0xff, 0xff, 0xb0}, false)
 	}
-	img := cutinImage(s.char)
-	if img == nil {
-		return
-	}
 	// her upper body stands on the bottom of the band and rises out of its top
-	iw, ih := float64(img.Bounds().Dx()), float64(img.Bounds().Dy())
-	h := bandH * 1.55
-	sc := math.Min(h/ih, ScreenW*0.8/iw)
-	drawImageScaled(screen, img, x+ScreenW*0.55-iw*sc/2, bandY+bandH-ih*sc, sc, 1)
+	if img := cutinImage(s.char); img != nil {
+		iw, ih := float64(img.Bounds().Dx()), float64(img.Bounds().Dy())
+		h := bandH * 1.55
+		sc := math.Min(h/ih, ScreenW*0.8/iw)
+		drawImageScaled(screen, img, x+ScreenW*0.55-iw*sc/2, bandY+bandH-ih*sc, sc, 1)
+	}
 	drawTextOutline(screen, "SMASH!", x+ScreenW*0.2, bandY+bandH-90, 64, candyPink)
 }
 
@@ -79,10 +77,12 @@ func (s *PlayScene) drawCutin(screen *ebiten.Image) {
 func hammerImage() *ebiten.Image { return uiImage("hammer") }
 
 // cutinImage is the big picture of the hammer's cut-in: images/cutin.png (no background, a
-// "here I go!" pose), or the character select picture until it exists.
+// "here I go!" pose), or the character select picture until it exists. It is decoded in
+// the background with her portraits (portraitEntries) and is not waited for: nil until it
+// is ready (the band sweeps in from the right meanwhile).
 func cutinImage(c *Character) *ebiten.Image {
 	if c.Cutin != nil && c.Cutin.HasImage() {
-		return c.Cutin.Img()
+		return c.Cutin.ImgReady()
 	}
 	return c.SelectImage()
 }
