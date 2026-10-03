@@ -280,11 +280,14 @@ func (g *Game) themeBlocks(row *Row, t Theme, r, left, right int) {
 			block((left + right) / 2)
 		}
 	case ThemeCheckers:
-		// every third row a row of blocks on every other cell, the pattern shifting by one
-		// each time (every second row, it asked for a weave one cell a row: too much)
-		// The shifted rows take the cells along the walls too: rows that never blocked the
-		// sides left a safe lane down each side of the road.
+		// every third row (fourth, on the regular side) a row of blocks on every other cell,
+		// the pattern shifting by one each time (every second row, it asked for a weave one
+		// cell a row: too much). The shifted rows take the cells along the walls too: rows
+		// that never blocked the sides left a safe lane down each side of the road.
 		every := 3
+		if !hard {
+			every = 4
+		}
 		if r > 0 && r%every == 0 {
 			for x := left + 1 - (r/every)%2; x <= right; x += 2 {
 				block(x)

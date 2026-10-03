@@ -33,7 +33,8 @@ const (
 //
 //   - cool: roads that test the aim (gates, stepping gates, corridors, slaloms, edge runs)
 //   - cute: soft curves (snakes, swings, wobbles, funnels, diamonds)
-//   - gyal: busy, restless roads (scattered blocks, checkers, chicanes, pillars, stairs)
+//   - gyal: busy, restless roads (scattered blocks, chicanes, pillars, stairs, slaloms; one
+//     checkers course a side: three of them were too much)
 //   - street: regular patterns, like a kimono's (combs, lanes, splits, hourglasses, stairs)
 //   - bunny: the hardest of every kind
 //
@@ -49,8 +50,8 @@ var courseThemes = map[string][2][GameCourses]road.Theme{
 		{tWarm, tSnake, tWobb, tFunn, tSwing, tDiam, tHour, tSnake, tWobb, tFunn, tSwing, tChic, tDiam, tSnake, tWobb, tMix},
 	},
 	heroID: {
-		{tWarm, tPill, tRain, tCheck, tSwing, tChic, tRain, tStair, tCheck, tPill, tChic, tSlal, tRain, tStair, tCheck, tMix},
-		{tWarm, tRain, tCheck, tPill, tChic, tStair, tEdge, tRain, tCheck, tChic, tStair, tStep, tRain, tCheck, tChic, tMix},
+		{tWarm, tPill, tRain, tCheck, tSwing, tChic, tRain, tStair, tSlal, tPill, tChic, tSlal, tRain, tStair, tPill, tMix},
+		{tWarm, tRain, tCheck, tPill, tChic, tStair, tEdge, tRain, tSlal, tChic, tStair, tStep, tRain, tPill, tChic, tMix},
 	},
 	streetID: {
 		{tWarm, tLane, tSplit, tComb, tHour, tStair, tGate, tLane, tComb, tSplit, tHour, tFunn, tComb, tStair, tHour, tMix},
