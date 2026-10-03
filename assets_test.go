@@ -381,3 +381,33 @@ func TestDecodeImageTriesEachExtension(t *testing.T) {
 		t.Fatalf("a missing picture gave %v, want fs.ErrNotExist", err)
 	}
 }
+
+// TestExpressionFamilies pins the family (background color and frame) of every
+// expression, and checks that a reaction's family is that of the situation whose
+// portraits stand in for it (exprFallback), so the two tables cannot drift apart.
+func TestExpressionFamilies(t *testing.T) {
+	t.Parallel()
+	want := map[string]string{
+		ExprNormal: ExprNormal, ExprRelaxed: ExprNormal, ExprRelief: ExprNormal,
+		ExprHappy: ExprHappy, ExprGreat: ExprHappy, ExprReady: ExprHappy, ExprLevelUp: ExprHappy,
+		ExprExcited: ExprExcited, ExprTreat: ExprExcited, ExprCombo: ExprExcited, ExprPerfect: ExprExcited,
+		ExprWaiting: ExprExcited, ExprComeback: ExprExcited,
+		ExprWorried: ExprWorried, ExprNervous: ExprWorried, ExprOops: ExprWorried, ExprBlocked: ExprWorried,
+		ExprDrought: ExprWorried,
+		ExprPanic:   ExprPanic, ExprCrying: ExprPanic,
+		ExprGameOver: ExprGameOver,
+	}
+	for _, st := range allStates {
+		if got := family(st); got != want[st] {
+			t.Errorf("family(%s) = %s, want %s", st, got, want[st])
+		}
+		if _, ok := moodBackground[family(st)]; !ok {
+			t.Errorf("%s: no background color for its family %s", st, family(st))
+		}
+	}
+	for reaction, stand := range exprFallback {
+		if family(reaction) != family(stand) {
+			t.Errorf("%s is in family %s, but its stand-in %s is in %s", reaction, family(reaction), stand, family(stand))
+		}
+	}
+}

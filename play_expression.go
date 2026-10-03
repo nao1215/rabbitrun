@@ -210,16 +210,19 @@ var moodBackground = map[string]color.NRGBA{
 	ExprGameOver: popGray,
 }
 
-// moodFamily groups expressions into six families that share a background color and frame image.
+// moodFamily groups the situations into six families that share a background color and
+// frame image. A reaction (exprFallback) is in the family of the situation whose portraits
+// stand in for it, so the two tables cannot disagree.
 var moodFamily = map[string]string{
 	ExprRelaxed: ExprNormal, ExprGreat: ExprHappy, ExprTreat: ExprExcited, ExprCombo: ExprExcited,
 	ExprPerfect: ExprExcited, ExprNervous: ExprWorried, ExprCrying: ExprPanic,
-	ExprOops: ExprWorried, ExprBlocked: ExprWorried, ExprReady: ExprHappy, ExprWaiting: ExprExcited,
-	ExprRelief: ExprNormal, ExprLevelUp: ExprHappy, ExprDrought: ExprWorried,
-	ExprComeback: ExprExcited,
 }
 
+// family is the family of the expression expr (see moodFamily).
 func family(expr string) string {
+	if stand, ok := exprFallback[expr]; ok {
+		expr = stand
+	}
 	if f, ok := moodFamily[expr]; ok {
 		return f
 	}
