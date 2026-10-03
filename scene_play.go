@@ -361,6 +361,10 @@ func (s *PlayScene) drawLives(screen *ebiten.Image) {
 	item(charFace(s.char), "x"+strconv.Itoa(g.Lives))
 	item(hammerImage(), "x"+strconv.Itoa(g.Bombs))
 	item(macaronImage(0), strconv.Itoa(g.Sweets)+"/"+strconv.Itoa(g.SweetsForLife())) // sweets toward the next life
+	// the stage and course, left of the sweets
+	label := "STAGE " + s.eng.Progress()
+	tw := 21.0 * float64(len(label))
+	drawTextOutline(screen, label, right-tw/2, 10, 30, candyPink)
 }
 
 // updateMusic matches the music intensity to the situation, ramping up at high speed and in danger.
