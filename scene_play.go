@@ -1348,7 +1348,7 @@ func (s *PlayScene) drawCharacter(screen *ebiten.Image) {
 			sx, sy = sx*p, sy*p
 			dx = s.slideDir * popSlide(s.popFrame)
 		}
-		drawPortrait(l, pic, fw, fh, sx, sy, dx, m.lift, alpha, m.gray, s.portraitScale(fw, fh))
+		drawPortrait(l, pic, fw, fh, sx, sy, dx, m.lift, alpha, m.gray, s.portraitScale(fh))
 	}
 	if s.exprFade < 1 {
 		drawLayer(s.prevExpr, prev, 1, false)
