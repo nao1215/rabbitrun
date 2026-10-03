@@ -370,18 +370,18 @@ func drawImageCover(dst, img *ebiten.Image, x, y, w, h float64, alpha float32) {
 
 var maskCache = map[[3]int]*ebiten.Image{}
 
-// roundedMask returns img with its corners rounded by radius r (valid until the next call).
+// roundedMask rounds the corners of img by radius r, in place, and returns it. The mask
+// (a white rounded rectangle) is made once per size and applied with a blend: filling the
+// rounded path anew every frame was most of the cost of the character's frame.
 func roundedMask(img *ebiten.Image, r float32) *ebiten.Image {
 	w, h := img.Bounds().Dx(), img.Bounds().Dy()
 	key := [3]int{w, h, int(r)}
-	out, ok := maskCache[key]
+	mask, ok := maskCache[key]
 	if !ok {
-		out = ebiten.NewImage(w, h)
-		maskCache[key] = out
+		mask = ebiten.NewImage(w, h)
+		fillRoundRect(mask, 0, 0, float32(w), float32(h), r, color.White)
+		maskCache[key] = mask
 	}
-	out.Clear()
-	fillRoundRect(out, 0, 0, float32(w), float32(h), r, color.White)
-	op := &ebiten.DrawImageOptions{Blend: ebiten.BlendSourceIn}
-	out.DrawImage(img, op)
-	return out
+	img.DrawImage(mask, &ebiten.DrawImageOptions{Blend: ebiten.BlendDestinationIn})
+	return img
 }
