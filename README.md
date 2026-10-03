@@ -124,7 +124,7 @@ gh attestation verify rabbitrun_<version>_linux_amd64.tar.gz --repo nao1215/rabb
 
 Bug reports, ideas and pull requests are welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md) for how to build, test and lint the game.
 
-## Contributors ✨
+## Contributors
 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
 
