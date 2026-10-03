@@ -55,12 +55,7 @@ func drawText(dst *ebiten.Image, s string, x, y, size float64, clr color.Color) 
 
 // drawTextOutline draws centered text with a white outline so it stays readable over images.
 func drawTextOutline(dst *ebiten.Image, str string, x, y, size float64, clr color.Color) {
-	w := math.Max(2, size/12)
-	for i := range 12 {
-		t := float64(i) / 12 * 2 * math.Pi
-		drawText(dst, str, x+math.Cos(t)*w, y+math.Sin(t)*w, size, color.White)
-	}
-	drawText(dst, str, x, y, size, clr)
+	drawTextOutlineColor(dst, str, x, y, size, clr, color.White, 1)
 }
 
 // drawTextOutlineColor draws centered text in fill with an outline of the given color, both
