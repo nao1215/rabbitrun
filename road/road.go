@@ -365,23 +365,11 @@ func (g *Game) trap(row Row, reach [W]bool, last Row) Row {
 			best = x
 		}
 	}
-	if best < 0 || open < 3 {
-		return row
-	}
-	// open on both sides (in this row and the row before): a way around it either way, and
-	// the road on past it is not cut off whichever way the next rows go
-	for _, nx := range []int{best - 1, best + 1} {
-		if nx < 0 || nx >= W || row[nx].Wall != 0 || last[nx].Wall != 0 {
-			return row
-		}
-	}
-	// and both sides open for a while: she can step aside early either way, and it does
-	// not come right after another block (dodging one and straight into the next)
-	if min(g.openRun[best-1], g.openRun[best+1]) < trapSideRun {
+	if best < 0 || open < 3 || !g.canTrap(row, last, best) {
 		return row
 	}
 	built, builtReach := row, g.reach
-	row[best].Wall = g.WallColor()
+	row[min(best, W-1)].Wall = g.WallColor()
 	g.reach, g.lastRow = reach, last
 	if !g.passable(row) {
 		g.reach, g.lastRow = builtReach, built
@@ -394,6 +382,56 @@ func (g *Game) trap(row Row, reach [W]bool, last Row) Row {
 	g.openRun = [W]int{}        // the next trap only after another long straight run
 	return row
 }
+
+// canTrap reports whether column x of row can take a trap block: she can step aside to an
+// open neighbour that has been open for a while (in this row and the row before), so there
+// is a way around it, and it does not come right after another block. A column along the
+// wall has one such side, and that is enough: the side of the road was a safe lane before.
+func (g *Game) canTrap(row, last Row, x int) bool {
+	sides := 0
+	for _, nx := range []int{x - 1, x + 1} {
+		if nx < 0 || nx >= W || row[nx].Wall != 0 {
+			continue
+		}
+		if last[nx].Wall != 0 || g.openRun[nx] < trapSideRun {
+			return false // an open side that was walled just now: dodging into a block
+		}
+		sides++
+	}
+	// along the wall it waits a little longer: a theme that closes the sides now and then
+	// (gates with the gap at either side) already keeps her from running down them
+	if sides == 2 {
+		return true
+	}
+	if sides == 0 || g.openRun[x] < trapEdgeRun || !alongSide(row, x) {
+		return false
+	}
+	// with one way around it, that way has to have been open as long (a side that only
+	// just opened left no time to step over on the fast last courses)
+	for _, nx := range []int{x - 1, x + 1} {
+		if nx >= 0 && nx < W && row[nx].Wall == 0 && g.openRun[nx] < trapEdgeRun {
+			return false
+		}
+	}
+	return true
+}
+
+// alongSide reports whether column x of row is next to the side of the road: the cells
+// from x to one edge of the screen are all walls but x itself. A column beside a block in
+// the middle of the road is not (a trap there made a wall two wide to go around).
+func alongSide(row Row, x int) bool {
+	left, right := true, true
+	for i := range x {
+		left = left && row[i].Wall != 0
+	}
+	for i := x + 1; i < W; i++ {
+		right = right && row[i].Wall != 0
+	}
+	return x > 0 && left || x < W-1 && right
+}
+
+// trapEdgeRun is how many rows a column along the wall may stay open before a trap.
+const trapEdgeRun = 14
 
 // trapSideRun is how many rows a side of a trap must have been open.
 const trapSideRun = 6

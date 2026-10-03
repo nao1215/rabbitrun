@@ -222,13 +222,16 @@ func (g *Game) themeBlocks(row *Row, t Theme, r, left, right int) {
 	switch t {
 	case ThemeSlalom:
 		// a block of three juts in every fourth row, from each side in turn
+		// reaching one cell past the middle, so she has to swing from side to side (blocks of
+		// three left a straight lane down the middle of a wide road)
 		every := 4
 		if r > 0 && r%every == 0 && right-left >= 4 {
+			n := (right-left+1)/2 + 1
 			from := left
 			if (r/every)%2 == 1 {
-				from = right - 2
+				from = right - n + 1
 			}
-			for x := from; x < from+3; x++ {
+			for x := from; x < from+n; x++ {
 				block(x)
 			}
 		}
@@ -279,9 +282,11 @@ func (g *Game) themeBlocks(row *Row, t Theme, r, left, right int) {
 	case ThemeCheckers:
 		// every third row a row of blocks on every other cell, the pattern shifting by one
 		// each time (every second row, it asked for a weave one cell a row: too much)
+		// The shifted rows take the cells along the walls too: rows that never blocked the
+		// sides left a safe lane down each side of the road.
 		every := 3
 		if r > 0 && r%every == 0 {
-			for x := left + 1 + (r/every)%2; x < right; x += 2 {
+			for x := left + 1 - (r/every)%2; x <= right; x += 2 {
 				block(x)
 			}
 		}
@@ -328,6 +333,12 @@ func (g *Game) themeBlocks(row *Row, t Theme, r, left, right int) {
 			block(mid - 1)
 			block(mid)
 			block(mid + 1)
+			// and the sides, so she passes between the diamond and the wall instead of
+			// running down the side untouched
+			if right-left >= 6 {
+				block(left)
+				block(right)
+			}
 		}
 	case ThemeLanes:
 		// two walls part three lanes for ten rows in every sixteen
