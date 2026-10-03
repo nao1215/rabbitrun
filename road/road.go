@@ -342,7 +342,7 @@ func (g *Game) buildRow(withThings bool) Row {
 
 // trapRun is how many rows a column may stay open before a block is put in it: a road
 // that lets her run straight for that long gets one block in her way at the end.
-const trapRun = 14
+const trapRun = 10
 
 // trap puts one block in the column that has been open longest, when it has been open for
 // trapRun rows: a long straight run ends with a block to dodge. reach and last are the

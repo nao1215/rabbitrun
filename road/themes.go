@@ -18,7 +18,7 @@ const (
 	ThemeGates                  // walls across the road, each with a gap of two at the other side
 	ThemeStairs                 // a narrow road stepping sideways, turning at the sides
 	ThemeFunnel                 // the road narrows to two cells and opens up again, over and over
-	ThemeSplit                  // a wall down the middle parts the road in two lanes for a while
+	ThemeSplit                  // the road is squeezed against a side, then opens up and a wall parts it in two lanes
 	ThemeRain                   // single blocks scattered over a wide road
 	ThemeChicane                // a narrow road that jumps from side to side in S-bends
 	ThemeCheckers               // rows of blocks in a checkered pattern across a wide road
@@ -72,7 +72,18 @@ func (g *Game) themeTarget(t Theme, r int) (center, width int) {
 		// seven cells to four (three, when hard), so the weave through the pillars tightens
 		p := math.Min(1, float64(r)/48)
 		return W/2 + int(math.Round(2*p)), 7 - int(math.Round(float64(3+hard)*p))
-	case ThemeRain, ThemeSplit:
+	case ThemeRain:
+		return W / 2, 7
+	case ThemeSplit:
+		// the road is squeezed against one side of the screen (the other side next time),
+		// then opens up wide and a wall down the middle parts it in two lanes: a wall in
+		// the middle of a wide road alone was a dull straight line
+		if p := r % splitPeriod; p < splitSqueeze {
+			if (r/splitPeriod)%2 == 0 {
+				return 1, 3
+			}
+			return W - 2, 3
+		}
 		return W / 2, 7
 	case ThemeGates:
 		return W / 2, 6
@@ -118,6 +129,13 @@ func (g *Game) themeTarget(t Theme, r int) (center, width int) {
 // settleRows is how many themed rows come without the theme's blocks after rows that are
 // not themed.
 const settleRows = 6
+
+// The split theme repeats every splitPeriod rows: the first splitSqueeze of them squeeze
+// the road against a side of the screen, the rest open it up and part it in two lanes.
+const (
+	splitPeriod  = 32
+	splitSqueeze = 12
+)
 
 // hard reports whether the course being built is tight: every course of the extra stages
 // (Hard), and the regular courses from HardFrom on.
@@ -249,8 +267,9 @@ func (g *Game) themeBlocks(row *Row, t Theme, r, left, right int) {
 			}
 		}
 	case ThemeSplit:
-		// a wall down the middle for twelve rows in every twenty, parting two lanes
-		if p := r % 20; p >= 4 && p < 16 && right-left >= 4 {
+		// once the road has opened up after the squeeze, a wall down the middle parts two
+		// lanes for a while
+		if p := r % splitPeriod; p >= splitSqueeze+6 && p < splitPeriod-4 && right-left >= 4 {
 			block((left + right) / 2)
 		}
 	case ThemeCheckers:
