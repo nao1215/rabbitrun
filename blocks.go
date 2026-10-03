@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"image"
 	"image/color"
 	"math"
@@ -33,11 +32,9 @@ var kindNames = map[Kind]string{KindSoda: "soda", KindLemon: "lemon", KindGrape:
 // Missing ones fall back to procedurally drawn glossy blocks.
 func initBlocks() {
 	for k := KindSoda; k <= KindOrange; k++ {
-		if raw, err := assetFS.ReadFile("assets/blocks/" + kindNames[k] + ".png"); err == nil {
-			if img, _, err := image.Decode(bytes.NewReader(raw)); err == nil {
-				blockImages[k] = ebiten.NewImageFromImage(img)
-				continue
-			}
+		if img, err := decodeAsset("assets/blocks/" + kindNames[k] + ".png"); err == nil {
+			blockImages[k] = ebiten.NewImageFromImage(img)
+			continue
 		}
 		blockImages[k] = ebiten.NewImageFromImage(renderGlossyBlock(kindColors[k], blockTex))
 	}
@@ -143,10 +140,6 @@ func drawGummyGrid(dst *ebiten.Image, w, h int, at func(x, y int) gummyCell, ox,
 		return at(x, y)
 	}
 	same := func(a, b gummyCell) bool { return a.kind != Empty && a.kind == b.kind && a.id == b.id }
-	edges := [4]float64{0, 0.3, 0.7, 1} // 3x3 split on the destination
-	// split on the source image; the middle uses only the flat center so stretching does not cause banding
-	src := [4]float64{0, 0.3, 0.7, 1}
-	srcMid := [2]float64{0.46, 0.54}
 	for y := range h {
 		for x := range w {
 			c := get(x, y)
@@ -157,28 +150,73 @@ func drawGummyGrid(dst *ebiten.Image, w, h int, at func(x, y int) gummyCell, ox,
 			l, r := same(c, get(x-1, y)), same(c, get(x+1, y))
 			u, d := same(c, get(x, y-1)), same(c, get(x, y+1))
 			px, py := ox+float64(x)*size, oy+float64(y)*size
-			for j := range 3 {
-				srcRow := j
-				if (j == 0 && u) || (j == 2 && d) {
-					srcRow = 1
-				}
-				for i := range 3 {
-					srcCol := i
-					if (i == 0 && l) || (i == 2 && r) {
-						srcCol = 1
-					}
-					su0, su1 := src[srcCol], src[srcCol+1]
-					if srcCol == 1 {
-						su0, su1 = srcMid[0], srcMid[1]
-					}
-					sv0, sv1 := src[srcRow], src[srcRow+1]
-					if srcRow == 1 {
-						sv0, sv1 = srcMid[0], srcMid[1]
-					}
-					drawGummyPart(dst, c, su0, sv0, su1, sv1,
-						px+edges[i]*size, py+edges[j]*size, (edges[i+1]-edges[i])*size, (edges[j+1]-edges[j])*size)
-				}
+			// An opaque lone gummy on whole pixels (every wall block of the road) is drawn at
+			// once from its finished picture, the same pixels as its nine parts. (See-through,
+			// the parts drawn one by one show faint seams where they meet; the fading walls of
+			// a game over keep them.)
+			if !l && !r && !u && !d && !c.gray && c.alpha == 1 && whole(px) && whole(py) && whole(size) {
+				op := &ebiten.DrawImageOptions{}
+				op.GeoM.Translate(px, py)
+				dst.DrawImage(loneGummy(c.kind, int(size)), op)
+				continue
 			}
+			drawGummyParts(dst, c, l, r, u, d, px, py, size)
+		}
+	}
+}
+
+// whole reports whether v is a whole number.
+func whole(v float64) bool { return v == math.Trunc(v) }
+
+type loneGummyKey struct {
+	kind Kind
+	size int
+}
+
+// loneGummies are the finished pictures of a gummy joined on no side, per kind and size.
+var loneGummies = map[loneGummyKey]*ebiten.Image{}
+
+// loneGummy returns the picture of a gummy of kind joined on no side, size pixels square,
+// made once from its nine parts: drawing every wall block as nine stretched parts was nine
+// times the draws a frame.
+func loneGummy(kind Kind, size int) *ebiten.Image {
+	k := loneGummyKey{kind, size}
+	img, ok := loneGummies[k]
+	if !ok {
+		img = ebiten.NewImage(size, size)
+		drawGummyParts(img, gummyCell{kind: kind, alpha: 1}, false, false, false, false, 0, 0, float64(size))
+		loneGummies[k] = img
+	}
+	return img
+}
+
+// drawGummyParts draws the cell c at (px, py), size square, as its 3x3 parts; l, r, u and
+// d tell which sides are joined to a neighbor.
+func drawGummyParts(dst *ebiten.Image, c gummyCell, l, r, u, d bool, px, py, size float64) {
+	edges := [4]float64{0, 0.3, 0.7, 1} // 3x3 split on the destination
+	// split on the source image; the middle uses only the flat center so stretching does not cause banding
+	src := [4]float64{0, 0.3, 0.7, 1}
+	srcMid := [2]float64{0.46, 0.54}
+	for j := range 3 {
+		srcRow := j
+		if (j == 0 && u) || (j == 2 && d) {
+			srcRow = 1
+		}
+		for i := range 3 {
+			srcCol := i
+			if (i == 0 && l) || (i == 2 && r) {
+				srcCol = 1
+			}
+			su0, su1 := src[srcCol], src[srcCol+1]
+			if srcCol == 1 {
+				su0, su1 = srcMid[0], srcMid[1]
+			}
+			sv0, sv1 := src[srcRow], src[srcRow+1]
+			if srcRow == 1 {
+				sv0, sv1 = srcMid[0], srcMid[1]
+			}
+			drawGummyPart(dst, c, su0, sv0, su1, sv1,
+				px+edges[i]*size, py+edges[j]*size, (edges[i+1]-edges[i])*size, (edges[j+1]-edges[j])*size)
 		}
 	}
 }

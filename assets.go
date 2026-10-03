@@ -17,6 +17,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"sync"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
@@ -76,10 +77,12 @@ type ImageEntry struct {
 
 	Image *ebiten.Image `json:"-"` // portraits load lazily via Img; illustrations load on demand via Full / Thumb
 
-	base string
-	full *ebiten.Image
-	tile *ebiten.Image // finished gallery tile (see GalleryScene.tileOf)
-	has  int8          // HasImage cache: 0 unknown, 1 yes, -1 no (the assets are embedded and never change)
+	base        string
+	full        *ebiten.Image
+	pending     chan decodedImg  // the portrait being decoded in the background (prefetchImgs)
+	fullPending chan image.Image // the illustration being decoded in the background (PrefetchFull)
+	tile        *ebiten.Image    // finished gallery tile (see GalleryScene.tileOf)
+	has         int8             // HasImage cache: 0 unknown, 1 yes, -1 no (the assets are embedded and never change)
 }
 
 // HasImage reports whether the image file exists (otherwise a placeholder is used).
@@ -100,29 +103,216 @@ func (e *ImageEntry) HasImage() bool {
 const standingMaxH = 800
 
 // Img loads the portrait (expression or character-select image) scaled down on first use.
+// If the picture is being decoded in the background (prefetchImgs), it waits for that
+// rather than decoding it twice (unless it has not started yet).
 func (e *ImageEntry) Img() *ebiten.Image {
 	if e.Image == nil {
-		name := e.Label
-		if name == "" {
-			name = e.ID
+		if e.pending != nil && !unqueue(e, false) {
+			e.upload(<-e.pending)
+		} else {
+			e.pending = nil
+			e.upload(decodePortrait(e.base, e.ID))
 		}
-		e.Image = loadScaledImage(e.base, e.ID, name, standingMaxH)
 	}
 	return e.Image
 }
 
-// Full loads the illustration at full size (for the gallery's enlarged view). Free it with ReleaseFull.
+// ImgReady is Img without the wait: nil while the picture is still being decoded in the
+// background.
+func (e *ImageEntry) ImgReady() *ebiten.Image {
+	if e.Image == nil && e.pending != nil {
+		select {
+		case d := <-e.pending:
+			e.upload(d)
+		default:
+			unqueue(e, true) // wanted now: decoded next
+			return nil
+		}
+	}
+	return e.Img()
+}
+
+// name is what the placeholder of a missing picture says.
+func (e *ImageEntry) name() string {
+	if e.Label != "" {
+		return e.Label
+	}
+	return e.ID
+}
+
+// upload hands a picture decoded in the background to the GPU, with its figure measured.
+func (e *ImageEntry) upload(d decodedImg) {
+	e.pending = nil
+	if d.img == nil {
+		e.Image = placeholderImage(e.name())
+		return
+	}
+	e.Image = ebiten.NewImageFromImage(d.img)
+	figureCache[e.Image] = d.fig
+}
+
+// ReleaseImg frees the loaded portrait on the GPU (and drops one being decoded); Img
+// loads it again when it is wanted.
+func (e *ImageEntry) ReleaseImg() {
+	if e.pending != nil {
+		unqueue(e, false)
+		e.pending = nil
+	}
+	if e.Image != nil {
+		delete(figureCache, e.Image)
+		e.Image.Deallocate()
+		e.Image = nil
+	}
+}
+
+// decodedImg is a picture decoded off the main goroutine, with its figure measured there
+// too (so it is not read back from the GPU).
+type decodedImg struct {
+	img image.Image
+	fig figure
+}
+
+// decodePortrait decodes images/<id> as Img shows it (at most standingMaxH high) and
+// measures its figure on the CPU, so drawPortrait need not read it back from the GPU. It
+// may run on any goroutine.
+func decodePortrait(base, id string) decodedImg {
+	var d decodedImg
+	if d.img = decodeScaled(base, id, standingMaxH); d.img != nil {
+		d.fig = measureFigure(alphaPixels(d.img), d.img.Bounds().Dx(), d.img.Bounds().Dy())
+	}
+	return d
+}
+
+// prefetchImgs decodes the pictures of entries, as Img loads them, in the background: in
+// the order given, a few at a time. Img then only uploads them (and uploadPrefetched does it
+// a few a frame ahead of use). A picture already loaded or on its way is left alone.
+func prefetchImgs(entries []*ImageEntry) {
+	prefetchQueue.Lock()
+	defer prefetchQueue.Unlock()
+	for _, e := range entries {
+		if e == nil || e.Image != nil || e.pending != nil || !e.HasImage() {
+			continue
+		}
+		ch := make(chan decodedImg, 1)
+		e.pending = ch
+		prefetchQueue.jobs = append(prefetchQueue.jobs, prefetchJob{e, e.base, e.ID, ch})
+	}
+	for ; prefetchQueue.workers < min(len(prefetchQueue.jobs), cap(tileDecoders)); prefetchQueue.workers++ {
+		go prefetchWorker()
+	}
+}
+
+// prefetchQueue holds the pictures waiting to be decoded in the background, and how many
+// workers are decoding them.
+var prefetchQueue struct {
+	sync.Mutex
+	jobs    []prefetchJob
+	workers int
+}
+
+// prefetchJob is a picture to decode. The worker reads only base and id; e only tells
+// the jobs apart.
+type prefetchJob struct {
+	e        *ImageEntry
+	base, id string
+	out      chan<- decodedImg
+}
+
+// prefetchWorker decodes queued pictures until the queue is empty.
+func prefetchWorker() {
+	for {
+		prefetchQueue.Lock()
+		if len(prefetchQueue.jobs) == 0 {
+			prefetchQueue.workers--
+			prefetchQueue.Unlock()
+			return
+		}
+		j := prefetchQueue.jobs[0]
+		prefetchQueue.jobs = prefetchQueue.jobs[1:]
+		prefetchQueue.Unlock()
+		tileDecoders <- struct{}{}
+		d := decodePortrait(j.base, j.id)
+		<-tileDecoders
+		j.out <- d
+	}
+}
+
+// unqueue takes e's picture out of the queue (keep: put it first instead, as it is wanted
+// now). It reports whether it was still waiting there.
+func unqueue(e *ImageEntry, keep bool) bool {
+	prefetchQueue.Lock()
+	defer prefetchQueue.Unlock()
+	q := prefetchQueue.jobs
+	for i, j := range q {
+		if j.e == e {
+			copy(q[1:i+1], q[:i]) // the jobs before it move back one
+			if !keep {
+				prefetchQueue.jobs = q[1:]
+				return true
+			}
+			q[0] = j
+			return true
+		}
+	}
+	return false
+}
+
+// uploadPrefetched uploads up to n of the entries' pictures that finished decoding
+// (uploading is quick, but capped so a frame never stalls).
+func uploadPrefetched(entries []*ImageEntry, n int) {
+	for _, e := range entries {
+		if n == 0 {
+			return
+		}
+		if e == nil || e.Image != nil || e.pending == nil {
+			continue
+		}
+		select {
+		case d := <-e.pending:
+			e.upload(d)
+			n--
+		default:
+		}
+	}
+}
+
+// Full loads the illustration at full size (for the gallery's enlarged view). Free it with
+// ReleaseFull. If PrefetchFull started decoding it, it only waits for that and uploads it.
 func (e *ImageEntry) Full() *ebiten.Image {
 	if e.Image != nil {
 		return e.Image
 	}
 	if e.full == nil {
-		e.full = loadCharImage(e.base, e.ID, e.Title)
+		if e.fullPending != nil {
+			img := <-e.fullPending
+			e.fullPending = nil
+			if img != nil {
+				e.full = ebiten.NewImageFromImage(img)
+			} else {
+				e.full = placeholderImage(e.Title)
+			}
+		} else {
+			e.full = loadCharImage(e.base, e.ID, e.Title)
+		}
 	}
 	return e.full
 }
 
+// PrefetchFull starts decoding the full-size illustration in the background, so the frame
+// that first shows it (Full) only uploads it: decoding a large JPEG on the main goroutine
+// dropped frames whenever the road changed its picture.
+func (e *ImageEntry) PrefetchFull() {
+	if e.Image != nil || e.full != nil || e.fullPending != nil {
+		return
+	}
+	ch := make(chan image.Image, 1)
+	e.fullPending = ch
+	base, id := e.base, e.ID
+	go func() { ch <- decodeCharImage(base, id) }()
+}
+
 func (e *ImageEntry) ReleaseFull() {
+	e.fullPending = nil
 	if e.full != nil {
 		e.full.Deallocate()
 		e.full = nil
@@ -286,23 +476,11 @@ func readCharacters(fsys fs.FS) ([]*Character, error) {
 	return chars, nil
 }
 
-// loadScaledImage reads an image and, if taller than maxH, scales it down before uploading it to the GPU.
-func loadScaledImage(base, id, label string, maxH int) *ebiten.Image {
-	if img := decodeScaled(base, id, maxH); img != nil {
-		return ebiten.NewImageFromImage(img)
-	}
-	return placeholderImage(label)
-}
-
 // decodeScaled reads images/<id> and scales it down to at most maxH pixels high. It only
 // touches the CPU, so it may run on any goroutine. It returns nil if the image is missing.
 func decodeScaled(base, id string, maxH int) image.Image {
 	for _, ext := range imageExts {
-		raw, err := assetFS.ReadFile(path.Join(base, "images", id+ext))
-		if err != nil {
-			continue
-		}
-		img, _, err := image.Decode(bytes.NewReader(raw))
+		img, err := decodeAsset(path.Join(base, "images", id+ext))
 		if err != nil {
 			continue
 		}
@@ -320,19 +498,39 @@ func decodeScaled(base, id string, maxH int) image.Image {
 
 // loadCharImage reads images/<id>.jpg (or .png). If missing, it returns a placeholder.
 func loadCharImage(base, id, label string) *ebiten.Image {
+	if img := decodeCharImage(base, id); img != nil {
+		return ebiten.NewImageFromImage(img)
+	}
+	return placeholderImage(label)
+}
+
+// decodeCharImage decodes images/<id>.jpg (or .png) at full size, or returns nil if it is
+// missing. It only touches the CPU, so it may run on any goroutine.
+func decodeCharImage(base, id string) image.Image {
 	for _, ext := range imageExts {
-		raw, err := assetFS.ReadFile(path.Join(base, "images", id+ext))
-		if err != nil {
+		img, err := decodeAsset(path.Join(base, "images", id+ext))
+		if errors.Is(err, fs.ErrNotExist) {
 			continue
 		}
-		img, _, err := image.Decode(bytes.NewReader(raw))
 		if err != nil {
 			log.Printf("%s%s: %v", id, ext, err)
 			continue
 		}
-		return ebiten.NewImageFromImage(img)
+		return img
 	}
-	return placeholderImage(label)
+	return nil
+}
+
+// decodeAsset decodes the embedded image name. It reads the embedded bytes in place:
+// assetFS.ReadFile would first copy the whole file. A missing file gives an error
+// wrapping fs.ErrNotExist.
+func decodeAsset(name string) (image.Image, error) {
+	f, err := assetFS.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	img, _, err := image.Decode(f)
+	return img, errors.Join(err, f.Close())
 }
 
 // placeholderImage is the stand-in (a human silhouette) used when an image is missing.

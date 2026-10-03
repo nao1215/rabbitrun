@@ -3,7 +3,6 @@ package main
 import (
 	"image"
 	"image/color"
-	"image/draw"
 	"math"
 	"runtime"
 
@@ -44,8 +43,10 @@ type decodedPicture struct {
 	img image.Image
 }
 
-// tileDecoders limits how many pictures are decoded at the same time.
-var tileDecoders = make(chan struct{}, max(1, runtime.NumCPU()-1))
+// tileDecoders limits how many pictures are decoded at the same time. A few are enough:
+// the tiles are uploaded only a few a frame anyway, and every decoder holds a portrait
+// of several megabytes while it works (one per CPU spiked memory to hundreds of MB).
+var tileDecoders = make(chan struct{}, min(3, max(1, runtime.NumCPU()-1)))
 
 const (
 	tileW, tileGap       = 160.0, 12.0
@@ -286,6 +287,17 @@ func (s *GalleryScene) requestPicture(it galleryItem) {
 		s.decoded = make(chan decodedPicture, 64)
 	}
 	s.loading[e] = true
+	// A portrait already loaded for play (with its figure measured) makes its tile at once,
+	// without decoding the file again.
+	if img := e.Image; !it.cg && img != nil {
+		if f, ok := figureCache[img]; ok {
+			e.tile = makeTile(func(l *ebiten.Image) {
+				drawTileBackdrop(l, it)
+				drawPortraitFigure(l, img, f, float64(l.Bounds().Dx()), float64(l.Bounds().Dy()), 1, 1, 0, 0, 1, 0, 0)
+			})
+			return
+		}
+	}
 	go func(out chan<- decodedPicture) {
 		tileDecoders <- struct{}{}
 		// Twice the tile height, so the tile is drawn from a sharper picture.
@@ -335,15 +347,13 @@ func makeTile(paint func(l *ebiten.Image)) *ebiten.Image {
 func drawTilePicture(l *ebiten.Image, it galleryItem, pic image.Image) {
 	e := it.e
 	lw, lh := float64(l.Bounds().Dx()), float64(l.Bounds().Dy())
-	if !it.cg {
-		if bgImg := uiImage("frame_" + family(e.State)); bgImg != nil {
-			drawImageCover(l, bgImg, 0, 0, lw, lh, 1)
-		}
-	}
+	drawTileBackdrop(l, it)
 	if pic == nil || it.cg {
-		img := placeholderImage(e.ID)
+		var img *ebiten.Image
 		if pic != nil {
 			img = ebiten.NewImageFromImage(pic)
+		} else {
+			img = placeholderImage(e.ID) // made only when it is needed: it is a large image
 		}
 		drawImageFit(l, img, 0, 0, lw, lh, 1)
 		img.Deallocate()
@@ -351,11 +361,20 @@ func drawTilePicture(l *ebiten.Image, it galleryItem, pic image.Image) {
 	}
 	// a portrait is drawn as in the play screen's frame (see drawPortrait)
 	b := pic.Bounds()
-	rgba := image.NewRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
-	draw.Draw(rgba, rgba.Bounds(), pic, b.Min, draw.Src)
-	img := ebiten.NewImageFromImage(rgba)
-	drawPortraitFigure(l, img, measureFigure(rgba.Pix, b.Dx(), b.Dy()), lw, lh, 1, 1, 0, 0, 1, 0, 0)
+	img := ebiten.NewImageFromImage(pic)
+	drawPortraitFigure(l, img, measureFigure(alphaPixels(pic), b.Dx(), b.Dy()), lw, lh, 1, 1, 0, 0, 1, 0, 0)
 	img.Deallocate()
+}
+
+// drawTileBackdrop paints the backdrop of a portrait's situation into the tile layer l
+// (an illustration has none).
+func drawTileBackdrop(l *ebiten.Image, it galleryItem) {
+	if it.cg {
+		return
+	}
+	if bgImg := uiImage("frame_" + family(it.e.State)); bgImg != nil {
+		drawImageCover(l, bgImg, 0, 0, float64(l.Bounds().Dx()), float64(l.Bounds().Dy()), 1)
+	}
 }
 
 // lockedTiles are the tiles of locked entries: gummies packed edge to edge under a soft

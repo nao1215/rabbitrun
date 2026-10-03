@@ -1,10 +1,10 @@
 package main
 
 import (
-	"bytes"
-	"fmt"
+	"errors"
 	"image"
 	"image/draw"
+	"io/fs"
 	"path"
 	"sync"
 
@@ -83,32 +83,40 @@ func portraitBox(pix []byte, w, h int, kind cropKind) (image.Rectangle, bool) {
 // crop is ready the panel keeps showing the previous one.
 var faceCrops = struct {
 	sync.Mutex
-	ready   map[string]*image.RGBA   // decoded crops waiting to be uploaded to the GPU
-	images  map[string]*ebiten.Image // uploaded crops (nil when the portrait has no image)
-	loading map[string]bool
-}{ready: map[string]*image.RGBA{}, images: map[string]*ebiten.Image{}, loading: map[string]bool{}}
+	ready   map[cropKey]*image.RGBA // decoded crops waiting to be uploaded to the GPU
+	loading map[cropKey]bool
+}{ready: map[cropKey]*image.RGBA{}, loading: map[cropKey]bool{}}
+
+// cropImages are the uploaded crops (nil when the portrait has no image). Only the main
+// goroutine uses them, so the crops shown every frame are found without the lock.
+var cropImages = map[cropKey]*ebiten.Image{}
+
+// cropKey names a crop: the portrait (entries never move) and the kind of crop.
+type cropKey struct {
+	e    *ImageEntry
+	kind cropKind
+}
 
 // cropPortrait decodes the portrait at full resolution and cuts out the part of the given kind.
 func cropPortrait(e *ImageEntry, kind cropKind) *image.RGBA {
 	for _, ext := range imageExts {
-		raw, err := assetFS.ReadFile(path.Join(e.base, "images", e.ID+ext))
-		if err != nil {
+		src, err := decodeAsset(path.Join(e.base, "images", e.ID+ext))
+		if errors.Is(err, fs.ErrNotExist) {
 			continue
 		}
-		src, _, err := image.Decode(bytes.NewReader(raw))
 		if err != nil {
 			return nil
 		}
+		// Only the alpha is read to find the box: the decoded pixels are read as they are
+		// (no full-size copy), and only the box is converted.
 		b := src.Bounds()
-		rgba := image.NewRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
-		draw.Draw(rgba, rgba.Bounds(), src, b.Min, draw.Src)
-		r, ok := portraitBox(rgba.Pix, b.Dx(), b.Dy(), kind)
+		r, ok := portraitBox(alphaPixels(src), b.Dx(), b.Dy(), kind)
 		if !ok {
 			return nil
 		}
 		// Parts of r outside the portrait stay transparent.
 		face := image.NewRGBA(image.Rect(0, 0, r.Dx(), r.Dy()))
-		draw.Draw(face, face.Bounds(), rgba, r.Min, draw.Src)
+		draw.Draw(face, face.Bounds(), src, r.Min.Add(b.Min), draw.Src)
 		return face
 	}
 	return nil
@@ -122,25 +130,25 @@ func portraitCrop(e *ImageEntry, kind cropKind) *ebiten.Image {
 	if e == nil {
 		return nil
 	}
-	id := fmt.Sprintf("%s/%s#%d", e.base, e.ID, kind)
-	faceCrops.Lock()
-	defer faceCrops.Unlock()
-	if img, ok := faceCrops.images[id]; ok {
+	id := cropKey{e, kind}
+	if img, ok := cropImages[id]; ok {
 		return img
 	}
+	faceCrops.Lock()
+	defer faceCrops.Unlock()
 	if rgba, ok := faceCrops.ready[id]; ok {
 		delete(faceCrops.ready, id)
 		var img *ebiten.Image
 		if rgba != nil {
 			img = ebiten.NewImageFromImage(rgba)
 		}
-		faceCrops.images[id] = img
+		cropImages[id] = img
 		return img
 	}
 	if !faceCrops.loading[id] {
 		faceCrops.loading[id] = true
 		if !e.HasImage() {
-			faceCrops.images[id] = nil
+			cropImages[id] = nil
 			return nil
 		}
 		go func() {

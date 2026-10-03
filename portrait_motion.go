@@ -257,11 +257,12 @@ type figure struct {
 	bodyX int
 }
 
-// figureCache keeps the figure of each portrait (read from the GPU once).
+// figureCache keeps the figure of each portrait, measured when it was decoded (or read
+// from the GPU once).
 var figureCache = map[*ebiten.Image]figure{}
 
-// figureOf finds the figure in a portrait (read from the GPU once, unless the preloading
-// already measured it).
+// figureOf finds the figure in a portrait. Every portrait Img loads was measured on the
+// CPU as it was decoded; only another picture (a placeholder) is read back from the GPU.
 func figureOf(img *ebiten.Image) figure {
 	if f, ok := figureCache[img]; ok {
 		return f
@@ -274,6 +275,29 @@ func figureOf(img *ebiten.Image) figure {
 	f.bodyX += b.Min.X
 	figureCache[img] = f
 	return f
+}
+
+// alphaPixels returns the pixels of img as rows of 4*w bytes with the alpha at offset 3,
+// as measureFigure and portraitBox read them. A decoded picture (*image.RGBA or
+// *image.NRGBA, whose alpha is the same) is used as it is, without a copy.
+func alphaPixels(img image.Image) []byte {
+	b := img.Bounds()
+	w, h := b.Dx(), b.Dy()
+	if b.Min == (image.Point{}) {
+		switch p := img.(type) {
+		case *image.RGBA:
+			if p.Stride == 4*w && len(p.Pix) == 4*w*h {
+				return p.Pix
+			}
+		case *image.NRGBA:
+			if p.Stride == 4*w && len(p.Pix) == 4*w*h {
+				return p.Pix
+			}
+		}
+	}
+	rgba := image.NewRGBA(image.Rect(0, 0, w, h))
+	draw.Draw(rgba, rgba.Bounds(), img, b.Min, draw.Src)
+	return rgba.Pix
 }
 
 // measureFigure finds the figure in RGBA pixels of size w x h.
@@ -317,53 +341,35 @@ func measureFigure(pix []byte, w, h int) figure {
 // ---- Loading the portraits ahead ----
 
 // A portrait loads the first time it is shown, which takes a moment (decoding the PNG) and
-// would stall a montage. Play loads all of the character's portraits in the background.
+// would stall a montage. Play decodes all of the character's portraits in the background
+// (prefetchImgs) and uploads them a few a frame (uploadPrefetched).
 
-type decodedPortrait struct {
-	e   *ImageEntry
-	img image.Image
-	fig figure
-}
-
-// preloadPortraits starts decoding every portrait of c that is not loaded yet; the results
-// arrive on the returned channel and are uploaded by uploadPortraits.
-func preloadPortraits(c *Character) chan decodedPortrait {
-	var todo []*ImageEntry
+// portraitEntries are the pictures play shows of c, in the order they are wanted: the
+// usual pose (shown first), the cut-in of the hammer, then every other pose.
+func portraitEntries(c *Character) []*ImageEntry {
+	first := c.Expression(ExprNormal)
+	out := []*ImageEntry{first, c.Cutin}
 	for i := range c.Expressions {
-		if e := &c.Expressions[i]; e.Image == nil && e.HasImage() {
-			todo = append(todo, e)
+		if e := &c.Expressions[i]; e != first {
+			out = append(out, e)
 		}
-	}
-	out := make(chan decodedPortrait, len(todo))
-	for _, e := range todo {
-		go func() {
-			tileDecoders <- struct{}{}
-			img := decodeScaled(e.base, e.ID, standingMaxH)
-			var fig figure
-			if img != nil {
-				rgba := image.NewRGBA(img.Bounds())
-				draw.Draw(rgba, rgba.Bounds(), img, img.Bounds().Min, draw.Src)
-				fig = measureFigure(rgba.Pix, rgba.Bounds().Dx(), rgba.Bounds().Dy())
-			}
-			<-tileDecoders
-			out <- decodedPortrait{e, img, fig}
-		}()
 	}
 	return out
 }
 
-// uploadPortraits hands up to a few decoded portraits to the GPU (cheap, but capped so a
-// frame never stalls).
-func uploadPortraits(ch chan decodedPortrait) {
-	for range 3 {
-		select {
-		case d := <-ch:
-			if d.e.Image == nil && d.img != nil {
-				d.e.Image = ebiten.NewImageFromImage(d.img)
-				figureCache[d.e.Image] = d.fig
+// releasePortraitsExcept frees the portraits (and cut-ins) of every character but c on the
+// GPU: they load again when that character is played, instead of piling up as one
+// character after another is played.
+func releasePortraitsExcept(c *Character) {
+	for _, o := range characters {
+		if o == c {
+			continue
+		}
+		keep := o.selectEntry() // the select screen and the title keep showing it
+		for _, e := range portraitEntries(o) {
+			if e != keep {
+				e.ReleaseImg()
 			}
-		default:
-			return
 		}
 	}
 }

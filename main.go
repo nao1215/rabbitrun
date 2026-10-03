@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"image"
 	"image/color"
@@ -36,7 +35,14 @@ type Game struct {
 	rec   *recorder
 }
 
-func (g *Game) SetScene(s Scene) { g.scene = s }
+// SetScene switches to the scene s. The scene left frees what it holds on the GPU, if it
+// has a release method.
+func (g *Game) SetScene(s Scene) {
+	if r, ok := g.scene.(interface{ release() }); ok && g.scene != s {
+		r.release()
+	}
+	g.scene = s
+}
 
 func (g *Game) Update() error {
 	if g.rec != nil && g.rec.skipUpdate() {
@@ -193,8 +199,14 @@ var bg *background
 
 // ---- Drawing helpers ----
 
+// roundPath is the path roundRectPath fills in. One is enough, as the path is copied when
+// it is filled or stroked, and a frame draws dozens of rounded rectangles.
+var roundPath vector.Path
+
+// roundRectPath returns the path of a rounded rectangle, valid until the next call.
 func roundRectPath(x, y, w, h, r float32) *vector.Path {
-	p := &vector.Path{}
+	p := &roundPath
+	p.Reset()
 	p.MoveTo(x+r, y)
 	p.LineTo(x+w-r, y)
 	p.ArcTo(x+w, y, x+w, y+r, r)
@@ -326,11 +338,7 @@ func uiImage(name string) *ebiten.Image {
 	}
 	var img *ebiten.Image
 	for _, ext := range imageExts {
-		raw, err := assetFS.ReadFile("assets/ui/" + name + ext)
-		if err != nil {
-			continue
-		}
-		if dec, _, err := image.Decode(bytes.NewReader(raw)); err == nil {
+		if dec, err := decodeAsset("assets/ui/" + name + ext); err == nil {
 			img = ebiten.NewImageFromImage(dec)
 			break
 		}
@@ -368,18 +376,18 @@ func drawImageCover(dst, img *ebiten.Image, x, y, w, h float64, alpha float32) {
 
 var maskCache = map[[3]int]*ebiten.Image{}
 
-// roundedMask returns img with its corners rounded by radius r (valid until the next call).
+// roundedMask rounds the corners of img by radius r, in place, and returns it. The mask
+// (a white rounded rectangle) is made once per size and applied with a blend: filling the
+// rounded path anew every frame was most of the cost of the character's frame.
 func roundedMask(img *ebiten.Image, r float32) *ebiten.Image {
 	w, h := img.Bounds().Dx(), img.Bounds().Dy()
 	key := [3]int{w, h, int(r)}
-	out, ok := maskCache[key]
+	mask, ok := maskCache[key]
 	if !ok {
-		out = ebiten.NewImage(w, h)
-		maskCache[key] = out
+		mask = ebiten.NewImage(w, h)
+		fillRoundRect(mask, 0, 0, float32(w), float32(h), r, color.White)
+		maskCache[key] = mask
 	}
-	out.Clear()
-	fillRoundRect(out, 0, 0, float32(w), float32(h), r, color.White)
-	op := &ebiten.DrawImageOptions{Blend: ebiten.BlendSourceIn}
-	out.DrawImage(img, op)
-	return out
+	img.DrawImage(mask, &ebiten.DrawImageOptions{Blend: ebiten.BlendDestinationIn})
+	return img
 }

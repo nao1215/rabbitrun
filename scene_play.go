@@ -61,14 +61,14 @@ type PlayScene struct {
 	popFrame       int      // frames since the current pose popped in (-1: it cross-faded in)
 	montage        []string // poses still to flash by in a montage
 	montageTimer   int
-	comboStep      int     // combo reactions so far in this chain (picks the next combo pose)
-	popNext        bool    // the next pose change pops in (a reaction) instead of cross-fading
-	windup         int     // frames left of the crouch before a strong reaction springs out
-	slideDir       float64 // side the next popping pose slides in from (alternates)
-	landing        float64 // squash when a sweet is picked up (1 just now, fades out)
-	intensity      int     // music intensity stage (for the beat bounce)
-	portraits      chan decodedPortrait
-	charScale      float64 // the character's fixed size in the frame (portraitScale)
+	comboStep      int           // combo reactions so far in this chain (picks the next combo pose)
+	popNext        bool          // the next pose change pops in (a reaction) instead of cross-fading
+	windup         int           // frames left of the crouch before a strong reaction springs out
+	slideDir       float64       // side the next popping pose slides in from (alternates)
+	landing        float64       // squash when a sweet is picked up (1 just now, fades out)
+	intensity      int           // music intensity stage (for the beat bounce)
+	portraits      []*ImageEntry // the character's pictures, decoded in the background
+	charScale      float64       // the character's fixed size in the frame (portraitScale)
 
 	// Reading the road for the reactions: the danger level last frame, and whether the
 	// "a big sweet is coming" look was shown for the sweet in sight.
@@ -110,6 +110,11 @@ type PlayScene struct {
 	allClear  bool
 	endLayer  *ebiten.Image // the ending's portrait, when there is no illustration
 	committed bool          // whether this run's score was added to the total
+	// artFor is the course (negative: the course a retry goes back to) whose next
+	// illustration prefetchArt has started decoding; prefetched are the illustrations it
+	// started, freed with the scene.
+	artFor     int
+	prefetched []*ImageEntry
 }
 
 // comebackDelay is how long the retry keeps the collapsed game over pose before the
@@ -150,14 +155,17 @@ func newPlayScene(c *Character) *PlayScene {
 		expr:  ExprNormal, prevExpr: ExprNormal, exprID: ExprNormal, prevID: ExprNormal, exprFade: 1,
 		popFrame: -1,
 	}
-	s.portraits = preloadPortraits(c)
+	releasePortraitsExcept(c)
+	s.portraits = portraitEntries(c)
+	prefetchImgs(s.portraits)
 	// Each run starts on the sweets background; illustrations appear as the run earns them.
 	return s
 }
 
 func (s *PlayScene) Update(g *Game) {
 	s.frame++
-	uploadPortraits(s.portraits)
+	uploadPrefetched(s.portraits, 3)
+	s.prefetchArt()
 	s.updateEffects()
 	s.updateMusic()
 	bg.set(moodBackground[family(s.expr)])
@@ -579,6 +587,73 @@ func (s *PlayScene) setStageCG(cg *ImageEntry) {
 	}
 	s.prevCG = s.stageCG
 	s.stageCG, s.stageFade = cg, 0
+}
+
+// prefetchArt starts decoding, in the background, the illustration the road shows next:
+// the one the course being run unlocks, the one a retry goes back to after a miss, and the
+// ending's picture on the last course. The frame that shows it then only uploads it.
+func (s *PlayScene) prefetchArt() {
+	g := s.eng.G
+	key := g.Level
+	if g.Missed {
+		key = -g.RewindLevel()
+	}
+	if key == s.artFor {
+		return
+	}
+	s.artFor = key
+	if g.Missed {
+		s.prefetchCG(s.stageCGAfter(g.RewindLevel() - 1)) // see restartBackground
+		return
+	}
+	s.prefetchCG(s.stageCGAfter(g.Level)) // the course being run is cleared as course g.Level
+	if g.Level >= GameCourses {
+		s.prefetchCG(s.ending())
+	}
+}
+
+// stageCGAfter is the illustration behind the road once n courses are cleared, as
+// courseClear picks it: the newest unlocked one that is drawn yet (nil: the plain board).
+func (s *PlayScene) stageCGAfter(n int) *ImageEntry {
+	cgs := s.char.PlayCGs()
+	for i := unlockedAfter(n, len(cgs)) - 1; i >= 0; i-- {
+		if cgs[i].HasImage() {
+			return &cgs[i]
+		}
+	}
+	return nil
+}
+
+func (s *PlayScene) prefetchCG(e *ImageEntry) {
+	if e == nil || e == s.stageCG || !e.HasImage() {
+		return
+	}
+	e.PrefetchFull()
+	s.prefetched = append(s.prefetched, e)
+}
+
+// ending is the picture of the all clear: of the extra stages when they are played.
+func (s *PlayScene) ending() *ImageEntry {
+	if extraMode() {
+		return s.char.EndingExtra
+	}
+	return s.char.Ending
+}
+
+// release frees the scene's pictures on the GPU when it is left (Game.SetScene): the
+// illustrations behind the road and those decoded ahead, the ending and the layers.
+// Otherwise every run left them behind.
+func (s *PlayScene) release() {
+	for _, e := range append(s.prefetched, s.stageCG, s.prevCG, s.ending()) {
+		if e != nil {
+			e.ReleaseFull()
+		}
+	}
+	for _, l := range []*ebiten.Image{s.fadeLayer, s.frameLayer, s.endLayer} {
+		if l != nil {
+			l.Deallocate()
+		}
+	}
 }
 
 // Reaction strengths: a weaker reaction never interrupts a stronger one that is still showing.
@@ -1188,19 +1263,34 @@ var macaronClash = map[int8]string{1: macMint, 2: macLemon, 4: macMint, 5: macPi
 
 // macaronImage is the macaron of the i-th color (the colors take turns).
 func macaronImage(i int) *ebiten.Image {
-	return uiImage("macaron_" + macaronColors[i%len(macaronColors)])
+	return uiImage(macaronNames(-1)[i%len(macaronColors)])
 }
 
 // macaronFor is the macaron for column i among walls of the color wall: the colors take
 // turns across the road, leaving out the one that looks like the walls.
 func macaronFor(i int, wall int8) *ebiten.Image {
-	colors := make([]string, 0, len(macaronColors))
+	names := macaronNames(wall)
+	return uiImage(names[i%len(names)])
+}
+
+// macaronSets are the artwork names of the macaron colors that go with each wall color
+// (all of them under -1), worked out once: every sweet on the road asks every frame.
+var macaronSets = map[int8][]string{}
+
+// macaronNames returns the artwork names of the macaron colors, in turn, leaving out the
+// one that looks like walls of the color wall (-1 leaves none out).
+func macaronNames(wall int8) []string {
+	if names, ok := macaronSets[wall]; ok {
+		return names
+	}
+	names := make([]string, 0, len(macaronColors))
 	for _, c := range macaronColors {
-		if c != macaronClash[wall] {
-			colors = append(colors, c)
+		if wall < 0 || c != macaronClash[wall] {
+			names = append(names, "macaron_"+c)
 		}
 	}
-	return uiImage("macaron_" + colors[i%len(colors)])
+	macaronSets[wall] = names
+	return names
 }
 
 // cgVeil is how strongly the illustration behind the road is washed with white: light,
@@ -1235,9 +1325,22 @@ func (s *PlayScene) drawCharacter(screen *ebiten.Image) {
 	l.Clear()
 	fw, fh := float64(iw), float64(ih)
 	m := s.motion()
-	drawLayer := func(expr, id string, alpha float32, cur bool) {
+	// A pose still being decoded in the background is not waited for: the pose before it
+	// stays until it is ready (only with nothing to show is it waited for).
+	img := s.char.Expression(s.exprID).ImgReady()
+	prev := s.char.Expression(s.prevID).ImgReady()
+	if img == nil {
+		img = prev
+	}
+	if img == nil {
+		img = s.char.Expression(s.exprID).Img()
+	}
+	drawLayer := func(expr string, pic *ebiten.Image, alpha float32, cur bool) {
 		if bgImg := uiImage("frame_" + family(expr)); bgImg != nil {
 			drawImageCover(l, bgImg, 0, 0, fw, fh, alpha)
+		}
+		if pic == nil {
+			return
 		}
 		sx, sy, dx := m.sx, m.sy, 0.0
 		if cur {
@@ -1245,12 +1348,12 @@ func (s *PlayScene) drawCharacter(screen *ebiten.Image) {
 			sx, sy = sx*p, sy*p
 			dx = s.slideDir * popSlide(s.popFrame)
 		}
-		drawPortrait(l, s.char.Expression(id).Img(), fw, fh, sx, sy, dx, m.lift, alpha, m.gray, s.portraitScale(fw, fh))
+		drawPortrait(l, pic, fw, fh, sx, sy, dx, m.lift, alpha, m.gray, s.portraitScale(fw, fh))
 	}
 	if s.exprFade < 1 {
-		drawLayer(s.prevExpr, s.prevID, 1, false)
+		drawLayer(s.prevExpr, prev, 1, false)
 	}
-	drawLayer(s.expr, s.exprID, float32(s.exprFade), true)
+	drawLayer(s.expr, img, float32(s.exprFade), true)
 
 	fillRoundRect(screen, frameX+8, frameY+10, frameW, frameH, 22, shadowColor())
 	fillRoundRect(screen, frameX, frameY, frameW, frameH, 22, panelFill)
@@ -1313,11 +1416,7 @@ const (
 func (s *PlayScene) drawAllClear(screen *ebiten.Image) {
 	a := float32(math.Min(1, float64(s.overFrame)/60))
 	dimScreen(screen, uint8(0xff*a))
-	ending := s.char.Ending
-	if extraMode() {
-		ending = s.char.EndingExtra
-	}
-	if ending != nil && ending.HasImage() {
+	if ending := s.ending(); ending != nil && ending.HasImage() {
 		// the ending's own picture, made the shape of the window: it fills it
 		drawImageCover(screen, ending.Full(), 0, 0, ScreenW, ScreenH, a)
 	} else if s.stageCG != nil {

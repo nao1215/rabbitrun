@@ -179,31 +179,47 @@ var (
 
 func initAudio() {
 	audioCtx = audio.NewContext(sampleRate)
+	go func() {
+		synthEffects(&seData)
+		close(seSynthed)
+	}()
+}
+
+// seSynthed is closed once the sound effects are synthesized. They are made in the
+// background (a tenth of a second of work, more on a slow machine), so the window opens
+// without waiting for them; playSE waits in the rare case one is wanted before they are
+// done (nothing plays a sound in the first frames).
+var seSynthed = make(chan struct{})
+
+// synthEffects synthesizes every sound effect into d.
+func synthEffects(d *[seCount][]byte) {
 	// Moving and placing gummies uses soft sine waves with falling pitch (squishy, bouncy).
-	seData[seMove] = synth(0.05, func(t float64) float64 { return glide(t, 1100, 800, 60) * soft(t, 0.002, 70) * .18 })
-	seData[seBomb] = bombSound()
-	seData[seBreak] = breakSound()
-	seData[sePick] = arp([]int{72, 76, 79, 84}, 0.05, 0.3)
-	seData[seStreak] = arp([]int{72, 76, 79, 84, 88, 91, 96}, 0.045, 0.35)
-	seData[seTreat] = arp([]int{74, 81, 86, 93}, 0.05, 0.3)
-	seData[seLevelUp] = arp([]int{67, 72, 76, 79, 84}, 0.07, 0.3)
-	seData[seUnlock] = synth(1.2, func(t float64) float64 { // bell-like chord
+	d[seMove] = synth(0.05, func(t float64) float64 { return glide(t, 1100, 800, 60) * soft(t, 0.002, 70) * .18 })
+	d[seBomb] = bombSound()
+	d[seBreak] = breakSound()
+	d[sePick] = arp([]int{72, 76, 79, 84}, 0.05, 0.3)
+	d[seStreak] = arp([]int{72, 76, 79, 84, 88, 91, 96}, 0.045, 0.35)
+	d[seTreat] = arp([]int{74, 81, 86, 93}, 0.05, 0.3)
+	d[seLevelUp] = arp([]int{67, 72, 76, 79, 84}, 0.07, 0.3)
+	bell := []float64{noteFreq(84), noteFreq(88), noteFreq(91), noteFreq(96)}
+	d[seUnlock] = synth(1.2, func(t float64) float64 { // bell-like chord
 		v := 0.0
-		for i, m := range []int{84, 88, 91, 96} {
+		for i, f := range bell {
 			st := float64(i) * 0.08
 			if t > st {
-				v += sine(t-st, noteFreq(m))*decay(t-st, 3) + sine(t-st, noteFreq(m)*2.76)*decay(t-st, 9)*.3
+				v += sine(t-st, f)*decay(t-st, 3) + sine(t-st, f*2.76)*decay(t-st, 9)*.3
 			}
 		}
 		return v * .18
 	})
-	seData[seGameOver] = arp([]int{72, 67, 64, 60, 55, 48}, 0.12, 0.3)
-	seData[seConfirm] = arp([]int{79, 84}, 0.05, 0.3)
-	seData[seCancel] = arp([]int{76, 69}, 0.05, 0.25)
-	seData[seDenied] = synth(0.15, func(t float64) float64 { return sq(t, 140) * decay(t, 12) * .2 })
-	seData[seReady] = synth(0.15, func(t float64) float64 { return sq(t, noteFreq(69)) * decay(t, 10) * .25 })
-	seData[seGo] = synth(0.4, func(t float64) float64 { return sq(t, noteFreq(81)) * decay(t, 5) * .25 })
-	seData[sePause] = arp([]int{84, 79, 84}, 0.06, 0.25)
+	d[seGameOver] = arp([]int{72, 67, 64, 60, 55, 48}, 0.12, 0.3)
+	d[seConfirm] = arp([]int{79, 84}, 0.05, 0.3)
+	d[seCancel] = arp([]int{76, 69}, 0.05, 0.25)
+	d[seDenied] = synth(0.15, func(t float64) float64 { return sq(t, 140) * decay(t, 12) * .2 })
+	ready, goF := noteFreq(69), noteFreq(81)
+	d[seReady] = synth(0.15, func(t float64) float64 { return sq(t, ready) * decay(t, 10) * .25 })
+	d[seGo] = synth(0.4, func(t float64) float64 { return sq(t, goF) * decay(t, 5) * .25 })
+	d[sePause] = arp([]int{84, 79, 84}, 0.06, 0.25)
 }
 
 // bombSound is an explosion: a deep boom falling in pitch, a burst of noise that darkens
@@ -257,8 +273,12 @@ func glide(t, f0, f1, k float64) float64 {
 
 // soft is an envelope with an attack of a seconds and decay rate k (avoids click noise).
 func soft(t, a, k float64) float64 { return math.Min(1, t/a) * math.Exp(-t*k) }
+
+// sq is a square wave. t is never negative, so the fraction of t*f is x - Floor(x),
+// exactly what math.Mod gives, at a fraction of its cost (it was a third of the
+// time the sound effects took).
 func sq(t, f float64) float64 {
-	if math.Mod(t*f, 1) < .5 {
+	if x := t * f; x-math.Floor(x) < .5 {
 		return 1
 	}
 	return -1
@@ -268,14 +288,19 @@ func decay(t, k float64) float64 { return math.Exp(-t * k) }
 // arp is a rising (or falling) arpeggio that plays notes in order.
 func arp(notes []int, step, vol float64) []byte {
 	total := step*float64(len(notes)) + 0.25
+	freqs := make([]float64, len(notes))
+	for i, m := range notes {
+		freqs[i] = noteFreq(m)
+	}
 	return synth(total, func(t float64) float64 {
 		v := 0.0
-		for i, m := range notes {
+		for i, f := range freqs {
 			st := float64(i) * step
-			if t >= st {
-				tt := t - st
-				v += (sq(tt, noteFreq(m))*.5 + sine(tt, noteFreq(m))*.5) * decay(tt, 14)
+			if t < st {
+				break // the notes start in order: none after this one has started yet
 			}
+			tt := t - st
+			v += (sq(tt, f)*.5 + sine(tt, f)*.5) * decay(tt, 14)
 		}
 		return v * vol
 	})
@@ -301,6 +326,7 @@ func playSE(id seID) {
 	if audioCtx == nil || audioMuted {
 		return
 	}
+	<-seSynthed
 	seMu.Lock()
 	defer seMu.Unlock()
 	p := audioCtx.NewPlayerF32FromBytes(seData[id])
