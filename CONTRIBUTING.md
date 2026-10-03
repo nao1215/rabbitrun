@@ -10,7 +10,7 @@ Thank you for helping make rabbitrun better. Bug reports, ideas, patches, tests 
 
 ### 2. Build and run
 
-You need Go 1.25 or later. On Linux, `go build` compiles Ebitengine with cgo, so install the headers listed in the [Ebitengine install guide](https://ebitengine.org/en/documents/install.html) first, or build with `CGO_ENABLED=0`.
+You need Go 1.25 or later. No C compiler is needed; on Linux, install the runtime libraries listed in the [Ebitengine install guide](https://ebitengine.org/en/documents/install.html) to run the game.
 
 ```shell
 make build   # build ./rabbitrun

@@ -87,16 +87,10 @@ Download the archive for your OS from the [releases page](https://github.com/nao
 go install github.com/nao1215/rabbitrun@latest
 ```
 
-On Linux, Ebitengine is built with cgo by default, so you need the OpenGL, X11 and ALSA development packages described in the [Ebitengine install guide](https://ebitengine.org/en/documents/install.html). On Debian or Ubuntu:
+No C compiler is needed. On Linux the game needs the X11, OpenGL and ALSA libraries listed in the [Ebitengine install guide](https://ebitengine.org/en/documents/install.html). On Debian or Ubuntu:
 
 ```shell
-sudo apt install gcc libc6-dev libgl1-mesa-dev libxcursor-dev libxi-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libasound2-dev pkg-config
-```
-
-You can also build without cgo. The game then loads the same libraries at run time:
-
-```shell
-CGO_ENABLED=0 go install github.com/nao1215/rabbitrun@latest
+sudo apt install libx11-6 libgl1 libglx-mesa0 libxcursor1 libxi6 libxinerama1 libxrandr2 libxrender1 libxext6 libasound2t64
 ```
 
 Rabbit Run needs Go 1.25 or later. CI tests Go 1.25, 1.26, 1.27 and the latest release on Linux, macOS and Windows.
