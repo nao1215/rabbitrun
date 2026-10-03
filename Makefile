@@ -32,8 +32,12 @@ lint: ## Run golangci-lint (same config as CI)
 vuln: ## Scan for known vulnerabilities (requires govulncheck)
 	govulncheck ./...
 
-licenses: ## Check dependency licenses and collect their texts (requires go-licenses)
-	CGO_ENABLED=0 go-licenses check --disallowed_types=forbidden,restricted,unknown .
+# GOROOT is set because go-licenses recognizes the standard library by path:
+# after a toolchain switch it would report every standard package as unlicensed.
+licenses: ## Check dependency licenses for each release OS and collect their texts (requires go-licenses)
+	for goos in linux darwin windows; do \
+		GOROOT="$$($(GO) env GOROOT)" GOOS=$$goos CGO_ENABLED=0 go-licenses check --disallowed_types=forbidden,restricted,unknown . || exit 1; \
+	done
 	./scripts/third_party_licenses.sh
 
 tools: ## Install golangci-lint, govulncheck and go-licenses at the versions CI uses
