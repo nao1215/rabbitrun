@@ -271,56 +271,6 @@ func dimScreen(dst *ebiten.Image, a uint8) {
 	vector.FillRect(dst, 0, 0, ScreenW, ScreenH, color.NRGBA{c.R, c.G, c.B, a}, false)
 }
 
-// drawTextOutline draws centered text with a white outline so it stays readable over images.
-func drawTextOutline(dst *ebiten.Image, str string, x, y, size float64, clr color.Color) {
-	w := math.Max(2, size/12)
-	for i := range 12 {
-		t := float64(i) / 12 * 2 * math.Pi
-		drawText(dst, str, x+math.Cos(t)*w, y+math.Sin(t)*w, size, color.White)
-	}
-	drawText(dst, str, x, y, size, clr)
-}
-
-// drawTextOutlineColor draws centered text in fill with an outline of the given color, both
-// faded by alpha (dark outlines read on a dark screen).
-func drawTextOutlineColor(dst *ebiten.Image, str string, x, y, size float64, fill, outline color.Color, alpha float32) {
-	fade := func(c color.Color) color.Color {
-		n := color.NRGBAModel.Convert(c).(color.NRGBA) //nolint:errcheck,forcetypeassert // NRGBAModel always returns NRGBA
-		n.A = uint8(float32(n.A) * alpha)
-		return n
-	}
-	w := math.Max(2, size/12)
-	for i := range 12 {
-		t := float64(i) / 12 * 2 * math.Pi
-		drawText(dst, str, x+math.Cos(t)*w, y+math.Sin(t)*w, size, fade(outline))
-	}
-	drawText(dst, str, x, y, size, fade(fill))
-}
-
-// drawMenu draws a vertical menu. The selected item is pink and a little larger.
-func drawMenu(dst *ebiten.Image, items []string, sel int, y, size float64) {
-	drawMenuAt(dst, items, sel, ScreenW/2, y, size)
-}
-
-// drawMenuAt draws a vertical menu centered at cx.
-func drawMenuAt(dst *ebiten.Image, items []string, sel int, cx, y, size float64) {
-	drawMenuOn(dst, items, sel, cx, y, size, textMain, color.White)
-}
-
-// drawMenuOn draws a vertical menu centered at cx, the items not selected in normal, all
-// outlined in outline (light items with a dark outline read on a dark screen).
-func drawMenuOn(dst *ebiten.Image, items []string, sel int, cx, y, size float64, normal, outline color.Color) {
-	for i, s := range items {
-		yy := y + float64(i)*size*1.7
-		clr, sz := normal, size
-		if i == sel {
-			clr, sz = candyPink, size*1.15
-			yy -= (sz - size) / 2
-		}
-		drawTextOutlineColor(dst, s, cx, yy, sz, clr, outline, 1)
-	}
-}
-
 // ---- Screen artwork (assets/ui/) ----
 
 var uiCache = map[string]*ebiten.Image{}

@@ -542,48 +542,6 @@ func placeholderImage(label string) *ebiten.Image {
 	return img
 }
 
-type faceKey struct {
-	size float64
-	pop  bool
-}
-
-var faceCache = map[faceKey]*text.GoTextFace{}
-
-// face returns a font face for the size. ASCII-only strings use the pop typeface (Lilita One).
-func face(size float64, s string) *text.GoTextFace {
-	pop := popSource != nil && isASCII(s)
-	k := faceKey{size, pop}
-	f, ok := faceCache[k]
-	if !ok {
-		src := fontSource
-		if pop {
-			src = popSource
-		}
-		f = &text.GoTextFace{Source: src, Size: size}
-		faceCache[k] = f
-	}
-	return f
-}
-
-func isASCII(s string) bool {
-	for _, r := range s {
-		if r > 0x7e {
-			return false
-		}
-	}
-	return true
-}
-
-// drawText draws s horizontally centered on x.
-func drawText(dst *ebiten.Image, s string, x, y, size float64, clr color.Color) {
-	op := &text.DrawOptions{}
-	op.GeoM.Translate(x, y)
-	op.ColorScale.ScaleWithColor(clr)
-	op.LineSpacing = size * 1.4
-	op.PrimaryAlign = text.AlignCenter
-	text.Draw(dst, s, face(size, s), op)
-}
-
 // MainCGCount is how many illustrations a regular game unlocks (one a course for the
 // first GameCourses-1 courses). A character's illustrations past these are the extras,
 // which only the hidden command brings out.
