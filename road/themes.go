@@ -165,7 +165,11 @@ func (g *Game) buildThemedRow() (Row, int, int) {
 		// three cells wide, a step sideways every third row (every other, when hard),
 		// turning at the sides: a step every other row on a road two wide was too hard
 		// to follow
-		if (g.dir < 0 && g.center <= 1) || (g.dir > 0 && g.center >= W-1) {
+		// turn where the road meets the side: its middle stops half a road short of the
+		// edge (turning only at the last column left a three-wide road stuck on one side,
+		// a long straight wall down the screen)
+		lo, hi := g.width/2, W-1-g.width/2
+		if (g.dir < 0 && g.center <= lo) || (g.dir > 0 && g.center >= hi) {
 			g.dir = -g.dir
 		}
 		wantC = g.center + g.dir
