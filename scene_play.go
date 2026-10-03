@@ -102,9 +102,9 @@ type PlayScene struct {
 	countdown int
 	// The bomb: frames left of its cut-in, the walls it blew away (drawn breaking), and the
 	// frames since they began to break (0: not breaking).
-	crumble   int
-	cutin     int
-	bombWalls [road.Rows + 1]road.Row
+	crumble     int
+	cutin       int
+	hammerWalls [road.Rows + 1]road.Row
 	// allClear: the last locked illustration was unlocked; the run ends on it with a
 	// congratulation.
 	allClear  bool
@@ -228,7 +228,7 @@ func (s *PlayScene) Update(g *Game) {
 	}
 	if s.crumble > 0 {
 		if k := (s.crumble - 1) / crumbleStep; (s.crumble-1)%crumbleStep == 0 && k <= road.Rows {
-			if rowHasWall(s.bombWalls[road.Rows-k]) { // the row breaking now (rowBroken)
+			if rowHasWall(s.hammerWalls[road.Rows-k]) { // the row breaking now (rowBroken)
 				playSE(seBreak)
 			}
 		}
@@ -253,7 +253,7 @@ func (s *PlayScene) Update(g *Game) {
 			e.Move(float64(dir) * e.SlideSpeed(s.holdFrames) / 60)
 		}
 		if g.in.Pressed(ActConfirm) && s.cutin == 0 { // Space or Enter, the A button on a pad
-			s.bomb()
+			s.useHammer()
 		}
 		accel = g.in.Held(ActUp) // speeds the road up for good
 	}
@@ -335,16 +335,16 @@ func (s *PlayScene) handleEvents() {
 // cutinFrames is how long the cut-in of a bomb lasts (the road waits meanwhile).
 const cutinFrames = 70
 
-// bomb sets off a bomb: the character cuts in big, and every wall on the screen bursts.
-func (s *PlayScene) bomb() {
+// useHammer swings a hammer: the character cuts in big, and every wall on the screen bursts.
+func (s *PlayScene) useHammer() {
 	g := s.eng.G
-	s.bombWalls[0] = g.Ahead
-	copy(s.bombWalls[1:], g.Rows[:])
-	if !s.eng.UseBomb() {
+	s.hammerWalls[0] = g.Ahead
+	copy(s.hammerWalls[1:], g.Rows[:])
+	if !s.eng.UseHammer() {
 		playSE(seDenied)
 		return
 	}
-	playSE(seBomb)
+	playSE(seHammer)
 	s.cutin = cutinFrames
 	s.react(ExprExcited, 120, rankBig)
 }
@@ -410,13 +410,13 @@ func (s *PlayScene) drawLives(screen *ebiten.Image) {
 	}
 	g := s.eng.G
 	item(charFace(s.char), "x"+strconv.Itoa(g.Lives))
-	item(bombImage(), "x"+strconv.Itoa(g.Bombs))
+	item(hammerImage(), "x"+strconv.Itoa(g.Bombs))
 	item(macaronImage(0), strconv.Itoa(g.Sweets)+"/"+strconv.Itoa(g.SweetsForLife())) // sweets toward the next life
 }
 
-// bombImage is the picture of the bomb: a pop squeaky toy hammer that smashes the walls
+// hammerImage is the picture of the hammer item: a pop squeaky toy hammer that smashes the walls
 // (assets/ui/hammer.png), shown on the road and in the stock.
-func bombImage() *ebiten.Image { return uiImage("hammer") }
+func hammerImage() *ebiten.Image { return uiImage("hammer") }
 
 // cutinImage is the big picture of the bomb cut-in: images/cutin.png (no background, a
 // "here I go!" pose), or the character select picture until it exists.
@@ -1054,7 +1054,7 @@ func (s *PlayScene) drawBoard(screen *ebiten.Image) {
 			w = g.Rows[y-1][x].Wall
 		}
 		if s.breaking() && !s.rowBroken(y) {
-			w = s.bombWalls[y][x].Wall // the hammer's walls, not broken yet
+			w = s.hammerWalls[y][x].Wall // the hammer's walls, not broken yet
 		}
 		return w
 	}
@@ -1230,7 +1230,7 @@ func drawSweet(dst *ebiten.Image, kind, wall int8, sd *ebiten.Image, cx, cy, cel
 		return
 	}
 	if kind == road.SweetBomb {
-		if img := bombImage(); img != nil {
+		if img := hammerImage(); img != nil {
 			drawImageFit(dst, img, cx-cell*0.55, cy-cell*0.55+bob, cell*1.1, cell*1.1, 1)
 		}
 		return
@@ -1537,7 +1537,7 @@ func (s *PlayScene) drawShards(dst *ebiten.Image, rowY func(int) float64) {
 		if t < 0 || t > 1 {
 			continue
 		}
-		for x, c := range s.bombWalls[y] {
+		for x, c := range s.hammerWalls[y] {
 			if c.Wall == 0 {
 				continue
 			}

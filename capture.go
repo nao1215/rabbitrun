@@ -271,7 +271,7 @@ var captureSteps = []captureStep{
 				s.eng.G.Rows[y][x].Wall = road.CourseColors[y%road.Courses]
 			}
 		}
-		s.bomb()
+		s.useHammer()
 		g.SetScene(s)
 	}, cutinFrames + 25},
 	{"play_cutin", func(g *Game) { cutinScene(g, defaultCharIndex()) }, 30},
@@ -336,7 +336,7 @@ func writePNG(p string, img image.Image) error {
 func cutinScene(g *Game, i int) {
 	s := newPlayScene(characters[i])
 	s.ready = 0
-	s.bomb()
+	s.useHammer()
 	g.SetScene(s)
 }
 

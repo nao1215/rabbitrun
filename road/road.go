@@ -260,10 +260,10 @@ func sectionChance(d int) float64 {
 // chance at first, rarer every stage (a hammer is a rare help, not one a stage).
 func BombChance(stage int) float64 { return max(0.1, 0.5-0.15*float64(stage-1)) }
 
-// bombRowOf is the row of a stage (counted from its start) where a bomb lies, or -1 for
+// hammerRowOf is the row of a stage (counted from its start) where a hammer lies, or -1 for
 // none. It has its own random numbers (from the seed and the stage), so it is the same
 // every time, whichever course of the stage is being built, and does not change the road.
-func (g *Game) bombRowOf(stage int) int {
+func (g *Game) hammerRowOf(stage int) int {
 	r := rand.New(rand.NewPCG(g.seed^0x5bd1e995, uint64(stage))) //nolint:gosec // G404: game randomness, not security sensitive
 	if r.Float64() >= BombChance(stage) {
 		return -1
@@ -703,7 +703,7 @@ func (g *Game) addThings(row Row, left, right int) Row {
 		return row
 	}
 	switch {
-	case g.stageRow == g.bombRowOf(g.Stage):
+	case g.stageRow == g.hammerRowOf(g.Stage):
 		thing = SweetBomb
 	case g.rng.Float64() < p.SweetsRate*bonusSweets(g.Bonus()):
 		switch r := g.rng.Float64(); {
@@ -986,7 +986,7 @@ func (g *Game) pickAt(col int) {
 		c.Sweet = 0
 		return
 	case SweetBomb:
-		g.gainBomb()
+		g.gainHammer()
 		c.Sweet = 0
 		return
 	}
@@ -1007,7 +1007,8 @@ func (g *Game) pickAt(col int) {
 	c.Sweet = 0
 }
 
-func (g *Game) gainBomb() {
+// gainHammer adds a hammer to the stock, up to MaxBombs.
+func (g *Game) gainHammer() {
 	if g.Bombs < MaxBombs {
 		g.Bombs++
 		g.Events = append(g.Events, Event{Kind: EventBombGain})

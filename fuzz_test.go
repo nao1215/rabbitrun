@@ -76,7 +76,7 @@ func FuzzEngineOps(f *testing.F) {
 			case opBoost:
 				e.Tick(true)
 			case opBomb:
-				e.UseBomb()
+				e.UseHammer()
 			}
 			if overBefore && (!e.G.Over || e.G.Distance != prev) {
 				t.Fatalf("step %d: engine changed after game over", i)

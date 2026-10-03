@@ -121,8 +121,9 @@ func (e *Engine) Move(dx float64) {
 	e.collect()
 }
 
-// UseBomb sets off a bomb from the stock (every wall on the screen is gone).
-func (e *Engine) UseBomb() bool {
+// UseHammer swings a hammer from the stock (every wall on the screen is gone). The rule
+// engine still calls it a bomb (road.Game.UseBomb), from an earlier design.
+func (e *Engine) UseHammer() bool {
 	ok := e.G.UseBomb()
 	e.collect()
 	return ok
