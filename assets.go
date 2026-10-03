@@ -77,11 +77,12 @@ type ImageEntry struct {
 
 	Image *ebiten.Image `json:"-"` // portraits load lazily via Img; illustrations load on demand via Full / Thumb
 
-	base    string
-	full    *ebiten.Image
-	pending chan decodedImg // the portrait being decoded in the background (prefetchImgs)
-	tile    *ebiten.Image   // finished gallery tile (see GalleryScene.tileOf)
-	has     int8            // HasImage cache: 0 unknown, 1 yes, -1 no (the assets are embedded and never change)
+	base        string
+	full        *ebiten.Image
+	pending     chan decodedImg  // the portrait being decoded in the background (prefetchImgs)
+	fullPending chan image.Image // the illustration being decoded in the background (PrefetchFull)
+	tile        *ebiten.Image    // finished gallery tile (see GalleryScene.tileOf)
+	has         int8             // HasImage cache: 0 unknown, 1 yes, -1 no (the assets are embedded and never change)
 }
 
 // HasImage reports whether the image file exists (otherwise a placeholder is used).
@@ -267,18 +268,43 @@ func uploadPrefetched(entries []*ImageEntry, n int) {
 	}
 }
 
-// Full loads the illustration at full size (for the gallery's enlarged view). Free it with ReleaseFull.
+// Full loads the illustration at full size (for the gallery's enlarged view). Free it with
+// ReleaseFull. If PrefetchFull started decoding it, it only waits for that and uploads it.
 func (e *ImageEntry) Full() *ebiten.Image {
 	if e.Image != nil {
 		return e.Image
 	}
 	if e.full == nil {
-		e.full = loadCharImage(e.base, e.ID, e.Title)
+		if e.fullPending != nil {
+			img := <-e.fullPending
+			e.fullPending = nil
+			if img != nil {
+				e.full = ebiten.NewImageFromImage(img)
+			} else {
+				e.full = placeholderImage(e.Title)
+			}
+		} else {
+			e.full = loadCharImage(e.base, e.ID, e.Title)
+		}
 	}
 	return e.full
 }
 
+// PrefetchFull starts decoding the full-size illustration in the background, so the frame
+// that first shows it (Full) only uploads it: decoding a large JPEG on the main goroutine
+// dropped frames whenever the road changed its picture.
+func (e *ImageEntry) PrefetchFull() {
+	if e.Image != nil || e.full != nil || e.fullPending != nil {
+		return
+	}
+	ch := make(chan image.Image, 1)
+	e.fullPending = ch
+	base, id := e.base, e.ID
+	go func() { ch <- decodeCharImage(base, id) }()
+}
+
 func (e *ImageEntry) ReleaseFull() {
+	e.fullPending = nil
 	if e.full != nil {
 		e.full.Deallocate()
 		e.full = nil
@@ -472,6 +498,15 @@ func decodeScaled(base, id string, maxH int) image.Image {
 
 // loadCharImage reads images/<id>.jpg (or .png). If missing, it returns a placeholder.
 func loadCharImage(base, id, label string) *ebiten.Image {
+	if img := decodeCharImage(base, id); img != nil {
+		return ebiten.NewImageFromImage(img)
+	}
+	return placeholderImage(label)
+}
+
+// decodeCharImage decodes images/<id>.jpg (or .png) at full size, or returns nil if it is
+// missing. It only touches the CPU, so it may run on any goroutine.
+func decodeCharImage(base, id string) image.Image {
 	for _, ext := range imageExts {
 		img, err := decodeAsset(path.Join(base, "images", id+ext))
 		if errors.Is(err, fs.ErrNotExist) {
@@ -481,9 +516,9 @@ func loadCharImage(base, id, label string) *ebiten.Image {
 			log.Printf("%s%s: %v", id, ext, err)
 			continue
 		}
-		return ebiten.NewImageFromImage(img)
+		return img
 	}
-	return placeholderImage(label)
+	return nil
 }
 
 // decodeAsset decodes the embedded image name. It reads the embedded bytes in place:

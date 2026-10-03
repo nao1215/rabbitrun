@@ -110,6 +110,11 @@ type PlayScene struct {
 	allClear  bool
 	endLayer  *ebiten.Image // the ending's portrait, when there is no illustration
 	committed bool          // whether this run's score was added to the total
+	// artFor is the course (negative: the course a retry goes back to) whose next
+	// illustration prefetchArt has started decoding; prefetched are the illustrations it
+	// started, freed with the scene.
+	artFor     int
+	prefetched []*ImageEntry
 }
 
 // comebackDelay is how long the retry keeps the collapsed game over pose before the
@@ -160,6 +165,7 @@ func newPlayScene(c *Character) *PlayScene {
 func (s *PlayScene) Update(g *Game) {
 	s.frame++
 	uploadPrefetched(s.portraits, 3)
+	s.prefetchArt()
 	s.updateEffects()
 	s.updateMusic()
 	bg.set(moodBackground[family(s.expr)])
@@ -582,6 +588,57 @@ func (s *PlayScene) setStageCG(cg *ImageEntry) {
 	}
 	s.prevCG = s.stageCG
 	s.stageCG, s.stageFade = cg, 0
+}
+
+// prefetchArt starts decoding, in the background, the illustration the road shows next:
+// the one the course being run unlocks, the one a retry goes back to after a miss, and the
+// ending's picture on the last course. The frame that shows it then only uploads it.
+func (s *PlayScene) prefetchArt() {
+	g := s.eng.G
+	key := g.Level
+	if g.Missed {
+		key = -g.RewindLevel()
+	}
+	if key == s.artFor {
+		return
+	}
+	s.artFor = key
+	if g.Missed {
+		s.prefetchCG(s.stageCGAfter(g.RewindLevel() - 1)) // see restartBackground
+		return
+	}
+	s.prefetchCG(s.stageCGAfter(g.Level)) // the course being run is cleared as course g.Level
+	if g.Level >= GameCourses {
+		s.prefetchCG(s.ending())
+	}
+}
+
+// stageCGAfter is the illustration behind the road once n courses are cleared, as
+// courseClear picks it: the newest unlocked one that is drawn yet (nil: the plain board).
+func (s *PlayScene) stageCGAfter(n int) *ImageEntry {
+	cgs := s.char.PlayCGs()
+	for i := unlockedAfter(n, len(cgs)) - 1; i >= 0; i-- {
+		if cgs[i].HasImage() {
+			return &cgs[i]
+		}
+	}
+	return nil
+}
+
+func (s *PlayScene) prefetchCG(e *ImageEntry) {
+	if e == nil || e == s.stageCG || !e.HasImage() {
+		return
+	}
+	e.PrefetchFull()
+	s.prefetched = append(s.prefetched, e)
+}
+
+// ending is the picture of the all clear: of the extra stages when they are played.
+func (s *PlayScene) ending() *ImageEntry {
+	if extraMode() {
+		return s.char.EndingExtra
+	}
+	return s.char.Ending
 }
 
 // Reaction strengths: a weaker reaction never interrupts a stronger one that is still showing.
@@ -1329,11 +1386,7 @@ const (
 func (s *PlayScene) drawAllClear(screen *ebiten.Image) {
 	a := float32(math.Min(1, float64(s.overFrame)/60))
 	dimScreen(screen, uint8(0xff*a))
-	ending := s.char.Ending
-	if extraMode() {
-		ending = s.char.EndingExtra
-	}
-	if ending != nil && ending.HasImage() {
+	if ending := s.ending(); ending != nil && ending.HasImage() {
 		// the ending's own picture, made the shape of the window: it fills it
 		drawImageCover(screen, ending.Full(), 0, 0, ScreenW, ScreenH, a)
 	} else if s.stageCG != nil {
