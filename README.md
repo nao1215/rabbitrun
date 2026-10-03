@@ -97,7 +97,7 @@ Rabbit Run needs Go 1.26.6 or later. CI tests Go 1.26.6 and the latest release o
 
 ### Verifying release integrity
 
-Each release publishes `checksums.txt`, a cosign signature bundle for it, an SBOM for each archive, and GitHub build provenance.
+Each release publishes `checksums.txt`, a cosign signature bundle for it, an SBOM for each archive, SLSA build provenance (`multiple.intoto.jsonl`) and GitHub build provenance.
 
 ```shell
 # Verify the signature of checksums.txt (keyless, via Sigstore)
@@ -110,7 +110,14 @@ cosign verify-blob \
 # Check the archive you downloaded against it
 sha256sum --ignore-missing -c checksums.txt
 
-# Verify the build provenance of an archive
+# Verify the SLSA provenance of an archive
+slsa-verifier verify-artifact \
+  --provenance-path multiple.intoto.jsonl \
+  --source-uri github.com/nao1215/rabbitrun \
+  --source-tag v<version> \
+  rabbitrun_<version>_linux_amd64.tar.gz
+
+# Verify the GitHub build provenance of an archive
 gh attestation verify rabbitrun_<version>_linux_amd64.tar.gz --repo nao1215/rabbitrun
 ```
 
