@@ -17,7 +17,7 @@ Slide the bunny left and right, pick up macarons and keep off the walls. The roa
 - Each course has a theme: winding roads, swings, slaloms, gates, pillars, lanes, checkers and more.
 - Each character has her own roads. They are the same every time, so you can learn them.
 - Hit a wall, from the front or the side, and it is a miss. A life sends you back ten rows to retry. With no lives left, or if you give up, the game is over.
-- Hold up to speed the road up by as much as 30% for the rest of the stage. The music speeds up with it.
+- Hold up to speed the road up by as much as 30%. It stays until a miss, and the music speeds up with it.
 - From the second stage on, one course per stage is a bonus course with candy-colored blocks: a wider road, twice the macarons, and a stretch covered in them.
 
 ### Items
@@ -60,7 +60,7 @@ Your character stands beside the road and reacts to the run: she relaxes on a wi
 | Action | Keyboard | Gamepad |
 | --- | --- | --- |
 | Move | ← → / A D / H L | D-pad left / right |
-| Speed up (for the rest of the stage) | ↑ / W / K | D-pad up |
+| Speed up (until a miss) | ↑ / W / K | D-pad up |
 | Hammer (smash the walls) | Space / Enter | A |
 | Pause | Esc / P / F1 | Start |
 | Menu up / down | ↑ ↓ / W S / K J | D-pad up / down |

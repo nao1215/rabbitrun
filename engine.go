@@ -24,8 +24,8 @@ type Engine struct {
 	stepAcc    float64
 	Steps      int // rows scrolled (for the scroll animation)
 	// Boost is how much faster the player has made the road (1: not at all). Holding up
-	// raises it; it does not come down within the stage, and goes back to 1 when the next
-	// stage starts or the player retries.
+	// raises it; it does not come down at a new stage, and goes back to 1 when the player
+	// retries.
 	Boost float64
 }
 
@@ -142,7 +142,7 @@ func (e *Engine) RestartProgress() string {
 }
 
 // Tick advances one frame: the road scrolls by RowsPerSec/60 rows. Holding up (accel)
-// speeds the road up for good (Boost).
+// speeds the road up until a retry (Boost).
 func (e *Engine) Tick(accel bool) {
 	if e.G.Over {
 		return
@@ -173,8 +173,10 @@ func (e *Engine) Scroll() float64 { return e.stepAcc }
 func (e *Engine) collect() {
 	for _, ev := range e.G.Events {
 		switch ev.Kind {
-		case road.EventStageClear, road.EventRestart:
-			e.Boost = 1 // the speed-up holds for one stage; a new stage or a retry starts at its own speed
+		case road.EventRestart:
+			e.Boost = 1 // a retry starts at its own speed
+			// (a new stage keeps the speed-up: dropping it there felt like the game slowing
+			// down, and the stage's own speed is never undercut since Boost is at least 1)
 		default:
 		}
 		e.Events = append(e.Events, ev)

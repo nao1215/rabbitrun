@@ -130,7 +130,7 @@ func TestHoldingUpSpeedsTheStageUp(t *testing.T) {
 	if fast < base*1.25 {
 		t.Fatalf("held up for a second: %v rows/s from %v", fast, base)
 	}
-	for range 120 { // let go: it stays fast for the rest of the stage
+	for range 120 { // let go: it stays fast
 		e.Tick(false)
 	}
 	if e.RowsPerSec() != fast {
@@ -145,10 +145,11 @@ func TestHoldingUpSpeedsTheStageUp(t *testing.T) {
 	if slide := newRun(heroID, false).PlayerSpeed(); e.PlayerSpeed() != slide {
 		t.Fatalf("sideways speed %v with the speed-up, want it unchanged at %v", e.PlayerSpeed(), slide)
 	}
+	held := e.Boost
 	e.G.Events = append(e.G.Events, road.Event{Kind: road.EventStageClear})
 	e.collect()
-	if e.Boost != 1 {
-		t.Fatalf("a new stage starts at boost %v, want 1", e.Boost)
+	if e.Boost != held {
+		t.Fatalf("a new stage took the speed-up from %v to %v, want it kept", held, e.Boost)
 	}
 	e.Boost = 1.5
 	e.G.Events = append(e.G.Events, road.Event{Kind: road.EventRestart})
