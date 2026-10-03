@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"reflect"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -127,32 +126,6 @@ func FuzzSaveDecode(f *testing.F) {
 		}
 		if !reflect.DeepEqual(&s, &back) {
 			t.Fatalf("round trip changed the save:\n %+v\n %+v", s.Characters, back.Characters)
-		}
-	})
-}
-
-// FuzzFormatScore checks that the thousands separators are placed correctly
-// and never change the digits.
-func FuzzFormatScore(f *testing.F) {
-	for _, n := range []int{0, 9, 999, 1000, 123456789, 1 << 62} {
-		f.Add(n)
-	}
-	f.Fuzz(func(t *testing.T, n int) {
-		if n < 0 {
-			return // scores are never negative
-		}
-		got := formatScore(n)
-		if plain := strings.ReplaceAll(got, ",", ""); plain != strconv.Itoa(n) {
-			t.Fatalf("formatScore(%d) = %q changes the digits", n, got)
-		}
-		groups := strings.Split(got, ",")
-		if len(groups[0]) < 1 || len(groups[0]) > 3 {
-			t.Fatalf("formatScore(%d) = %q has a bad leading group", n, got)
-		}
-		for _, g := range groups[1:] {
-			if len(g) != 3 {
-				t.Fatalf("formatScore(%d) = %q has a group of %d digits", n, got, len(g))
-			}
 		}
 	})
 }

@@ -16,7 +16,6 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
-	"strconv"
 	"sync"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -732,16 +731,4 @@ func (s *SaveData) progress(id string) *CharProgress {
 		p.SeenExpr = map[string]bool{ExprNormal: true}
 	}
 	return p
-}
-
-func formatScore(n int) string {
-	s := strconv.Itoa(n)
-	out := []byte{}
-	for i := range s {
-		if i > 0 && (len(s)-i)%3 == 0 {
-			out = append(out, ',')
-		}
-		out = append(out, s[i])
-	}
-	return string(out)
 }

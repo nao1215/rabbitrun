@@ -19,28 +19,6 @@ var allStates = []string{
 	ExprOops, ExprBlocked, ExprReady, ExprWaiting, ExprRelief, ExprLevelUp, ExprDrought, ExprComeback,
 }
 
-func TestFormatScore(t *testing.T) {
-	t.Parallel()
-	cases := []struct {
-		in   int
-		want string
-	}{
-		{0, "0"},
-		{7, "7"},
-		{999, "999"},
-		{1000, "1,000"},
-		{12345, "12,345"},
-		{123456, "123,456"},
-		{1234567, "1,234,567"},
-		{1000000000, "1,000,000,000"},
-	}
-	for _, tc := range cases {
-		if got := formatScore(tc.in); got != tc.want {
-			t.Errorf("formatScore(%d) = %q, want %q", tc.in, got, tc.want)
-		}
-	}
-}
-
 func TestProgressDefaults(t *testing.T) {
 	t.Parallel()
 	s := &SaveData{Characters: map[string]*CharProgress{}}
