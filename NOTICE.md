@@ -24,4 +24,4 @@ The note data for the *Four Seasons* in `songs_data.go` (`songSpring`, `songSumm
 
 ## Go modules
 
-The licenses of the Go modules rabbitrun depends on are checked in CI (`.github/workflows/licenses.yml`) and listed by `go-licenses report github.com/nao1215/rabbitrun`.
+The license texts of the Go modules linked into rabbitrun ship with every release: under `THIRD_PARTY_LICENSES/` in the archives and under `/usr/share/doc/rabbitrun/THIRD_PARTY_LICENSES` in the Linux packages. CI checks those licenses with go-licenses (`.github/workflows/licenses.yml`).
