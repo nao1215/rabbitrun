@@ -6,17 +6,9 @@
 
 Rabbit Run is a short road runner with sweets. A bunny hops up a road of gummy blocks. It is written in Go with [Ebitengine](https://ebitengine.org/) and runs on Linux, macOS and Windows.
 
-| Title | Character select | Play |
-| :---: | :---: | :---: |
-| ![title](./doc/img/title.png) | ![select](./doc/img/select.png) | ![play](./doc/img/play.png) |
-
-| A vault | A feast | The hammer |
-| :---: | :---: | :---: |
-| ![vault](./doc/img/play_vault.png) | ![feast](./doc/img/play_feast.png) | ![hammer](./doc/img/play_cutin.png) |
-
-| An illustration behind the road | Game over | Gallery |
-| :---: | :---: | :---: |
-| ![illustration behind the road](./doc/img/play_cg.png) | ![game over](./doc/img/gameover.png) | ![gallery](./doc/img/gallery.png) |
+| Title | Character select | Play | Gallery |
+| :---: | :---: | :---: | :---: |
+| ![title](./doc/img/title.png) | ![select](./doc/img/select.png) | ![play](./doc/img/play.png) | ![gallery](./doc/img/gallery.png) |
 
 ## About this game
 
@@ -34,6 +26,10 @@ Slide the bunny left and right, pick up macarons and keep off the walls. The roa
 | <img src="./doc/img/items/hammer.png" width="40" alt="hammer"> | Hammer | Smashes every wall on the screen. You start with one; more lie on the road now and then, fewer in later stages. |
 | <img src="./doc/img/items/oneup.png" width="28" alt="1UP"> | 1UP | An extra life. |
 | <img src="./doc/img/items/vault.png" width="72" alt="vault"> | Vault | A 1UP and a hammer locked in blocks. Only a hammer opens it, and you get that hammer back. |
+
+| Swinging the hammer | The walls breaking |
+| :---: | :---: |
+| <img src="./doc/img/play_cutin.png" width="300" alt="swinging the hammer"> | <img src="./doc/img/play_break.png" width="300" alt="the walls breaking"> |
 
 From the second stage on, one course per stage is a bonus course with candy-colored blocks: a wider road, twice the macarons, and a stretch covered in them.
 
