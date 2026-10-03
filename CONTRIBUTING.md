@@ -38,13 +38,11 @@ make fmt
 make lint    # golangci-lint, the same configuration CI enforces
 ```
 
-CI also runs `govulncheck` against every supported Go version and checks the licenses of every dependency with `go-licenses`:
+`make tools` installs golangci-lint, govulncheck and go-licenses at the versions CI pins. CI also runs `govulncheck` against every supported Go version and checks the licenses of every dependency with `go-licenses`:
 
 ```shell
-go install golang.org/x/vuln/cmd/govulncheck@v1.8.0
+make tools
 make vuln
-
-go install github.com/google/go-licenses/v2@v2.0.1
 make licenses
 ```
 
