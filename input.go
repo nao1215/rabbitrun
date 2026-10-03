@@ -134,3 +134,17 @@ func (in *Input) Repeat(a Action) bool {
 	f := in.holdFrames[a]
 	return f == 1 || (f > 20 && f%5 == 0)
 }
+
+// menuNav moves the selection sel of a menu of n items with key repeat: prev steps it back
+// and next forward, wrapping around at the ends, each step with a click.
+func (in *Input) menuNav(sel, n int, prev, next Action) int {
+	if in.Repeat(prev) {
+		sel = (sel + n - 1) % n
+		playSE(seMove)
+	}
+	if in.Repeat(next) {
+		sel = (sel + 1) % n
+		playSE(seMove)
+	}
+	return sel
+}

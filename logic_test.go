@@ -312,3 +312,20 @@ func TestSelectMusicSpeedsUpOverTime(t *testing.T) {
 		}
 	}
 }
+
+func TestMenuNavWrapsAround(t *testing.T) {
+	t.Parallel()
+	var in Input
+	in.holdFrames[ActUp] = 1
+	if got := in.menuNav(0, 3, ActUp, ActDown); got != 2 {
+		t.Fatalf("up from the top went to %d, want the bottom (2)", got)
+	}
+	in.holdFrames[ActUp], in.holdFrames[ActDown] = 0, 1
+	if got := in.menuNav(2, 3, ActUp, ActDown); got != 0 {
+		t.Fatalf("down from the bottom went to %d, want the top (0)", got)
+	}
+	in.holdFrames[ActDown] = 2 // held, not repeating yet
+	if got := in.menuNav(1, 3, ActUp, ActDown); got != 1 {
+		t.Fatalf("a held key moved the menu to %d before repeating", got)
+	}
+}

@@ -105,14 +105,7 @@ func (s *TitleScene) Update(g *Game) {
 		s.sel = 0 // the letters typed also moved the menu
 		playSE(seUnlock)
 	}
-	if g.in.Repeat(ActUp) {
-		s.sel = (s.sel + len(titleItems) - 1) % len(titleItems)
-		playSE(seMove)
-	}
-	if g.in.Repeat(ActDown) {
-		s.sel = (s.sel + 1) % len(titleItems)
-		playSE(seMove)
-	}
+	s.sel = g.in.menuNav(s.sel, len(titleItems), ActUp, ActDown)
 	if g.in.Pressed(ActConfirm) {
 		playSE(seConfirm)
 		switch s.sel {
@@ -300,14 +293,7 @@ func (s *CharSelectScene) Update(g *Game) {
 	bg.set(popYellow)
 	bg.setImage("select")
 	n := len(characters)
-	if g.in.Repeat(ActLeft) {
-		s.sel = (s.sel + n - 1) % n
-		playSE(seMove)
-	}
-	if g.in.Repeat(ActRight) {
-		s.sel = (s.sel + 1) % n
-		playSE(seMove)
-	}
+	s.sel = g.in.menuNav(s.sel, n, ActLeft, ActRight)
 	if g.in.Pressed(ActCancel) {
 		playSE(seCancel)
 		stopBGM()

@@ -68,14 +68,7 @@ var overItems = []string{"RETRY", "SELECT", itemTitle}
 const itemTitle = "TITLE"
 
 func (s *PlayScene) updatePause(g *Game) {
-	if g.in.Repeat(ActUp) {
-		s.pauseSel = (s.pauseSel + len(pauseItems) - 1) % len(pauseItems)
-		playSE(seMove)
-	}
-	if g.in.Repeat(ActDown) {
-		s.pauseSel = (s.pauseSel + 1) % len(pauseItems)
-		playSE(seMove)
-	}
+	s.pauseSel = g.in.menuNav(s.pauseSel, len(pauseItems), ActUp, ActDown)
 	resume := g.in.Pressed(ActCancel) || g.in.Pressed(ActPause)
 	if g.in.Pressed(ActConfirm) {
 		playSE(seConfirm)
@@ -117,14 +110,7 @@ func (s *PlayScene) updateGameOver(g *Game) {
 		}
 		return
 	}
-	if g.in.Repeat(ActUp) {
-		s.overSel = (s.overSel + len(overItems) - 1) % len(overItems)
-		playSE(seMove)
-	}
-	if g.in.Repeat(ActDown) {
-		s.overSel = (s.overSel + 1) % len(overItems)
-		playSE(seMove)
-	}
+	s.overSel = g.in.menuNav(s.overSel, len(overItems), ActUp, ActDown)
 	if g.in.Pressed(ActConfirm) {
 		playSE(seConfirm)
 		switch s.overSel {
