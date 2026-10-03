@@ -22,8 +22,9 @@ var captureDir = flag.String("capture", "", "save a screenshot of every screen t
 // debugMode: with --debug, the whole gallery is unlocked (for checking images; save data is unchanged).
 var debugMode = flag.Bool("debug", false, "unlock every character, portrait and illustration for this run")
 
-// resetSaveFlag: with --reset-save, the save data is moved aside before the game starts.
-var resetSaveFlag = flag.Bool("reset-save", false, "delete the save data (kept as save.json.bak) and start from the beginning")
+// resetSaveFlag: with --reset-save, the save data is moved aside and the program exits
+// without starting the game.
+var resetSaveFlag = flag.Bool("reset-save", false, "delete the save data (kept as save.json.bak) and exit without starting the game")
 
 // bgmWavDir: with -bgm-wav <dir>, 30 seconds of each character's BGM arrangement is written as WAV and the game exits (for listening).
 var bgmWavDir = flag.String("bgm-wav", "", "write each music arrangement to `DIR` as WAV and exit")

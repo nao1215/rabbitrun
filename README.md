@@ -70,7 +70,7 @@ Choose PLAY on the title screen, pick a character, and the run starts. GALLERY s
 | `-h`, `--help` | Show the help and exit. |
 | `-V`, `--version` | Print the version and exit. |
 | `--debug` | Unlock every character, portrait and illustration for this run. The save data is not changed. |
-| `--reset-save` | Delete the save data and start from the beginning. The old save is kept next to it as `save.json.bak`. |
+| `--reset-save` | Delete the save data and exit without starting the game. The old save is kept next to it as `save.json.bak`. |
 | `--capture DIR` | Save a screenshot of every screen to `DIR` and exit. |
 | `--bgm-wav DIR` | Write each background music arrangement to `DIR` as WAV and exit. |
 | `--record-demo FILE` | Let the game play by itself and save it as a video to `FILE` (needs ffmpeg). |

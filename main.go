@@ -103,13 +103,17 @@ func main() {
 		writeBGMWavs(*bgmWavDir)
 		return
 	}
-	loadAssets()
 	if *resetSaveFlag {
+		// only resets the save data; the game is started again without the flag
 		if err := resetSave(); err != nil {
 			log.Fatal(err)
 		}
-		log.Printf("the save data was reset (the old one is kept as %s.bak)", savePath())
+		if _, err := fmt.Printf("the save data was reset (the old one is kept as %s.bak)\n", savePath()); err != nil {
+			log.Fatal(err)
+		}
+		return
 	}
+	loadAssets()
 	loadSave()
 	initBlocks()
 	initAudio()
