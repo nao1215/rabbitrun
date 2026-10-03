@@ -31,10 +31,12 @@ var kindNames = map[Kind]string{KindSoda: "soda", KindLemon: "lemon", KindGrape:
 // Missing ones fall back to procedurally drawn glossy blocks.
 func initBlocks() {
 	for k := KindSoda; k <= KindOrange; k++ {
-		if img, err := decodeAsset("assets/blocks/" + kindNames[k] + ".png"); err == nil {
+		img, err := decodeAsset("assets/blocks/" + kindNames[k] + ".png")
+		if err == nil {
 			blockImages[k] = ebiten.NewImageFromImage(img)
 			continue
 		}
+		logBrokenImage(kindNames[k], err)
 		blockImages[k] = ebiten.NewImageFromImage(renderGlossyBlock(kindColors[k], blockTex))
 	}
 }

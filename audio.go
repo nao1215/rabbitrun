@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/binary"
+	"log"
 	"math"
 	"sort"
 	"sync"
@@ -91,6 +92,7 @@ func startBGM(name string) {
 	bgm = newMusicStream(sg)
 	p, err := audioCtx.NewPlayerF32(bgm)
 	if err != nil {
+		log.Printf("cannot play the music: %v", err) // the game goes on without it
 		return
 	}
 	p.SetBufferSize(80e6) // 80ms; kept short so tempo changes take effect quickly

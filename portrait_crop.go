@@ -99,6 +99,7 @@ type cropKey struct {
 func cropPortrait(e *ImageEntry, kind cropKind) *image.RGBA {
 	src, err := decodeImage(path.Join(e.base, "images", e.ID))
 	if err != nil {
+		logBrokenImage(e.ID, err)
 		return nil
 	}
 	// Only the alpha is read to find the box: the decoded pixels are read as they are

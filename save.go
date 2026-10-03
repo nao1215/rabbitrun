@@ -72,6 +72,9 @@ func resetSave() error {
 func loadSave() {
 	raw, err := os.ReadFile(savePath())
 	if err != nil {
+		if !errors.Is(err, fs.ErrNotExist) { // no save yet is the usual first launch
+			log.Printf("cannot read save data: %v", err)
+		}
 		return
 	}
 	if err := decodeSave(save, raw); err != nil {
@@ -113,6 +116,7 @@ func flushSave() {
 func writeSave() {
 	raw, err := json.MarshalIndent(save, "", "  ")
 	if err != nil {
+		log.Printf("failed to save: %v", err)
 		return
 	}
 	p := savePath()

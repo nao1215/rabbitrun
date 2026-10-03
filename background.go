@@ -74,6 +74,8 @@ func uiImage(name string) *ebiten.Image {
 	var img *ebiten.Image
 	if dec, err := decodeImage("assets/ui/" + name); err == nil {
 		img = ebiten.NewImageFromImage(dec)
+	} else {
+		logBrokenImage(name, err)
 	}
 	uiCache[name] = img
 	return img

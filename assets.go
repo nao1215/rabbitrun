@@ -401,6 +401,8 @@ func loadAssets() {
 		} else {
 			log.Printf("cannot load the pop font, using the default font: %v", err)
 		}
+	} else {
+		log.Printf("cannot read the pop font, using the default font: %v", err)
 	}
 	characters, err = readCharacters(assetFS)
 	if err != nil {
@@ -482,6 +484,7 @@ func readCharacters(fsys fs.FS) ([]*Character, error) {
 func decodeScaled(base, id string, maxH int) image.Image {
 	img, err := decodeImage(path.Join(base, "images", id))
 	if err != nil {
+		logBrokenImage(id, err)
 		return nil
 	}
 	b := img.Bounds()
@@ -507,12 +510,18 @@ func loadCharImage(base, id, label string) *ebiten.Image {
 func decodeCharImage(base, id string) image.Image {
 	img, err := decodeImage(path.Join(base, "images", id))
 	if err != nil {
-		if !errors.Is(err, fs.ErrNotExist) {
-			log.Printf("%s: %v", id, err)
-		}
+		logBrokenImage(id, err)
 		return nil
 	}
 	return img
+}
+
+// logBrokenImage logs err when a picture is there but does not decode. A missing picture
+// is not logged: the game expects some to be missing and shows a stand-in.
+func logBrokenImage(name string, err error) {
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		log.Printf("cannot decode %s: %v", name, err)
+	}
 }
 
 // decodeImage decodes the embedded picture stem.jpg or stem.png, trying imageExts in
