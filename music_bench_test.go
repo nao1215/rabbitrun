@@ -14,3 +14,11 @@ func BenchmarkMusicRead(b *testing.B) {
 		}
 	}
 }
+
+// BenchmarkSynthEffects measures synthesizing every sound effect, done once at startup.
+func BenchmarkSynthEffects(b *testing.B) {
+	var d [seCount][]byte
+	for b.Loop() {
+		synthEffects(&d)
+	}
+}
