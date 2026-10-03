@@ -2,9 +2,7 @@
 
 ![RABBIT RUN](./doc/img/banner.png)
 
-# Rabbit Run
-
-Rabbit Run is a short road runner with sweets. A bunny hops up a road of gummy blocks. It is written in Go with [Ebitengine](https://ebitengine.org/) and runs on Linux, macOS and Windows.
+Rabbit Run is a short road runner: a bunny hops up a road of gummy blocks. It is a project for learning how to make a game with AI. The program, the characters and illustrations, the blocks and items, the backgrounds and the music arrangements were all made with AI. It is written in Go with [Ebitengine](https://ebitengine.org/) and runs on Linux, macOS and Windows.
 
 | Title | Character select | Play | Gallery |
 | :---: | :---: | :---: | :---: |
@@ -50,8 +48,6 @@ Your character stands beside the road and reacts to the run: she relaxes on a wi
 | <img src="./doc/img/faces/gyal.png" width="64" alt="gyaru"> | 87 | 15 + α |
 | <img src="./doc/img/faces/street.png" width="64" alt="Taisho"> | 86 | 15 + α |
 | <img src="./doc/img/faces/secret.png" width="64" alt="secret"> | 86 | 15 + α |
-
-Everything in this game was made with AI: the program, the characters and illustrations, the blocks and items, the backgrounds and the music arrangements. I have wanted to make games since I was a student, and I wanted to find out what is left for a person to do when a game is built with AI.
 
 ## How to play
 
