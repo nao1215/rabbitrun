@@ -36,7 +36,7 @@ func checkEngine(t *testing.T, e *Engine, prevScore, step int) {
 	if g.Lives < 0 || g.Lives > road.MaxLives || (g.Lives == 0) != g.Over {
 		t.Fatalf("step %d: %d lives, over %v", step, g.Lives, g.Over)
 	}
-	if g.Level < 1 || g.Level > MaxLevel {
+	if g.Level < 1 || g.Level > GameCourses+1 { // one past the last course on the open road after it
 		t.Fatalf("step %d: level %d", step, g.Level)
 	}
 	// While playing, the player never stands inside a wall unless in the grace after a crash.
@@ -62,7 +62,7 @@ func FuzzEngineOps(f *testing.F) {
 		if len(ops) > 4096 {
 			ops = ops[:4096]
 		}
-		e := NewEngine(1)
+		e := newRun(heroID, false)
 		checkEngine(t, e, 0, -1)
 		for i, b := range ops {
 			prev := e.G.Distance

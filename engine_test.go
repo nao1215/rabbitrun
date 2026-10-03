@@ -8,12 +8,12 @@ import (
 
 func TestRoadScrollsAtTheLevelSpeed(t *testing.T) {
 	t.Parallel()
-	e := NewEngine(1)
+	e := newRun(heroID, false)
 	e.G.Safe = 1 << 30 // nobody steers; walls pass through
 	for range 600 {
 		e.Tick(false)
 	}
-	want := int(RowsPerSecond(1) * 10)
+	want := int(e.RowsPerSec() * 10)
 	if d := e.G.Distance; d < want-1 || d > want+1 {
 		t.Fatalf("scrolled %d rows in 10 seconds, want about %d", d, want)
 	}
@@ -22,7 +22,7 @@ func TestRoadScrollsAtTheLevelSpeed(t *testing.T) {
 func TestRowsPerSecondRisesAndCaps(t *testing.T) {
 	t.Parallel()
 	prev := 0.0
-	for lv := 1; lv <= MaxLevel; lv++ {
+	for lv := 1; lv <= 2*GameCourses; lv++ {
 		v := RowsPerSecond(lv)
 		if v < prev || v > 16 {
 			t.Fatalf("level %d: %v rows/s after %v", lv, v, prev)
@@ -33,7 +33,7 @@ func TestRowsPerSecondRisesAndCaps(t *testing.T) {
 
 func TestDangerReadsTheRoadAndLives(t *testing.T) {
 	t.Parallel()
-	e := NewEngine(1)
+	e := newRun(heroID, false)
 	for y := range road.PlayerRow {
 		e.G.Rows[y] = road.Row{}
 	}
@@ -58,7 +58,7 @@ func TestDangerReadsTheRoadAndLives(t *testing.T) {
 
 func TestProgressReadsStageAndCourse(t *testing.T) {
 	t.Parallel()
-	e := NewEngine(1)
+	e := newRun(heroID, false)
 	e.G.Stage, e.G.Course = 2, 4
 	if got := e.Progress(); got != "2-5" {
 		t.Fatalf("progress %q", got)
@@ -67,7 +67,7 @@ func TestProgressReadsStageAndCourse(t *testing.T) {
 
 func TestSlideSpeedsUpWhileHeld(t *testing.T) {
 	t.Parallel()
-	e := NewEngine(1)
+	e := newRun(heroID, false)
 	if v := e.SlideSpeed(1); v != slideStart {
 		t.Fatalf("first frame: %v cells/s", v)
 	}
@@ -102,7 +102,7 @@ func TestMusicSpeedsUpWithTheRoad(t *testing.T) {
 
 func TestRestartProgressIsTenRowsBack(t *testing.T) {
 	t.Parallel()
-	e := NewEngine(1)
+	e := newRun(heroID, false)
 	e.G.Safe = 1 << 30
 	for e.G.Level < 3 { // into course 3: just started, ten rows back is course 2
 		e.G.Step()
@@ -120,7 +120,7 @@ func TestRestartProgressIsTenRowsBack(t *testing.T) {
 
 func TestHoldingUpSpeedsTheStageUp(t *testing.T) {
 	t.Parallel()
-	e := NewEngine(1)
+	e := newRun(heroID, false)
 	e.G.Safe = 1 << 30
 	base := e.RowsPerSec()
 	for range 60 { // one second held
@@ -142,7 +142,7 @@ func TestHoldingUpSpeedsTheStageUp(t *testing.T) {
 	if e.Boost > boostMax {
 		t.Fatalf("boost %v past its cap %v", e.Boost, boostMax)
 	}
-	if slide := NewEngine(1).PlayerSpeed(); e.PlayerSpeed() != slide {
+	if slide := newRun(heroID, false).PlayerSpeed(); e.PlayerSpeed() != slide {
 		t.Fatalf("sideways speed %v with the speed-up, want it unchanged at %v", e.PlayerSpeed(), slide)
 	}
 	e.G.Events = append(e.G.Events, road.Event{Kind: road.EventStageClear})
@@ -190,6 +190,25 @@ func TestCourseThemesAreTheirOwn(t *testing.T) {
 	for c := range courseThemes {
 		if len(themesFor(c, false)) != GameCourses || len(themesFor(c, true)) != GameCourses {
 			t.Errorf("%s has no run of themes", c)
+		}
+	}
+}
+
+// TestEveryCharacterHasHerRun checks that every character in the game data has her course
+// themes and her speed: a character missing from the tables (a renamed ID) would run the
+// plain mixed road at the usual speed without a word.
+func TestEveryCharacterHasHerRun(t *testing.T) {
+	t.Parallel()
+	chars, err := readCharacters(assetFS)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range chars {
+		if _, ok := courseThemes[c.ID]; !ok {
+			t.Errorf("%s has no course themes", c.ID)
+		}
+		if _, ok := charSpeed[c.ID]; !ok {
+			t.Errorf("%s has no road speed", c.ID)
 		}
 	}
 }

@@ -18,7 +18,7 @@ func stageScene(n int) *PlayScene {
 	for i := range n {
 		c.CGs = append(c.CGs, ImageEntry{ID: "cg" + string(rune('a'+i)), has: 1})
 	}
-	return &PlayScene{char: c, eng: NewEngine(1),
+	return &PlayScene{char: c, eng: newRun(heroID, false),
 		prog: &CharProgress{SeenExpr: map[string]bool{}, UnlockedCG: map[string]bool{}}}
 }
 
@@ -63,7 +63,7 @@ func TestIllustrationsAreSharedOutOverTheCourses(t *testing.T) {
 
 func TestGameHasThreeStages(t *testing.T) {
 	t.Parallel()
-	e := NewEngineFor(1, GameCourses, false)
+	e := newRun(heroID, false)
 	if e.G.TotalCourses != 16 || e.G.CourseRowsFor == nil || e.G.StageCourses() != road.Courses {
 		t.Fatalf("total %d", e.G.TotalCourses)
 	}

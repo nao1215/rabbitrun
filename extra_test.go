@@ -44,7 +44,7 @@ func TestGalleryHidesTheExtrasUntilTheCommand(t *testing.T) { //nolint:parallelt
 
 func TestExtraRoadIsFaster(t *testing.T) {
 	t.Parallel()
-	if NewEngineFor(1, GameCourses, true).G.Profile.Speed <= NewEngineFor(1, GameCourses, false).G.Profile.Speed {
+	if newRun(heroID, true).G.Profile.Speed <= newRun(heroID, false).G.Profile.Speed {
 		t.Fatal("the extra road is not faster")
 	}
 }

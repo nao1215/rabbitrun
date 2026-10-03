@@ -44,22 +44,8 @@ func (e *Engine) RowsPerSec() float64 {
 	return RowsPerSecond(e.G.Level) * e.G.Profile.Speed * math.Max(1, e.Boost)
 }
 
-// NewEngine starts a game on the standard road.
-func NewEngine(seed uint64) *Engine { return &Engine{G: road.New(seed)} }
-
-// NewEngineFor starts a game on the road every character plays (roadProfile, or
-// extraProfile for the extra stages). courses is how many courses the game has (one more
-// than the illustrations: each course cleared unlocks one, and the first course is on the
-// plain background).
-func NewEngineFor(seed uint64, courses int, extra bool) *Engine {
-	p := roadProfile
-	if extra {
-		p = extraProfile
-	}
-	return newEngineWith(seed, courses, p)
-}
-
-// newEngineWith starts a game of courses courses on the road p.
+// newEngineWith starts a game of courses courses on the road p (newRun builds a
+// character's run on it).
 func newEngineWith(seed uint64, courses int, p road.Profile) *Engine {
 	g := road.NewWith(seed, p)
 	g.TotalCourses = courses
