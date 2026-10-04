@@ -148,6 +148,7 @@ var captureSteps = []captureStep{
 		s := newPlayScene(characters[defaultCharIndex()])
 		s.ready = 0
 		s.auto = &engine.AutoPlayer{} // a few seconds of play, so the road is in motion
+		s.demoSwung = true            // the road itself, not the demo's hammer (play_cutin shows that)
 		g.SetScene(s)
 	}, 300},
 	{"play_panic", func(g *Game) {
