@@ -7,6 +7,8 @@ import (
 	"path"
 	"runtime"
 	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
@@ -156,6 +158,10 @@ func PrefetchImgs(entries []*ImageEntry) {
 	}
 }
 
+// prefetchWaiting counts the prefetch workers waiting for a decoder; the gallery's tile
+// decodes (DecodeScaled) step aside while it is not zero.
+var prefetchWaiting atomic.Int32
+
 // prefetchQueue holds the pictures waiting to be decoded in the background, and how many
 // workers are decoding them.
 var prefetchQueue struct {
@@ -185,7 +191,9 @@ func prefetchWorker() {
 		j := prefetchQueue.jobs[0]
 		prefetchQueue.jobs = prefetchQueue.jobs[1:]
 		prefetchQueue.Unlock()
+		prefetchWaiting.Add(1)
 		decoders <- struct{}{}
+		prefetchWaiting.Add(-1)
 		d := decodePortrait(j.fsys, j.base, j.id)
 		<-decoders
 		j.out <- d
@@ -236,10 +244,28 @@ func UploadPrefetched(entries []*ImageEntry, n int) {
 // decoded (see decoders). Closing quit gives up the wait (it returns nil): the screen that
 // wanted the picture was left, and the decoders are wanted for the next one's pictures.
 func (e *ImageEntry) DecodeScaled(maxH int, quit <-chan struct{}) image.Image {
-	select {
-	case decoders <- struct{}{}:
-	case <-quit:
-		return nil
+	// The gallery's tiles come after the pictures wanted now (the prefetch queue): with one
+	// decoder (two CPUs) the enlarged view waited behind dozens of tiles.
+	for {
+		if prefetchWaiting.Load() == 0 {
+			select {
+			case decoders <- struct{}{}:
+			case <-quit:
+				return nil
+			case <-time.After(2 * time.Millisecond):
+				continue // look again whether a prefetch is waiting
+			}
+			if prefetchWaiting.Load() == 0 {
+				break
+			}
+			<-decoders // a prefetch came meanwhile: let it go first
+			continue
+		}
+		select {
+		case <-quit:
+			return nil
+		case <-time.After(2 * time.Millisecond):
+		}
 	}
 	defer func() { <-decoders }()
 	return decodeScaled(e.fsys, e.base, e.ID, maxH)
