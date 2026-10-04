@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/nao1215/rabbitrun/internal/engine"
 	"github.com/nao1215/rabbitrun/internal/input"
 	"github.com/nao1215/rabbitrun/internal/save"
 	"github.com/nao1215/rabbitrun/internal/sound"
@@ -486,7 +487,7 @@ func TestScenarioAutoplayClearsACourseAndUnlocksItsIllustration(t *testing.T) { 
 
 	play(t, g, press(input.Confirm, input.Confirm))
 	s := playOf(t, g)
-	s.auto = &autoPlayer{careful: true}
+	s.auto = &engine.AutoPlayer{Careful: true}
 	g.in.SetScript(&script{})
 	for f := 0; s.eng.Level() < 2; f++ {
 		if f > 60*30 {

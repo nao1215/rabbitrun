@@ -6,6 +6,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"github.com/nao1215/rabbitrun/internal/engine"
 	"github.com/nao1215/rabbitrun/internal/input"
 	"github.com/nao1215/rabbitrun/road"
 )
@@ -94,7 +95,7 @@ func TestMissMenu(t *testing.T) {
 	t.Run("the demo always retries", func(t *testing.T) {
 		g, screen := newDrawScenario(t, nil)
 		s := startRun(t, g)
-		s.auto = &autoPlayer{}
+		s.auto = &engine.AutoPlayer{}
 		lives := s.eng.G.Lives
 		wallAcross(s)
 		playUntil(t, g, screen, 5*60, func() bool { return s.eng.G.Missed })

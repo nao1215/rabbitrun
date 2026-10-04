@@ -1,4 +1,4 @@
-package main
+package engine
 
 import (
 	"strings"
@@ -6,6 +6,9 @@ import (
 
 	"github.com/nao1215/rabbitrun/road"
 )
+
+// maxWall is the highest wall color: the seven candy colors of the gummy blocks.
+const maxWall = 7
 
 // Opcodes FuzzEngineOps reads from its input, one byte per action.
 const (
@@ -49,7 +52,7 @@ func checkEngine(t *testing.T, e *Engine, prevScore, step int) {
 	}
 	for _, r := range g.Rows {
 		for _, c := range r {
-			if c.Wall > int8(KindOrange) || c.Wall < 0 || (c.Sweet != 0 && c.Wall != 0) {
+			if c.Wall > maxWall || c.Wall < 0 || (c.Sweet != 0 && c.Wall != 0) {
 				t.Fatalf("step %d: bad cell %+v", step, c)
 			}
 		}
@@ -66,7 +69,7 @@ func FuzzEngineOps(f *testing.F) {
 		if len(ops) > 4096 {
 			ops = ops[:4096]
 		}
-		e := newRun(heroID, false)
+		e := NewRun("gyal", false)
 		checkEngine(t, e, 0, -1)
 		for i, b := range ops {
 			prev := e.G.Distance

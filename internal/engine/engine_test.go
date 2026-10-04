@@ -1,4 +1,4 @@
-package main
+package engine
 
 import (
 	"testing"
@@ -8,7 +8,7 @@ import (
 
 func TestRoadScrollsAtTheLevelSpeed(t *testing.T) {
 	t.Parallel()
-	e := newRun(heroID, false)
+	e := NewRun("gyal", false)
 	e.G.Safe = 1 << 30 // nobody steers; walls pass through
 	for range 600 {
 		e.Tick(false)
@@ -33,7 +33,7 @@ func TestRowsPerSecondRisesAndCaps(t *testing.T) {
 
 func TestDangerReadsTheRoadAndLives(t *testing.T) {
 	t.Parallel()
-	e := newRun(heroID, false)
+	e := NewRun("gyal", false)
 	for y := range road.PlayerRow {
 		e.G.Rows[y] = road.Row{}
 	}
@@ -58,7 +58,7 @@ func TestDangerReadsTheRoadAndLives(t *testing.T) {
 
 func TestProgressReadsStageAndCourse(t *testing.T) {
 	t.Parallel()
-	e := newRun(heroID, false)
+	e := NewRun("gyal", false)
 	e.G.Stage, e.G.Course = 2, 4
 	if got := e.Progress(); got != "2-5" {
 		t.Fatalf("progress %q", got)
@@ -67,7 +67,7 @@ func TestProgressReadsStageAndCourse(t *testing.T) {
 
 func TestSlideSpeedsUpWhileHeld(t *testing.T) {
 	t.Parallel()
-	e := newRun(heroID, false)
+	e := NewRun("gyal", false)
 	if v := e.SlideSpeed(1); v != slideStart {
 		t.Fatalf("first frame: %v cells/s", v)
 	}
@@ -84,25 +84,9 @@ func TestSlideSpeedsUpWhileHeld(t *testing.T) {
 	}
 }
 
-func TestMusicSpeedsUpWithTheRoad(t *testing.T) {
-	t.Parallel()
-	first, last := playBPM(1, roadProfile.Speed), playBPM(GameCourses, roadProfile.Speed)
-	if first != 136 || last < 170 || last > 190 {
-		t.Fatalf("tempo %v on the first course, %v on the last", first, last)
-	}
-	prev := 0.0
-	for lv := 1; lv <= GameCourses; lv++ {
-		if b := playBPM(lv, roadProfile.Speed); b < prev {
-			t.Fatalf("tempo falls at level %d: %v after %v", lv, b, prev)
-		} else {
-			prev = b
-		}
-	}
-}
-
 func TestRestartProgressIsTenRowsBack(t *testing.T) {
 	t.Parallel()
-	e := newRun(heroID, false)
+	e := NewRun("gyal", false)
 	e.G.Safe = 1 << 30
 	for e.G.Level < 3 { // into course 3: just started, ten rows back is course 2
 		e.G.Step()
@@ -120,7 +104,7 @@ func TestRestartProgressIsTenRowsBack(t *testing.T) {
 
 func TestHoldingUpSpeedsTheStageUp(t *testing.T) {
 	t.Parallel()
-	e := newRun(heroID, false)
+	e := NewRun("gyal", false)
 	e.G.Safe = 1 << 30
 	base := e.RowsPerSec()
 	for range 60 { // one second held
@@ -142,7 +126,7 @@ func TestHoldingUpSpeedsTheStageUp(t *testing.T) {
 	if e.Boost > boostMax {
 		t.Fatalf("boost %v past its cap %v", e.Boost, boostMax)
 	}
-	if slide := newRun(heroID, false).PlayerSpeed(); e.PlayerSpeed() != slide {
+	if slide := NewRun("gyal", false).PlayerSpeed(); e.PlayerSpeed() != slide {
 		t.Fatalf("sideways speed %v with the speed-up, want it unchanged at %v", e.PlayerSpeed(), slide)
 	}
 	held := e.Boost
@@ -195,21 +179,115 @@ func TestCourseThemesAreTheirOwn(t *testing.T) {
 	}
 }
 
-// TestEveryCharacterHasHerRun checks that every character in the game data has her course
-// themes and her speed: a character missing from the tables (a renamed ID) would run the
-// plain mixed road at the usual speed without a word.
-func TestEveryCharacterHasHerRun(t *testing.T) {
+func TestExtraRoadIsFaster(t *testing.T) {
 	t.Parallel()
-	chars, err := readCharacters(assetFS)
-	if err != nil {
-		t.Fatal(err)
+	if NewRun("gyal", true).G.Profile.Speed <= NewRun("gyal", false).G.Profile.Speed {
+		t.Fatal("the extra road is not faster")
 	}
-	for _, c := range chars {
-		if _, ok := courseThemes[c.ID]; !ok {
-			t.Errorf("%s has no course themes", c.ID)
+}
+
+func TestGameHasThreeStages(t *testing.T) {
+	t.Parallel()
+	e := NewRun("gyal", false)
+	if e.G.TotalCourses != 16 || e.G.CourseRowsFor == nil || e.G.StageCourses() != road.Courses {
+		t.Fatalf("total %d", e.G.TotalCourses)
+	}
+	// a course lasts about CourseSeconds at any level
+	for _, lv := range []int{1, 10, 30} {
+		rows := e.G.CourseRowsFor(lv)
+		secs := float64(rows) / (RowsPerSecond(lv) * e.G.Profile.Speed)
+		if secs < CourseSeconds-1 || secs > CourseSeconds+1 {
+			t.Fatalf("level %d: a course lasts %.1f seconds", lv, secs)
 		}
-		if _, ok := charSpeed[c.ID]; !ok {
-			t.Errorf("%s has no road speed", c.ID)
+	}
+}
+
+func TestHasOwnRun(t *testing.T) {
+	t.Parallel()
+	for id := range courseThemes {
+		if !HasOwnRun(id) {
+			t.Errorf("%s has her themes but HasOwnRun says not", id)
 		}
+	}
+	if HasOwnRun("nobody") {
+		t.Error("an unknown character has a run of her own")
+	}
+}
+
+// missOnTheWall runs e into a wall across the road just ahead of her.
+func missOnTheWall(t *testing.T, e *Engine) {
+	t.Helper()
+	for x := range road.W {
+		e.G.Rows[road.PlayerRow-1][x].Wall = road.CourseColors[0]
+	}
+	for f := 0; f < 600 && !e.G.Missed && !e.Over(); f++ {
+		e.Tick(false)
+	}
+	if !e.G.Missed {
+		t.Fatal("no miss on a wall across the road")
+	}
+}
+
+func TestRetryAndGiveUpAfterAMiss(t *testing.T) {
+	t.Parallel()
+	e := NewRun("gyal", false)
+	if e.Level() != 1 {
+		t.Fatalf("a run starts on level %d", e.Level())
+	}
+	e.Boost = 1.2
+	missOnTheWall(t, e)
+	if !e.Restart() || e.G.Missed || e.Boost != 1 || e.Scroll() != 0 {
+		t.Fatalf("retry: missed %v, boost %v, scroll %v", e.G.Missed, e.Boost, e.Scroll())
+	}
+
+	e = NewRun("gyal", false)
+	missOnTheWall(t, e)
+	e.GiveUp()
+	if !e.Over() {
+		t.Fatal("giving up did not end the game")
+	}
+	frames, dist := e.PlayFrames, e.G.Distance
+	e.Tick(true)
+	(&AutoPlayer{}).Step(e)
+	if e.PlayFrames != frames || e.G.Distance != dist {
+		t.Fatal("the game went on after it was over")
+	}
+}
+
+func TestHammerNeedsOneInStock(t *testing.T) {
+	t.Parallel()
+	e := NewRun("gyal", false)
+	e.G.Bombs = 0
+	if e.UseHammer() {
+		t.Fatal("a hammer swung with none in stock")
+	}
+	e.G.Bombs = 1
+	if !e.UseHammer() || e.G.Bombs != 0 {
+		t.Fatalf("swinging the one hammer: %d left", e.G.Bombs)
+	}
+}
+
+func TestDangerRisesAsTheRoadNarrows(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct{ width, want int }{{4, 2}, {5, 1}} {
+		e := NewRun("gyal", false)
+		for y := range road.PlayerRow {
+			for x := range road.W {
+				e.G.Rows[y][x].Wall = 0
+				if x < 2 || x >= 2+tc.width {
+					e.G.Rows[y][x].Wall = 1
+				}
+			}
+		}
+		if d := e.Danger(); d != tc.want {
+			t.Errorf("a road %d wide: danger %d, want %d", tc.width, d, tc.want)
+		}
+	}
+}
+
+func TestUnknownCharacterRunsTheMixedRoad(t *testing.T) {
+	t.Parallel()
+	if themesFor("nobody", false) != nil {
+		t.Fatal("a character without a table has themes")
 	}
 }

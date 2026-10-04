@@ -4,6 +4,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/nao1215/rabbitrun/internal/engine"
 	"github.com/nao1215/rabbitrun/internal/input"
 	"github.com/nao1215/rabbitrun/internal/save"
 )
@@ -61,7 +62,7 @@ func TestRetryShowsComebackAfterGameOverPose(t *testing.T) {
 	c := &Character{ID: "t", Expressions: []ImageEntry{
 		{ID: ExprNormal, State: ExprNormal}, {ID: ExprGameOver, State: ExprGameOver}, {ID: ExprComeback, State: ExprComeback},
 	}}
-	s := &PlayScene{char: c, eng: newRun(heroID, false), prog: &save.CharProgress{SeenExpr: map[string]bool{}}}
+	s := &PlayScene{char: c, eng: engine.NewRun(heroID, false), prog: &save.CharProgress{SeenExpr: map[string]bool{}}}
 	s.expr, s.exprID, s.comeback = ExprGameOver, ExprGameOver, comebackDelay
 	for range comebackDelay - 1 {
 		s.updateComeback()
@@ -113,5 +114,21 @@ func TestMenuNavWrapsAround(t *testing.T) {
 	in.Update() // held, not repeating yet
 	if got := menuNav(&in, 1, 3, input.Up, input.Down); got != 1 {
 		t.Fatalf("a held key moved the menu to %d before repeating", got)
+	}
+}
+
+func TestMusicSpeedsUpWithTheRoad(t *testing.T) {
+	t.Parallel()
+	first, last := playBPM(1, engine.RegularSpeed), playBPM(engine.GameCourses, engine.RegularSpeed)
+	if first != 136 || last < 170 || last > 190 {
+		t.Fatalf("tempo %v on the first course, %v on the last", first, last)
+	}
+	prev := 0.0
+	for lv := 1; lv <= engine.GameCourses; lv++ {
+		if b := playBPM(lv, engine.RegularSpeed); b < prev {
+			t.Fatalf("tempo falls at level %d: %v after %v", lv, b, prev)
+		} else {
+			prev = b
+		}
 	}
 }

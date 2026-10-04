@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/nao1215/rabbitrun/internal/engine"
 	"github.com/nao1215/rabbitrun/internal/sound"
 	"github.com/nao1215/rabbitrun/road"
 )
@@ -33,7 +34,7 @@ func TestCaptureScenesAreOnRealCourses(t *testing.T) { //nolint:paralleltest // 
 			t.Fatalf("%s: not a play scene", st.name)
 		}
 		e := s.eng.G
-		lv := min(e.Level, GameCourses) // one past the last course on the open road after it
+		lv := min(e.Level, engine.GameCourses) // one past the last course on the open road after it
 		if e.Stage != (lv-1)/road.Courses+1 || e.Course != (lv-1)%road.Courses {
 			t.Errorf("%s: level %d on stage %d, course %d", st.name, e.Level, e.Stage, e.Course)
 		}

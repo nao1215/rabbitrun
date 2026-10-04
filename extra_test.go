@@ -43,13 +43,6 @@ func TestGalleryHidesTheExtrasUntilTheCommand(t *testing.T) { //nolint:parallelt
 	}
 }
 
-func TestExtraRoadIsFaster(t *testing.T) {
-	t.Parallel()
-	if newRun(heroID, true).G.Profile.Speed <= newRun(heroID, false).G.Profile.Speed {
-		t.Fatal("the extra road is not faster")
-	}
-}
-
 func TestTheSecretWordSwitchesTheStages(t *testing.T) { //nolint:paralleltest // swaps the global save
 	useTempConfig(t)
 	if !toggleExtra() || !extraMode() || !store.Data.ExtraFound {

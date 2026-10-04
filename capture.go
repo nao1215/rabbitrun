@@ -14,6 +14,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"github.com/nao1215/rabbitrun/internal/engine"
 	"github.com/nao1215/rabbitrun/road"
 )
 
@@ -34,7 +35,7 @@ func (r *recorder) start(g *Game) error {
 		}
 	}
 	s := newPlayScene(c)
-	s.auto = &autoPlayer{}
+	s.auto = &engine.AutoPlayer{}
 	if st := *recordStage; st > 1 {
 		s.eng.G.StartAt((st-1)*road.Courses + 1)
 	}
@@ -108,13 +109,13 @@ var captureSteps = []captureStep{
 	{"play", func(g *Game) {
 		s := newPlayScene(characters[defaultCharIndex()])
 		s.ready = 0
-		s.auto = &autoPlayer{} // a few seconds of play, so the road is in motion
+		s.auto = &engine.AutoPlayer{} // a few seconds of play, so the road is in motion
 		g.SetScene(s)
 	}, 300},
 	{"play_panic", func(g *Game) {
 		s := newPlayScene(characters[defaultCharIndex()])
 		s.ready = 0
-		s.auto = &autoPlayer{}
+		s.auto = &engine.AutoPlayer{}
 		s.eng.G.Lives = 1
 		s.eng.G.StartAt(12) // a narrow, fast road on the last life
 		g.SetScene(s)
@@ -123,7 +124,7 @@ var captureSteps = []captureStep{
 		c := characters[defaultCharIndex()]
 		s := newPlayScene(c)
 		s.ready = 0
-		s.auto = &autoPlayer{}
+		s.auto = &engine.AutoPlayer{}
 		// The second stage: the first illustration with a picture is the background.
 		s.eng.G.StartAt(road.Courses + 1)
 		for i := range c.CGs {
@@ -318,9 +319,9 @@ func allClearScene(g *Game) {
 	s := newPlayScene(characters[defaultCharIndex()])
 	s.ready = 0
 	e := s.eng
-	e.G.StartAt(GameCourses) // the road of the last course, from its start
+	e.G.StartAt(engine.GameCourses) // the road of the last course, from its start
 	e.G.Safe = 1 << 30
-	for f := 0; f < 60*60 && e.G.Level <= GameCourses; f++ {
+	for f := 0; f < 60*60 && e.G.Level <= engine.GameCourses; f++ {
 		e.Tick(false)
 	}
 	s.handleEvents()

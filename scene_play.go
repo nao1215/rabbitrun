@@ -8,6 +8,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"github.com/nao1215/rabbitrun/internal/engine"
 	"github.com/nao1215/rabbitrun/internal/input"
 	"github.com/nao1215/rabbitrun/internal/save"
 	"github.com/nao1215/rabbitrun/internal/sound"
@@ -48,9 +49,9 @@ type PlayScene struct {
 	holdDir     int     // the direction held (-1, 0, 1)
 	holdFrames  int     // frames it has been held
 	char        *Character
-	eng         *Engine
+	eng         *engine.Engine
 	prog        *save.CharProgress
-	auto        *autoPlayer // when set, the game plays itself (demo)
+	auto        *engine.AutoPlayer // when set, the game plays itself (demo)
 
 	frame    int
 	ready    int
@@ -253,7 +254,7 @@ func (s *PlayScene) Update(g *Game) {
 	}
 	accel := false
 	if s.auto != nil {
-		s.auto.step(e)
+		s.auto.Step(e)
 	} else {
 		// Sideways moves are smooth: she slides while a direction is held, slowly at
 		// first and faster the longer it is held (SlideSpeed).
@@ -396,7 +397,7 @@ func (s *PlayScene) updateMusic() {
 // is the road's profile times the player's boost), from 136 on the first course to about
 // 180 when the road runs twice as fast (the last course).
 func playBPM(level int, speed float64) float64 {
-	r := RowsPerSecond(level) * speed / (RowsPerSecond(1) * roadProfile.Speed)
+	r := engine.RowsPerSecond(level) * speed / (engine.RowsPerSecond(1) * engine.RegularSpeed)
 	return math.Max(136, math.Min(210, 136+44*(r-1)))
 }
 
@@ -544,3 +545,14 @@ func (s *PlayScene) drawPopups(screen *ebiten.Image) {
 		drawText(screen, p.text, cx, y, 32, color.NRGBA{candyPink.R, candyPink.G, candyPink.B, uint8(255 * a)})
 	}
 }
+
+// newGameEngine starts a game for the character id: her roads, her course themes, and
+// the extra stages' tighter ones when they are being played.
+func newGameEngine(id string) *engine.Engine { return engine.NewRun(id, extraMode()) }
+
+// The road. The rules (the wandering road, sweets, crashes, lives) live in package
+// road; the Engine adds the timing: how fast the road scrolls.
+const (
+	BoardW      = road.W
+	VisibleRows = road.Rows
+)

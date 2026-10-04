@@ -1,4 +1,4 @@
-package main
+package engine
 
 import "github.com/nao1215/rabbitrun/road"
 
@@ -41,7 +41,7 @@ const (
 //   - bunny: the hardest of every kind
 //
 // A run opens with the warm-up and ends on the mixed road; the courses get tight from
-// road.Game.HardFrom on (every course on the extra stages, see newRun).
+// road.Game.HardFrom on (every course on the extra stages, see NewRun).
 var courseThemes = map[string][2][GameCourses]road.Theme{
 	"cool": {
 		{tWarm, tGate, tSlal, tPill, tSwing, tHour, tStep, tSwing, tSlal, tSnake, tPill, tRain, tCheck, tEdge, tGate, tMix},
@@ -51,11 +51,11 @@ var courseThemes = map[string][2][GameCourses]road.Theme{
 		{tWarm, tSwing, tSnake, tDiam, tWobb, tFunn, tPill, tSwing, tSnake, tDiam, tWobb, tLane, tFunn, tSnake, tSwing, tMix},
 		{tWarm, tSnake, tWobb, tFunn, tSwing, tDiam, tHour, tSnake, tWobb, tFunn, tSwing, tChic, tDiam, tSnake, tWobb, tMix},
 	},
-	heroID: {
+	"gyal": {
 		{tWarm, tPill, tRain, tCheck, tSwing, tChic, tRain, tStair, tSlal, tPill, tChic, tSlal, tRain, tStair, tPill, tMix},
 		{tWarm, tRain, tCheck, tPill, tChic, tStair, tEdge, tRain, tSlal, tChic, tStair, tStep, tRain, tPill, tChic, tMix},
 	},
-	streetID: {
+	"street": {
 		{tWarm, tLane, tSplit, tComb, tHour, tStair, tGate, tLane, tComb, tSplit, tHour, tFunn, tComb, tStair, tHour, tMix},
 		{tWarm, tSplit, tComb, tLane, tHour, tStair, tCorr, tComb, tSplit, tHour, tLane, tStep, tComb, tStair, tHour, tMix},
 	},
@@ -67,18 +67,23 @@ var courseThemes = map[string][2][GameCourses]road.Theme{
 
 // charSpeed is how much faster than the others each character's road runs: the restless
 // gyaru and the secret bunny a little faster, the soft cute road at the usual speed.
-var charSpeed = map[string]float64{"cool": 1.02, "cute": 1, heroID: 1.06, streetID: 1, "bunny": 1.08}
-
-// streetID is the Taisho romance character.
-const streetID = "street"
+var charSpeed = map[string]float64{"cool": 1.02, "cute": 1, "gyal": 1.06, "street": 1, "bunny": 1.08}
 
 // frontHardFrom is the course from which the regular side is as tight as the extra stages
 // (the second half of a run). The extra stages are tight from the first course, and faster.
 const frontHardFrom = 7
 
-// newRun starts a character's run: her roads, her themes and her speed, on the regular
+// HasOwnRun reports whether the character id has course themes and a road speed of her
+// own; any other character runs the mixed road at the usual speed.
+func HasOwnRun(id string) bool {
+	_, themes := courseThemes[id]
+	_, speed := charSpeed[id]
+	return themes && speed
+}
+
+// NewRun starts a character's run: her roads, her themes and her speed, on the regular
 // side or on the extra stages.
-func newRun(id string, extra bool) *Engine {
+func NewRun(id string, extra bool) *Engine {
 	p := roadProfile
 	if extra {
 		p = extraProfile
@@ -114,10 +119,6 @@ func themesFor(id string, extra bool) []road.Theme {
 // each time (it can be learned, and a retry runs the same road again).
 const roadSeed = 20261002
 
-// newGameEngine starts a game for the character id: her roads, her course themes, and
-// the extra stages' tighter ones when they are being played.
-func newGameEngine(id string) *Engine { return newRun(id, extraMode()) }
-
 // roadSeedFor is the seed of a character's roads: each character runs roads of her own
 // (as hard as the others, shaped differently), the same every time.
 func roadSeedFor(id string) uint64 {
@@ -129,7 +130,6 @@ func roadSeedFor(id string) uint64 {
 }
 
 // GameCourses is how many courses the game has: four stages of four (about three
-// minutes; longer games dragged). The
-// illustrations are shared out over the first GameCourses-1 courses, one a course; the
-// last course leads to the ending.
-const GameCourses = MainCGCount + 1
+// minutes; longer games dragged). The illustrations are shared out over the first
+// GameCourses-1 courses, one a course; the last course leads to the ending.
+const GameCourses = 16

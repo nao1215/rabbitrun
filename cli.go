@@ -9,6 +9,7 @@ import (
 
 	flag "github.com/spf13/pflag"
 
+	"github.com/nao1215/rabbitrun/internal/engine"
 	"github.com/nao1215/rabbitrun/road"
 )
 
@@ -43,7 +44,7 @@ var exitModes = []string{"bgm-wav", "capture", "reset-save", "record-demo"}
 var recordOptions = []string{"record-char", "record-stage", "record-seconds"}
 
 // demoStages is how many stages a demo recording can start at.
-const demoStages = (GameCourses + road.Courses - 1) / road.Courses
+const demoStages = (engine.GameCourses + road.Courses - 1) / road.Courses
 
 // checkArgs checks the parsed command line fs for options the game would otherwise
 // ignore or misread.

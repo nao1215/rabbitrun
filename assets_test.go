@@ -8,6 +8,7 @@ import (
 	"testing"
 	"testing/fstest"
 
+	"github.com/nao1215/rabbitrun/internal/engine"
 	"github.com/nao1215/rabbitrun/internal/save"
 )
 
@@ -230,5 +231,30 @@ func TestFirstPortraitIsTheNormalExpression(t *testing.T) {
 	t.Parallel()
 	if save.FirstPortrait != ExprNormal {
 		t.Fatalf("save.FirstPortrait = %q, want %q", save.FirstPortrait, ExprNormal)
+	}
+}
+
+// TestEveryCharacterHasHerRun checks that every character in the game data has her course
+// themes and her speed: a character missing from the tables (a renamed ID) would run the
+// plain mixed road at the usual speed without a word.
+func TestEveryCharacterHasHerRun(t *testing.T) {
+	t.Parallel()
+	chars, err := readCharacters(assetFS)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range chars {
+		if !engine.HasOwnRun(c.ID) {
+			t.Errorf("%s has no course themes or road speed of her own", c.ID)
+		}
+	}
+}
+
+// TestCoursesMatchTheIllustrations: a regular game unlocks one illustration a course for
+// every course but the last, which leads to the ending.
+func TestCoursesMatchTheIllustrations(t *testing.T) {
+	t.Parallel()
+	if engine.GameCourses != MainCGCount+1 {
+		t.Fatalf("%d courses for %d illustrations, want one more course than illustrations", engine.GameCourses, MainCGCount)
 	}
 }

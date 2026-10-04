@@ -1,4 +1,8 @@
-package main
+// Package engine runs a game of the road in time. The rules (the wandering road, sweets,
+// crashes, lives) live in package road; the Engine adds the timing (how fast the road
+// scrolls and how she slides), each character's run of courses, and an auto player that
+// plays it by itself.
+package engine
 
 import (
 	"math"
@@ -7,13 +11,7 @@ import (
 	"github.com/nao1215/rabbitrun/road"
 )
 
-// The road. The rules (the wandering road, sweets, crashes, lives) live in package
-// road; the Engine adds the timing: how fast the road scrolls.
-const (
-	BoardW      = road.W
-	VisibleRows = road.Rows
-)
-
+// Engine is a game of the road on the clock: Tick advances it a frame.
 type Engine struct {
 	G *road.Game
 
@@ -42,7 +40,7 @@ func (e *Engine) RowsPerSec() float64 {
 	return RowsPerSecond(e.G.Level) * e.G.Profile.Speed * math.Max(1, e.Boost)
 }
 
-// newEngineWith starts a game of courses courses on the road p (newRun builds a
+// newEngineWith starts a game of courses courses on the road p (NewRun builds a
 // character's run on it).
 func newEngineWith(seed uint64, courses int, p road.Profile) *Engine {
 	g := road.NewWith(seed, p)
@@ -60,15 +58,22 @@ const CourseSeconds = 11
 // roadProfile is the road of every character: narrow, winding (zigzags and wandering
 // stretches take turns course by course), with pillars to slip past and gates to aim
 // through. The characters all play the same road.
-var roadProfile = road.Profile{Speed: 1.15, MaxWidth: 5, Narrowing: 2, Wander: 0.16, Mixed: true,
+var roadProfile = road.Profile{Speed: RegularSpeed, MaxWidth: 5, Narrowing: 2, Wander: 0.16, Mixed: true,
 	Pillars: 0.07, Gates: 0.05, SweetsRate: 0.16} // no extra lives lying on the road: they come from sweets and vaults
+
+// RegularSpeed is the speed of the regular road (its profile's Speed): the play screen sets
+// the music's tempo against it.
+const RegularSpeed = 1.15
 
 // extraProfile is the road of the extra stages (the hidden command): the same road, faster
 // and with more pillars and gates.
 var extraProfile = road.Profile{Speed: 1.32, MaxWidth: 5, Narrowing: 2, Wander: 0.2, Mixed: true,
 	Pillars: 0.1, Gates: 0.08, SweetsRate: 0.16}
 
+// Level is the level of the course being run (one level per course).
 func (e *Engine) Level() int { return e.G.Level }
+
+// Over reports whether the game is over.
 func (e *Engine) Over() bool { return e.G.Over }
 
 // GiveUp ends the game after a miss.

@@ -1,4 +1,4 @@
-package main
+package engine
 
 import (
 	"math"
@@ -6,10 +6,10 @@ import (
 	"github.com/nao1215/rabbitrun/road"
 )
 
-// autoPlayer plays the game by itself, sliding the way a player would, so the rules can
+// AutoPlayer plays the game by itself, sliding the way a player would, so the rules can
 // be seen in motion: for the demo recording, and later for an attract mode on the title.
-type autoPlayer struct {
-	careful bool // ignores the sweets and only stays safe (to test that the road can be passed)
+type AutoPlayer struct {
+	Careful bool // ignores the sweets and only stays safe (to test that the road can be passed)
 	// the direction she holds and for how long, so she speeds up the way a player does
 	holdDir, holdFrames int
 }
@@ -17,8 +17,8 @@ type autoPlayer struct {
 // autoLook is how many rows ahead the auto player plans.
 const autoLook = 8
 
-// step slides the player toward the middle of the column the plan heads for.
-func (a *autoPlayer) step(e *Engine) {
+// Step slides the player toward the middle of the column the plan heads for.
+func (a *AutoPlayer) Step(e *Engine) {
 	if e.Over() {
 		return
 	}
@@ -27,7 +27,7 @@ func (a *autoPlayer) step(e *Engine) {
 	// hits only halfway down its row (road.Game.ReachHalfway), so this leaves her a margin
 	frames := int((1 - e.Scroll()) / e.RowsPerSec() * 60)
 	left := slideDistance(e, a.holdFrames, frames)
-	target := float64(bestColumn(e.G, movesPerRow(e), left, a.careful)) + 0.5
+	target := float64(bestColumn(e.G, movesPerRow(e), left, a.Careful)) + 0.5
 	d := target - e.G.X
 	dir := 0
 	if math.Abs(d) > 1e-9 {

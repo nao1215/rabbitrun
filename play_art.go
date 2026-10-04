@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"github.com/nao1215/rabbitrun/internal/engine"
 	"github.com/nao1215/rabbitrun/internal/sound"
 )
 
@@ -37,7 +38,7 @@ func unlockedAfter(n, illustrations int) int {
 	if n <= 0 {
 		return 0
 	}
-	return min(illustrations, (n*illustrations+GameCourses-2)/(GameCourses-1))
+	return min(illustrations, (n*illustrations+engine.GameCourses-2)/(engine.GameCourses-1))
 }
 
 // courseClear runs when course n (counting from 1 over the whole game) is done: the
@@ -115,7 +116,7 @@ func (s *PlayScene) prefetchArt() {
 		return
 	}
 	s.prefetchCG(s.stageCGAfter(g.Level)) // the course being run is cleared as course g.Level
-	if g.Level >= GameCourses {
+	if g.Level >= engine.GameCourses {
 		s.prefetchCG(s.ending())
 	}
 }

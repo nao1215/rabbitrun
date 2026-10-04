@@ -457,3 +457,10 @@ func menuNav(in *input.Input, sel, n int, prev, next input.Action) int {
 	}
 	return sel
 }
+
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
+}

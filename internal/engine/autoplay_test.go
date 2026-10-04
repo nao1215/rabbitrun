@@ -1,4 +1,4 @@
-package main
+package engine
 
 import (
 	"sort"
@@ -22,11 +22,11 @@ func runIDs() []string {
 func TestAutoPlayerSurvivesTheEarlyRoad(t *testing.T) {
 	t.Parallel()
 	for _, id := range runIDs() {
-		e := newRun(id, false)
-		a := &autoPlayer{}
+		e := NewRun(id, false)
+		a := &AutoPlayer{}
 		crashes := 0
 		for range 60 * 60 { // one minute
-			a.step(e)
+			a.Step(e)
 			e.Tick(false)
 			for _, ev := range e.Events {
 				if ev.Kind == road.EventCrash {
@@ -52,10 +52,10 @@ func TestCarefulPlayerClearsEveryRun(t *testing.T) {
 	t.Parallel()
 	for _, id := range runIDs() {
 		for _, extra := range []bool{false, true} {
-			e := newRun(id, extra)
-			a := &autoPlayer{careful: true}
+			e := NewRun(id, extra)
+			a := &AutoPlayer{Careful: true}
 			for f := 0; f < 60*60*10 && !e.G.AllClear && !e.Over(); f++ { // ten minutes at most
-				a.step(e)
+				a.Step(e)
 				e.Tick(false)
 				for _, ev := range e.Events {
 					if ev.Kind == road.EventCrash {
