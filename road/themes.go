@@ -9,27 +9,28 @@ type Theme uint8
 
 // The themes of a course.
 const (
-	ThemeMixed     Theme = iota // the road wanders, with sections and obstacles at random
-	ThemeWarmUp                 // a wide road that bends gently: the first course
-	ThemeSnake                  // a narrow road winding in long curves
-	ThemeSwing                  // the road swings from one side of the screen to the other
-	ThemeSlalom                 // blocks jut in from the left and the right in turn
-	ThemePillars                // a wide road with pillars standing in a staggered pattern
-	ThemeGates                  // walls across the road, each with a gap of two at the other side
-	ThemeStairs                 // a narrow road stepping sideways, turning at the sides
-	ThemeFunnel                 // the road narrows to two cells and opens up again, over and over
-	ThemeSplit                  // the road is squeezed against a side, then opens up and a wall parts it in two lanes
-	ThemeRain                   // single blocks scattered over a wide road
-	ThemeChicane                // a narrow road that jumps from side to side in S-bends
-	ThemeCheckers               // rows of blocks in a checkered pattern across a wide road
-	ThemeCorridor               // a long, nearly straight road two cells wide (three, when hard)
-	ThemeHourglass              // the road wide and narrow in quick turns
-	ThemeComb                   // teeth of blocks reaching in from one wall
-	ThemeStepGates              // walls across the road with gaps that step along diagonally
-	ThemeDiamonds               // diamond-shaped islands of blocks parting the road around them
-	ThemeEdgeRun                // a narrow road along one side of the screen, then the other
-	ThemeLanes                  // two walls part the road into three lanes for a while
-	ThemeWobble                 // a road that shakes from side to side
+	ThemeMixed         Theme = iota // the road wanders, with sections and obstacles at random
+	ThemeWarmUp                     // a wide road that bends gently: the first course
+	ThemeSnake                      // a narrow road winding in long curves
+	ThemeSwing                      // the road swings from one side of the screen to the other
+	ThemeSlalom                     // blocks jut in from the left and the right in turn
+	ThemePillars                    // a wide road with pillars standing in a staggered pattern
+	ThemeGates                      // walls across the road, each with a gap of two at the other side
+	ThemeStairs                     // a narrow road stepping sideways, turning at the sides
+	ThemeFunnel                     // the road narrows to two cells and opens up again, over and over
+	ThemeSplit                      // the road is squeezed against a side, then opens up and a wall parts it in two lanes
+	ThemeRain                       // single blocks scattered over a wide road
+	ThemeChicane                    // a narrow road that jumps from side to side in S-bends
+	ThemeCheckers                   // rows of blocks in a checkered pattern across a wide road
+	ThemeCorridor                   // a long, nearly straight road two cells wide (three, when hard)
+	ThemeHourglass                  // the road wide and narrow in quick turns
+	ThemeComb                       // teeth of blocks reaching in from one wall
+	ThemeStepGates                  // walls across the road with gaps that step along diagonally
+	ThemeDiamonds                   // diamond-shaped islands of blocks parting the road around them
+	ThemeEdgeRun                    // a narrow road along one side of the screen, then the other
+	ThemeLanes                      // two walls part the road into three lanes for a while
+	ThemeWobble                     // a road that shakes from side to side
+	ThemeLooseCheckers              // the checkerboard with a block left out now and then, a spot to stand still in
 	themeCount
 )
 
@@ -95,7 +96,7 @@ func (g *Game) themeTarget(t Theme, r int) (center, width int) {
 			return 2, 3 - hard
 		}
 		return W - 3, 3 - hard
-	case ThemeCheckers, ThemeDiamonds, ThemeLanes:
+	case ThemeCheckers, ThemeLooseCheckers, ThemeDiamonds, ThemeLanes:
 		return W / 2, 7
 	case ThemeCorridor:
 		if g.hard() {
@@ -279,7 +280,7 @@ func (g *Game) themeBlocks(row *Row, t Theme, r, left, right int) {
 		if p := r % splitPeriod; p >= splitSqueeze+6 && p < splitPeriod-4 && right-left >= 4 {
 			block((left + right) / 2)
 		}
-	case ThemeCheckers:
+	case ThemeCheckers, ThemeLooseCheckers:
 		// every third row (fourth, on the regular side) a row of blocks on every other cell,
 		// the pattern shifting by one each time (every second row, it asked for a weave one
 		// cell a row: too much). The shifted rows take the cells along the walls too: rows
@@ -290,7 +291,9 @@ func (g *Game) themeBlocks(row *Row, t Theme, r, left, right int) {
 		}
 		if r > 0 && r%every == 0 {
 			for x := left + 1 - (r/every)%2; x <= right; x += 2 {
-				block(x)
+				if t != ThemeLooseCheckers || x != looseHole(r/every, left, right) {
+					block(x)
+				}
 			}
 		}
 	case ThemeComb:
@@ -379,6 +382,43 @@ func (g *Game) themeBlocks(row *Row, t Theme, r, left, right int) {
 		}
 	default: // the road alone: its shape is the theme
 	}
+}
+
+// looseHole is the cell of the k-th checker row (between left and right) that the loose
+// checkerboard leaves open, or -1: every fourth checker row leaves out one of its inner
+// blocks, the one left of the middle and the one right of it in turn. That cell is open in
+// the checker rows before and after it as well, so she can stand there past three of them
+// instead of stepping aside for every one (the checkerboard of a whole fast course asked
+// for a step on every one of them, with no rest). The blocks along the walls always stay:
+// a hole there was a safe lane down the side.
+func looseHole(k, left, right int) int {
+	if k%4 != 3 {
+		return -1
+	}
+	var inner []int
+	for x := left + 1 - k%2; x <= right; x += 2 {
+		if x > left && x < right {
+			inner = append(inner, x)
+		}
+	}
+	if len(inner) == 0 {
+		return -1
+	}
+	mid := (left + right) / 2
+	if (k/4)%2 == 0 { // the inner block nearest the middle on its left, then on its right
+		for i := len(inner) - 1; i >= 0; i-- {
+			if inner[i] <= mid {
+				return inner[i]
+			}
+		}
+		return inner[0]
+	}
+	for _, x := range inner {
+		if x >= mid {
+			return x
+		}
+	}
+	return inner[len(inner)-1]
 }
 
 // passable reports whether she can get onto row from a cell she can be on in the row

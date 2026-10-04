@@ -16,6 +16,7 @@ const (
 	tRain  = road.ThemeRain
 	tChic  = road.ThemeChicane
 	tCheck = road.ThemeCheckers
+	tLoos  = road.ThemeLooseCheckers
 	tCorr  = road.ThemeCorridor
 	tHour  = road.ThemeHourglass
 	tComb  = road.ThemeComb
@@ -44,7 +45,7 @@ const (
 // road.Game.HardFrom on (every course on the extra stages, see NewRun).
 var courseThemes = map[string][2][GameCourses]road.Theme{
 	"cool": {
-		{tWarm, tGate, tSlal, tPill, tSwing, tHour, tStep, tSwing, tSlal, tSnake, tPill, tRain, tCheck, tEdge, tGate, tMix},
+		{tWarm, tGate, tSlal, tPill, tSwing, tHour, tStep, tSwing, tSlal, tSnake, tPill, tRain, tLoos, tEdge, tGate, tMix},
 		{tWarm, tSlal, tStep, tCorr, tGate, tEdge, tDiam, tSwing, tPill, tGate, tSwing, tChic, tStep, tRain, tPill, tMix},
 	},
 	"cute": {
