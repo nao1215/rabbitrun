@@ -1,8 +1,10 @@
 package save
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
+	"log"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -256,4 +258,54 @@ func useTempConfig(t *testing.T) *Store {
 	t.Setenv("HOME", dir)            // macOS and the XDG fallback
 	t.Setenv("AppData", dir)         // Windows
 	return NewStore()
+}
+
+// TestFailedFlushIsRetried: a flush whose write fails keeps the change pending and the old
+// save file whole, and the next flush after the cause is gone writes the newest data.
+// Flush cleared the mark before writing, so a failed write was never tried again (not
+// even when the game exited) unless something else changed.
+//
+//nolint:paralleltest // uses t.Setenv
+func TestFailedFlushIsRetried(t *testing.T) {
+	st := useTempConfig(t)
+	st.Data.Progress("gyal").BestStage = 1
+	st.Write()
+	old, err := os.ReadFile(Path())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// a directory where the temporary file goes makes the write fail (as root too)
+	if err := os.Mkdir(Path()+".tmp", 0o750); err != nil {
+		t.Fatal(err)
+	}
+	st.Data.Progress("gyal").BestStage = 3
+	st.Mark()
+	var logged bytes.Buffer
+	log.SetOutput(&logged)
+	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+	st.Flush()
+	st.Flush() // failing again: logged once, not on every frame
+	if n := strings.Count(logged.String(), "failed to save"); n != 1 {
+		t.Fatalf("the failure was logged %d times:\n%s", n, logged.String())
+	}
+	if !st.dirty {
+		t.Fatal("the change is no longer pending after a failed write")
+	}
+	if now, err := os.ReadFile(Path()); err != nil || string(now) != string(old) {
+		t.Fatalf("the old save was not kept whole: %v\n%s", err, now)
+	}
+
+	if err := os.Remove(Path() + ".tmp"); err != nil {
+		t.Fatal(err)
+	}
+	st.Flush() // nothing new changed: the pending change alone is written
+	if st.dirty {
+		t.Fatal("the change is still pending after the write succeeded")
+	}
+	back := NewStore()
+	back.Load()
+	if got := back.Data.Progress("gyal").BestStage; got != 3 {
+		t.Fatalf("saved stage %d, want 3", got)
+	}
 }
