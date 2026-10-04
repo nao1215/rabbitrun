@@ -18,7 +18,7 @@ All notable changes to this project are documented in this file. The format is b
 - Vivaldi's Four Seasons as drum and bass, one season per screen.
 - Character select screen with a fanned hand of large cards, and a gallery of every portrait and illustration.
 - Keyboard (arrows, WASD or the vi keys HJKL) and gamepad support.
-- `--reset-save` to delete the save data and exit (the old one is kept as `save.json.bak`), `--debug` to unlock everything without touching the save data, and `--record-demo` to record a run played by itself.
+- `--reset-save` to delete the save data and exit (the old one is kept as `save.json.bak`), `--debug` to unlock everything without touching the save data, and `--record-demo` to record a run played by itself (`--record-extra` records it on the extra stages).
 - Command-line mistakes (an unknown option, a stray argument, two jobs such as `--bgm-wav` and `--reset-save` at once, a `--record-*` option without `--record-demo`, a stage outside 1 to 4, an unknown character, an empty directory) exit with status 2 before the game opens, with the error first and a pointer to `--help`. `--record-demo` checks for ffmpeg before opening a window, `--bgm-wav` stops with status 1 at the first file it cannot write, `--capture` and `--record-demo` never change the save data, and `--reset-save` says so when there is no save to reset.
 - End-to-end tests of the built binary with [atago](https://github.com/nao1215/atago) (`make e2e`), run by CI on Linux, macOS and Windows.
 - Release archives and Linux packages for Linux, macOS and Windows (amd64 and arm64), with a cosign-signed checksum file, an SBOM per archive, GitHub build provenance and the license texts of the linked Go modules under `THIRD_PARTY_LICENSES/`.

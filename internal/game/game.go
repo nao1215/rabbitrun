@@ -46,11 +46,12 @@ type Options struct {
 	// RecordPath, when set, plays a demo by itself and records it to this video file with
 	// ffmpeg, then ends the game. RecordChar is the character's ID (the main character
 	// when empty), RecordStage the stage it starts at (1 for the first) and RecordSeconds
-	// how long it lasts.
+	// how long it lasts. RecordExtra records it on the extra stages.
 	RecordPath    string
 	RecordChar    string
 	RecordStage   int
 	RecordSeconds int
+	RecordExtra   bool
 }
 
 // debugMode unlocks the whole gallery and every character (Options.Debug).
@@ -93,7 +94,7 @@ func New(opts Options) (*Game, error) {
 		ebiten.SetVsyncEnabled(false)
 	}
 	if opts.RecordPath != "" {
-		g.rec = &recorder{path: opts.RecordPath, char: opts.RecordChar, stage: opts.RecordStage, seconds: opts.RecordSeconds}
+		g.rec = &recorder{path: opts.RecordPath, char: opts.RecordChar, stage: opts.RecordStage, seconds: opts.RecordSeconds, extra: opts.RecordExtra}
 		if err := g.rec.start(g); err != nil {
 			return nil, err
 		}

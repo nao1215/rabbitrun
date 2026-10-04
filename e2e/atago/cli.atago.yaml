@@ -243,3 +243,14 @@ scenarios:
           exit_code: 2
           stderr:
             contains: "rabbitrun: --record-char only works with --record-demo FILE"
+
+  - name: --record-extra without --record-demo exits 2
+    steps:
+      - run:
+          command: rabbitrun --record-extra
+          sandbox_home: true
+          timeout: 20s
+      - assert:
+          exit_code: 2
+          stderr:
+            contains: "rabbitrun: --record-extra only works with --record-demo FILE"

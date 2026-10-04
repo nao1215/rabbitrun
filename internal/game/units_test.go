@@ -157,6 +157,28 @@ func TestRecorderTakesEveryOtherUpdate(t *testing.T) {
 	}
 }
 
+// TestRecorderScene starts the recorded run on the character, side and stage asked for:
+// --record-extra puts it on the extra stages without the secret word being found.
+func TestRecorderScene(t *testing.T) { //nolint:paralleltest // shares the save data and the characters
+	for _, extra := range []bool{false, true} {
+		newDrawScenario(t, nil)
+		r := &recorder{char: "cute", stage: 2, extra: extra}
+		s := r.scene()
+		if s.char.ID != "cute" {
+			t.Errorf("extra %v: the recording runs %s, want cute", extra, s.char.ID)
+		}
+		if s.auto == nil {
+			t.Errorf("extra %v: the recording does not play itself", extra)
+		}
+		if s.eng.G.Hard != extra {
+			t.Errorf("extra %v: the run is on the extra stages: %v", extra, s.eng.G.Hard)
+		}
+		if s.eng.G.Stage != 2 {
+			t.Errorf("extra %v: the recording starts on stage %d, want 2", extra, s.eng.G.Stage)
+		}
+	}
+}
+
 // TestBeatBounce squashes her to the beat only in a cheerful mood while lively music plays.
 func TestBeatBounce(t *testing.T) { //nolint:paralleltest // swaps the music's beat
 	old := beatPhase

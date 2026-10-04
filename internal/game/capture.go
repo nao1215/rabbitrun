@@ -24,6 +24,7 @@ type recorder struct {
 	char    string // the character's ID (the main character when empty)
 	stage   int    // the stage it starts at (1 for the first)
 	seconds int    // how long it lasts
+	extra   bool   // on the extra stages
 
 	frame int
 	drawn bool
@@ -34,18 +35,7 @@ type recorder struct {
 
 // start opens a self-playing game on the main character and starts ffmpeg.
 func (r *recorder) start(g *Game) error {
-	c := characters[defaultCharIndex()]
-	for _, ch := range characters {
-		if ch.ID == r.char {
-			c = ch
-		}
-	}
-	s := newPlayScene(c)
-	s.auto = &engine.AutoPlayer{}
-	if st := r.stage; st > 1 {
-		s.eng.G.StartAt((st-1)*road.Courses + 1)
-	}
-	g.SetScene(s)
+	g.SetScene(r.scene())
 	r.drawn = true
 	// Draw as fast as possible: a hidden window would otherwise be held to a few frames a second.
 	ebiten.SetVsyncEnabled(false)
@@ -60,6 +50,26 @@ func (r *recorder) start(g *Game) error {
 	r.pipe = pipe
 	r.pix = make([]byte, 4*ScreenW*ScreenH)
 	return r.cmd.Start()
+}
+
+// scene is the self-playing run the recording shows: its character, side and stage.
+func (r *recorder) scene() *playScene {
+	c := characters[defaultCharIndex()]
+	for _, ch := range characters {
+		if ch.ID == r.char {
+			c = ch
+		}
+	}
+	if r.extra {
+		// a recording never writes the save, so the extra stages are switched on just for it
+		store.Data.ExtraFound, store.Data.ExtraMode = true, true
+	}
+	s := newPlayScene(c)
+	s.auto = &engine.AutoPlayer{}
+	if st := r.stage; st > 1 {
+		s.eng.G.StartAt((st-1)*road.Courses + 1)
+	}
+	return s
 }
 
 // skipUpdate holds the game until the last frame was drawn, so the video has every

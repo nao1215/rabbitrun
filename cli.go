@@ -42,7 +42,7 @@ func exitUsage(err error) {
 var exitModes = []string{"bgm-wav", "capture", "reset-save", "record-demo"}
 
 // recordOptions only change the demo recording.
-var recordOptions = []string{"record-char", "record-stage", "record-seconds"}
+var recordOptions = []string{"record-char", "record-stage", "record-seconds", "record-extra"}
 
 // demoStages is how many stages a demo recording can start at.
 const demoStages = (engine.GameCourses + road.Courses - 1) / road.Courses

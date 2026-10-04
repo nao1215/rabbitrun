@@ -39,5 +39,8 @@ var recordChar = flag.String("record-char", "", "character `ID` of the demo reco
 // recordStage starts the demo recording at a later stage (1 for the first).
 var recordStage = flag.Int("record-stage", 1, "stage the demo recording starts at, from 1 to 4")
 
+// recordExtra records the demo on the extra stages instead of the regular ones.
+var recordExtra = flag.Bool("record-extra", false, "record the demo on the extra stages")
+
 // recordSeconds is how long the demo recording lasts.
 var recordSeconds = flag.Int("record-seconds", 60, "length of the demo recording in seconds")

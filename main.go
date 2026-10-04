@@ -85,6 +85,7 @@ func main() {
 		RecordChar:    *recordChar,
 		RecordStage:   *recordStage,
 		RecordSeconds: *recordSeconds,
+		RecordExtra:   *recordExtra,
 	})
 	if err != nil {
 		log.Fatal(err)
