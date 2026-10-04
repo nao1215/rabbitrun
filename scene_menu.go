@@ -8,6 +8,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 
+	"github.com/nao1215/rabbitrun/internal/assets"
+	"github.com/nao1215/rabbitrun/internal/character"
 	"github.com/nao1215/rabbitrun/internal/gfx"
 	"github.com/nao1215/rabbitrun/internal/input"
 	"github.com/nao1215/rabbitrun/internal/sound"
@@ -34,7 +36,7 @@ var titleItems = []string{"PLAY", "GALLERY", "EXIT"}
 
 func newTitleScene() *TitleScene {
 	s := &TitleScene{group: extraMode(), reveal: newSecret(), word: wordDue()}
-	prefetchImgs(selectEntries())
+	character.PrefetchImgs(selectEntries())
 	return s
 }
 
@@ -43,7 +45,7 @@ func newTitleScene() *TitleScene {
 func newSecret() int {
 	n := -1
 	for i, c := range characters {
-		if c.Secret && !c.locked() && !store.Data.Announced[c.ID] {
+		if c.Secret && !locked(c) && !store.Data.Announced[c.ID] {
 			n = i
 		}
 	}
@@ -71,17 +73,17 @@ const (
 
 // selectEntries are the pictures of the character select cards. The title decodes them in
 // the background (decoding the five took the select screen's first frame 160ms).
-func selectEntries() []*ImageEntry {
-	out := make([]*ImageEntry, len(characters))
+func selectEntries() []*character.ImageEntry {
+	out := make([]*character.ImageEntry, len(characters))
 	for i, c := range characters {
-		out[i] = c.selectEntry()
+		out[i] = c.SelectEntry()
 	}
 	return out
 }
 
 func (s *TitleScene) Update(g *Game) {
 	s.frame++
-	uploadPrefetched(selectEntries(), 2)
+	character.UploadPrefetched(selectEntries(), 2)
 	if sound.CurrentSong() != sound.TitleSong {
 		sound.StartBGM(sound.TitleSong)
 	}
@@ -148,7 +150,7 @@ func (s *TitleScene) Draw(screen *ebiten.Image) {
 		// The group picture: a small logo at the top and the menu at the bottom, so the
 		// text never covers the characters' faces.
 		if titleComplete() {
-			gfx.DrawImageCover(screen, uiImage("title_complete"), 0, 0, ScreenW, ScreenH, 1)
+			gfx.DrawImageCover(screen, assets.UI("title_complete"), 0, 0, ScreenW, ScreenH, 1)
 		} else {
 			screen.DrawImage(buildGroupPicture(groupMembers()), nil)
 		}
@@ -280,7 +282,7 @@ func newCharSelectScene(mode int) *CharSelectScene {
 	if mode == modePlay {
 		// the play screen's artwork, so its first frame (the hammer show) only uploads it:
 		// decoding it as play started held that frame for 30 to 50 ms
-		prefetchUI(playArtwork...)
+		assets.PrefetchUI(playArtwork...)
 	}
 	if s.announce >= 0 {
 		s.sel = s.announce // the most recently opened secret wins (rightmost)
@@ -310,10 +312,10 @@ func (s *CharSelectScene) Update(g *Game) {
 	bg.setImage("select")
 	n := len(characters)
 	s.sel = menuNav(&g.in, s.sel, n, input.Left, input.Right)
-	if c := characters[s.sel]; s.mode == modePlay && !c.locked() {
+	if c := characters[s.sel]; s.mode == modePlay && !locked(c) {
 		// her usual pose and the cut-in, decoded while she is chosen: play's first frame
 		// waited 30 to 40 ms for the pose otherwise (the rest decode as play starts)
-		prefetchImgs([]*ImageEntry{c.Expression(ExprNormal), c.Cutin})
+		character.PrefetchImgs([]*character.ImageEntry{c.Expression(character.ExprNormal), c.Cutin})
 	}
 	if g.in.Pressed(input.Cancel) {
 		sound.Play(sound.Cancel)
@@ -324,7 +326,7 @@ func (s *CharSelectScene) Update(g *Game) {
 	}
 	if g.in.Pressed(input.Confirm) {
 		c := characters[s.sel]
-		if c.locked() {
+		if locked(c) {
 			sound.Play(sound.Denied)
 			return
 		}
@@ -354,11 +356,11 @@ const (
 )
 
 // card builds and caches the character's card image (white border, background art, modest full-body portrait).
-func (s *CharSelectScene) card(c *Character) *ebiten.Image {
+func (s *CharSelectScene) card(c *character.Character) *ebiten.Image {
 	if s.cards == nil {
 		s.cards = map[string]*ebiten.Image{}
 	}
-	locked := c.locked()
+	locked := locked(c)
 	key := c.ID
 	if locked {
 		key += "#locked"
@@ -375,11 +377,11 @@ func (s *CharSelectScene) card(c *Character) *ebiten.Image {
 	case locked:
 		// A pastel card with the character's soft silhouette.
 		gfx.FillRoundRect(inner, 0, 0, float32(iw), float32(ih), 0, lockedCardFill)
-		if c.selectEntry().HasImage() {
+		if c.SelectEntry().HasImage() {
 			drawSilhouette(inner, c.SelectImage(), 0, 0, iw, ih, false)
 		}
 	default:
-		if bgImg := uiImage("frame_normal"); bgImg != nil {
+		if bgImg := assets.UI("frame_normal"); bgImg != nil {
 			gfx.DrawImageCover(inner, bgImg, 0, 0, iw, ih, 1)
 		}
 		gfx.DrawImageFit(inner, c.SelectImage(), 0, 0, iw, ih, 1)

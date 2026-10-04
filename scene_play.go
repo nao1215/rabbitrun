@@ -8,6 +8,8 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"github.com/nao1215/rabbitrun/internal/assets"
+	"github.com/nao1215/rabbitrun/internal/character"
 	"github.com/nao1215/rabbitrun/internal/engine"
 	"github.com/nao1215/rabbitrun/internal/gfx"
 	"github.com/nao1215/rabbitrun/internal/input"
@@ -49,7 +51,7 @@ type PlayScene struct {
 	prevX, lean float64 // the bunny's last x and how far she leans (smoothed)
 	holdDir     int     // the direction held (-1, 0, 1)
 	holdFrames  int     // frames it has been held
-	char        *Character
+	char        *character.Character
 	eng         *engine.Engine
 	prog        *save.CharProgress
 	auto        *engine.AutoPlayer // when set, the game plays itself (demo)
@@ -72,15 +74,15 @@ type PlayScene struct {
 	popFrame       int      // frames since the current pose popped in (-1: it cross-faded in)
 	montage        []string // poses still to flash by in a montage
 	montageTimer   int
-	comboStep      int           // combo reactions so far in this chain (picks the next combo pose)
-	popNext        bool          // the next pose change pops in (a reaction) instead of cross-fading
-	windup         int           // frames left of the crouch before a strong reaction springs out
-	slideDir       float64       // side the next popping pose slides in from (alternates)
-	landing        float64       // squash when a sweet is picked up (1 just now, fades out)
-	intensity      int           // music intensity stage (for the beat bounce)
-	portraits      []*ImageEntry // the character's pictures, decoded in the background
-	shownPic       *ebiten.Image // the picture drawn last as the current pose (stands in while the next decodes)
-	charScale      float64       // the character's fixed size in the frame (portraitScale)
+	comboStep      int                     // combo reactions so far in this chain (picks the next combo pose)
+	popNext        bool                    // the next pose change pops in (a reaction) instead of cross-fading
+	windup         int                     // frames left of the crouch before a strong reaction springs out
+	slideDir       float64                 // side the next popping pose slides in from (alternates)
+	landing        float64                 // squash when a sweet is picked up (1 just now, fades out)
+	intensity      int                     // music intensity stage (for the beat bounce)
+	portraits      []*character.ImageEntry // the character's pictures, decoded in the background
+	shownPic       *ebiten.Image           // the picture drawn last as the current pose (stands in while the next decodes)
+	charScale      float64                 // the character's fixed size in the frame (portraitScale)
 
 	// Reading the road for the reactions: the danger level last frame, and whether the
 	// "a big sweet is coming" look was shown for the sweet in sight.
@@ -101,11 +103,11 @@ type PlayScene struct {
 
 	// stageCG is the illustration behind the road: from the second course on, the newest
 	// one earned (it stays until the next is earned). stageFade fades it in.
-	stageCG   *ImageEntry
+	stageCG   *character.ImageEntry
 	stageFade float64
 	// prevCG is the illustration before stageCG, kept under it while the new one fades in
 	// (without it the plain road showed for a moment at every change)
-	prevCG *ImageEntry
+	prevCG *character.ImageEntry
 	// After a miss: missFrame counts the frames since it, missSel is the chosen button
 	// (RETRY or GIVE UP), and countdown runs while the lives count ticks down on RETRY.
 	missFrame int
@@ -127,39 +129,39 @@ type PlayScene struct {
 	// illustration prefetchArt has started decoding; prefetched are the illustrations it
 	// started, freed with the scene.
 	artFor     int
-	prefetched []*ImageEntry
+	prefetched []*character.ImageEntry
 }
 
 // newRetryScene starts a new run after a game over: the character is still down in her
 // game over pose and gets back up with a fist pump while READY is shown.
-func newRetryScene(c *Character) *PlayScene {
+func newRetryScene(c *character.Character) *PlayScene {
 	s := newPlayScene(c)
-	s.expr, s.exprID = ExprGameOver, s.pickVariant(ExprGameOver)
+	s.expr, s.exprID = character.ExprGameOver, s.pickVariant(character.ExprGameOver)
 	s.prevExpr, s.prevID = s.expr, s.exprID
 	s.comeback = comebackDelay
 	return s
 }
 
 // newRunScene starts a new run of the character c, opening with the hammer show.
-func newRunScene(c *Character) *PlayScene {
+func newRunScene(c *character.Character) *PlayScene {
 	s := newPlayScene(c)
 	s.startHammerShow()
 	return s
 }
 
-func newPlayScene(c *Character) *PlayScene {
+func newPlayScene(c *character.Character) *PlayScene {
 	s := &PlayScene{
 		char:  c,
 		eng:   newGameEngine(c.ID),
 		prog:  progress(c.ID),
 		ready: readyFr,
-		expr:  ExprNormal, prevExpr: ExprNormal, exprID: ExprNormal, prevID: ExprNormal, exprFade: 1,
+		expr:  character.ExprNormal, prevExpr: character.ExprNormal, exprID: character.ExprNormal, prevID: character.ExprNormal, exprFade: 1,
 		popFrame: -1,
 	}
 	releasePortraitsExcept(c)
 	s.portraits = portraitEntries(c)
-	prefetchImgs(s.portraits)
-	prefetchUI(playArtwork...)
+	character.PrefetchImgs(s.portraits)
+	assets.PrefetchUI(playArtwork...)
 	// Each run starts on the sweets background; illustrations appear as the run earns them.
 	return s
 }
@@ -183,7 +185,7 @@ var playArtwork = func() []string {
 func (s *PlayScene) Update(g *Game) {
 	s.frame++
 	defer s.updateLean() // after everything that moves her this frame
-	uploadPrefetched(s.portraits, 3)
+	character.UploadPrefetched(s.portraits, 3)
 	s.prefetchArt()
 	s.updateEffects()
 	s.updateMusic()
@@ -198,7 +200,7 @@ func (s *PlayScene) Update(g *Game) {
 		return
 	}
 	if s.eng.Over() {
-		if s.expr != ExprGameOver {
+		if s.expr != character.ExprGameOver {
 			s.updateExpression() // the game can end without passing through onGameOver
 		}
 		s.updateGameOver(g)
@@ -302,33 +304,33 @@ func (s *PlayScene) handleEvents() {
 			case ev.Streak >= 5 && ev.Streak%5 == 0:
 				sound.Play(sound.Streak)
 				s.comboStep = ev.Streak/5 - 1 // each five in a row shows the next combo pose
-				s.react(ExprCombo, 120, rankCombo)
+				s.react(character.ExprCombo, 120, rankCombo)
 			case ev.Sweet == road.SweetMacaron:
 				sound.Play(sound.Pick)
-				s.react(ExprGreat, 100, rankGood)
+				s.react(character.ExprGreat, 100, rankGood)
 			default:
 				sound.Play(sound.Pick)
-				s.react(ExprHappy, 80, rankSmall)
+				s.react(character.ExprHappy, 80, rankSmall)
 			}
 		case road.EventOneUp:
 			sound.Play(sound.LevelUp)
 			s.popups = append(s.popups, popup{text: "1UP", timer: 60})
 			if ev.Sweet == road.SweetOneUp {
 				sound.Play(sound.Treat)
-				s.react(ExprTreat, 150, rankBig) // an extra life picked up off the road: the big moment
+				s.react(character.ExprTreat, 150, rankBig) // an extra life picked up off the road: the big moment
 			} else {
-				s.react(ExprExcited, 100, rankGood)
+				s.react(character.ExprExcited, 100, rankGood)
 			}
 		case road.EventMiss:
 			if ev.Sweet == road.SweetOneUp {
-				s.react(ExprOops, 90, rankGood) // the extra life got away
+				s.react(character.ExprOops, 90, rankGood) // the extra life got away
 			}
 		case road.EventNearMiss:
-			s.react(ExprNervous, 50, rankHint)
+			s.react(character.ExprNervous, 50, rankHint)
 		case road.EventCrash:
 			sound.Play(sound.GameOver)
 			if !e.Over() {
-				s.react(ExprCrying, missFrames-5, rankPerfect) // a miss: she cries until the restart
+				s.react(character.ExprCrying, missFrames-5, rankPerfect) // a miss: she cries until the restart
 			}
 		case road.EventCourse:
 			courses++
@@ -338,13 +340,13 @@ func (s *PlayScene) handleEvents() {
 			}
 		case road.EventStageClear:
 			s.popups = append(s.popups, popup{text: "STAGE " + strconv.Itoa(e.G.Stage), timer: 90})
-			s.react(ExprPerfect, 180, rankPerfect)
+			s.react(character.ExprPerfect, 180, rankPerfect)
 		case road.EventAllClear:
 			s.allClearNow()
 		case road.EventBombGain:
 			sound.Play(sound.Confirm)
 		case road.EventRestart:
-			s.react(ExprComeback, 150, rankBig) // back on her feet
+			s.react(character.ExprComeback, 150, rankBig) // back on her feet
 		case road.EventBomb, road.EventOver:
 			// the game over is handled by onGameOver
 		}
@@ -352,7 +354,7 @@ func (s *PlayScene) handleEvents() {
 	e.Events = e.Events[:0]
 	if courses > 0 { // a new course is a level up: the road is faster now
 		sound.Play(sound.LevelUp)
-		s.react(ExprLevelUp, 60, rankHint)
+		s.react(character.ExprLevelUp, 60, rankHint)
 	}
 }
 
@@ -482,7 +484,9 @@ func (s *PlayScene) Draw(screen *ebiten.Image) {
 // charFace is the character's face, cut from her usual portrait: shown with the lives, on
 // the extra life item and on the miss screen (her own face reads better there than a
 // small figure).
-func charFace(c *Character) *ebiten.Image { return faceOf(c.Expression(ExprNormal)) }
+func charFace(c *character.Character) *ebiten.Image {
+	return character.FaceOf(c.Expression(character.ExprNormal))
+}
 
 // drawCharacter draws the per-expression background and the character image inside the lower-right frame.
 func (s *PlayScene) drawCharacter(screen *ebiten.Image) {
@@ -511,7 +515,7 @@ func (s *PlayScene) drawCharacter(screen *ebiten.Image) {
 	}
 	s.shownPic = img
 	drawLayer := func(expr string, pic *ebiten.Image, alpha float32, cur bool) {
-		if bgImg := uiImage("frame_" + family(expr)); bgImg != nil {
+		if bgImg := assets.UI("frame_" + family(expr)); bgImg != nil {
 			gfx.DrawImageCover(l, bgImg, 0, 0, fw, fh, alpha)
 		}
 		if pic == nil {

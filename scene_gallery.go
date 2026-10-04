@@ -4,12 +4,13 @@ import (
 	"image"
 	"image/color"
 	"math"
-	"runtime"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/colorm"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 
+	"github.com/nao1215/rabbitrun/internal/assets"
+	"github.com/nao1215/rabbitrun/internal/character"
 	"github.com/nao1215/rabbitrun/internal/gfx"
 	"github.com/nao1215/rabbitrun/internal/input"
 	"github.com/nao1215/rabbitrun/internal/sound"
@@ -36,7 +37,7 @@ type GalleryScene struct {
 
 	// Pictures for tiles are decoded on worker goroutines (decoding a PNG is the slow part)
 	// and arrive on decoded; the tile itself is made on the main goroutine.
-	loading map[*ImageEntry]bool
+	loading map[*character.ImageEntry]bool
 	decoded chan decodedPicture
 }
 
@@ -45,11 +46,6 @@ type decodedPicture struct {
 	it  galleryItem
 	img image.Image
 }
-
-// tileDecoders limits how many pictures are decoded at the same time. A few are enough:
-// the tiles are uploaded only a few a frame anyway, and every decoder holds a portrait
-// of several megabytes while it works (one per CPU spiked memory to hundreds of MB).
-var tileDecoders = make(chan struct{}, min(3, max(1, runtime.NumCPU()-1)))
 
 const (
 	tileW, tileGap       = 160.0, 12.0
@@ -63,14 +59,14 @@ const (
 
 // galleryItem is one grid entry, either a portrait or an illustration.
 type galleryItem struct {
-	e  *ImageEntry
+	e  *character.ImageEntry
 	cg bool
 }
 
 // newGalleryScene opens on the first character (the silver-haired one, leftmost).
 func newGalleryScene() *GalleryScene { return &GalleryScene{charIdx: 0} }
 
-func (s *GalleryScene) char() *Character { return characters[s.charIdx] }
+func (s *GalleryScene) char() *character.Character { return characters[s.charIdx] }
 
 // items returns the portraits followed by the illustrations.
 func (s *GalleryScene) items() []galleryItem {
@@ -84,7 +80,7 @@ func (s *GalleryScene) listFor() {
 		return
 	}
 	c := s.char()
-	cgs := c.GalleryCGs()
+	cgs := galleryCGs(c)
 	s.list = make([]galleryItem, 0, len(c.Expressions)+len(cgs))
 	// only entries with a picture: an unlocked illustration not drawn yet showed as a
 	// locked tile among the unlocked ones
@@ -159,7 +155,7 @@ func (s *GalleryScene) Update(g *Game) {
 		n := len(characters)
 		for range n {
 			s.charIdx = (s.charIdx + d + n) % n
-			if !characters[s.charIdx].locked() {
+			if !locked(characters[s.charIdx]) {
 				break
 			}
 		}
@@ -231,7 +227,7 @@ func (s *GalleryScene) Draw(screen *ebiten.Image) {
 		if it.cg {
 			gfx.DrawImageFit(screen, it.e.Full(), 0, 0, ScreenW, ScreenH, 1) // whole, with bands at the sides
 		} else {
-			if bgImg := uiImage("frame_" + family(it.e.State)); bgImg != nil {
+			if bgImg := assets.UI("frame_" + family(it.e.State)); bgImg != nil {
 				gfx.DrawImageCover(screen, bgImg, 0, 0, ScreenW, ScreenH, 0.9)
 			}
 			// the same size and place as in the play screen's frame: every standing pose
@@ -256,7 +252,7 @@ func (s *GalleryScene) Draw(screen *ebiten.Image) {
 		// made once and kept, so a frame only copies finished tiles.
 		var tile *ebiten.Image
 		if s.open[i] {
-			tile = it.e.tile
+			tile = galleryTiles[it.e]
 			if tile == nil {
 				s.requestPicture(it)
 			}
@@ -292,15 +288,15 @@ func (s *GalleryScene) requestPicture(it galleryItem) {
 		return
 	}
 	if s.loading == nil {
-		s.loading = map[*ImageEntry]bool{}
+		s.loading = map[*character.ImageEntry]bool{}
 		s.decoded = make(chan decodedPicture, 64)
 	}
 	s.loading[e] = true
 	// A portrait already loaded for play (with its figure measured) makes its tile at once,
 	// without decoding the file again.
 	if img := e.Image; !it.cg && img != nil {
-		if f, ok := figureCache[img]; ok {
-			e.tile = makeTile(func(l *ebiten.Image) {
+		if f, ok := character.KnownFigure(img); ok {
+			galleryTiles[e] = makeTile(func(l *ebiten.Image) {
 				drawTileBackdrop(l, it)
 				drawPortraitFigure(l, img, f, float64(l.Bounds().Dx()), float64(l.Bounds().Dy()), 1, 1, 0, 0, 1, 0, 0)
 			})
@@ -308,10 +304,8 @@ func (s *GalleryScene) requestPicture(it galleryItem) {
 		}
 	}
 	go func(out chan<- decodedPicture) {
-		tileDecoders <- struct{}{}
 		// Twice the tile height, so the tile is drawn from a sharper picture.
-		img := decodeScaled(e.base, e.ID, 2*tileInnerH)
-		<-tileDecoders
+		img := e.DecodeScaled(2 * tileInnerH)
 		out <- decodedPicture{it, img}
 	}(s.decoded)
 }
@@ -322,14 +316,18 @@ func (s *GalleryScene) finishTiles() {
 	for range 8 {
 		select {
 		case d := <-s.decoded:
-			if e := d.it.e; e.tile == nil {
-				e.tile = makeTile(func(l *ebiten.Image) { drawTilePicture(l, d.it, d.img) })
+			if e := d.it.e; galleryTiles[e] == nil {
+				galleryTiles[e] = makeTile(func(l *ebiten.Image) { drawTilePicture(l, d.it, d.img) })
 			}
 		default:
 			return
 		}
 	}
 }
+
+// galleryTiles are the finished tiles of the pictures, made once and kept (the entries
+// never move).
+var galleryTiles = map[*character.ImageEntry]*ebiten.Image{}
 
 // tileInnerW and tileInnerH are the size of a tile's picture inside its border.
 var tileInnerW, tileInnerH = int(tileW - 8), int(math.Floor(tileH - 8))
@@ -362,7 +360,7 @@ func drawTilePicture(l *ebiten.Image, it galleryItem, pic image.Image) {
 		if pic != nil {
 			img = ebiten.NewImageFromImage(pic)
 		} else {
-			img = placeholderImage(e.ID) // made only when it is needed: it is a large image
+			img = character.Placeholder(e.ID) // made only when it is needed: it is a large image
 		}
 		// an illustration fills its tile (fitted, it left bands at the top and bottom)
 		gfx.DrawImageCoverTop(l, img, 0, 0, lw, lh, 1)
@@ -370,9 +368,8 @@ func drawTilePicture(l *ebiten.Image, it galleryItem, pic image.Image) {
 		return
 	}
 	// a portrait is drawn as in the play screen's frame (see drawPortrait)
-	b := pic.Bounds()
 	img := ebiten.NewImageFromImage(pic)
-	drawPortraitFigure(l, img, measureFigure(alphaPixels(pic), b.Dx(), b.Dy()), lw, lh, 1, 1, 0, 0, 1, 0, 0)
+	drawPortraitFigure(l, img, character.MeasureFigure(pic), lw, lh, 1, 1, 0, 0, 1, 0, 0)
 	img.Deallocate()
 }
 
@@ -382,7 +379,7 @@ func drawTileBackdrop(l *ebiten.Image, it galleryItem) {
 	if it.cg {
 		return
 	}
-	if bgImg := uiImage("frame_" + family(it.e.State)); bgImg != nil {
+	if bgImg := assets.UI("frame_" + family(it.e.State)); bgImg != nil {
 		gfx.DrawImageCover(l, bgImg, 0, 0, float64(l.Bounds().Dx()), float64(l.Bounds().Dy()), 1)
 	}
 }
@@ -465,9 +462,9 @@ func drawFaceStrip(screen *ebiten.Image, sel int, pull []float64, top, size floa
 		gfx.FillRoundRect(screen, float32(x)+4, float32(y)+6, float32(w), float32(h), 12, shadowColor())
 		gfx.FillRoundRect(screen, float32(x), float32(y), float32(w), float32(h), 12, gfx.PanelFill)
 		alpha := float32(0.55 + 0.45*pull[i])
-		face := faceOf(c.selectEntry())
+		face := character.FaceOf(c.SelectEntry())
 		switch {
-		case c.locked():
+		case locked(c):
 			// A locked character shows only the black silhouette of her face.
 			gfx.FillRoundRect(screen, float32(x)+4, float32(y)+4, float32(w)-8, float32(h)-8, 10, lockedCardFill)
 			if face != nil {
@@ -505,7 +502,7 @@ func galleryBackground() *ebiten.Image {
 		return galleryBG
 	}
 	galleryBG = ebiten.NewImage(ScreenW, ScreenH)
-	if art := uiImage("gallery"); art != nil {
+	if art := assets.UI("gallery"); art != nil {
 		gfx.DrawImageCover(galleryBG, art, 0, 0, ScreenW, ScreenH, 1)
 	}
 	vector.FillRect(galleryBG, 0, 0, ScreenW, ScreenH, color.NRGBA{0xff, 0xff, 0xff, 0x60}, false)

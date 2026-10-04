@@ -1,4 +1,4 @@
-package main
+package character
 
 import (
 	"image"
@@ -7,6 +7,8 @@ import (
 	"sync"
 
 	"github.com/hajimehoshi/ebiten/v2"
+
+	"github.com/nao1215/rabbitrun/internal/assets"
 )
 
 // cropKind selects which part of a standing portrait to cut out.
@@ -78,7 +80,7 @@ func portraitBox(pix []byte, w, h int, kind cropKind) (image.Rectangle, bool) {
 
 // faceCrops holds the face close-ups cut from the full-resolution portraits.
 // Decoding a portrait takes a few frames, so it runs in the background; until a
-// crop is ready faceOf returns nil and the caller shows something else (or nothing).
+// crop is ready FaceOf returns nil and the caller shows something else (or nothing).
 var faceCrops = struct {
 	sync.Mutex
 	ready   map[cropKey]*image.RGBA // decoded crops waiting to be uploaded to the GPU
@@ -97,9 +99,9 @@ type cropKey struct {
 
 // cropPortrait decodes the portrait at full resolution and cuts out the part of the given kind.
 func cropPortrait(e *ImageEntry, kind cropKind) *image.RGBA {
-	src, err := decodeImage(path.Join(e.base, "images", e.ID))
+	src, err := assets.Decode(e.fsys, path.Join(e.base, "images", e.ID))
 	if err != nil {
-		logBrokenImage(e.ID, err)
+		assets.LogBroken(e.ID, err)
 		return nil
 	}
 	// Only the alpha is read to find the box: the decoded pixels are read as they are
@@ -115,9 +117,9 @@ func cropPortrait(e *ImageEntry, kind cropKind) *image.RGBA {
 	return face
 }
 
-// faceOf returns the face close-up of a portrait, or nil while it is still being
+// FaceOf returns the face close-up of a portrait, or nil while it is still being
 // prepared (or when the portrait has no image).
-func faceOf(e *ImageEntry) *ebiten.Image { return portraitCrop(e, cropFace) }
+func FaceOf(e *ImageEntry) *ebiten.Image { return portraitCrop(e, cropFace) }
 
 func portraitCrop(e *ImageEntry, kind cropKind) *ebiten.Image {
 	if e == nil {

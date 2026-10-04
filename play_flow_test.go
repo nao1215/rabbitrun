@@ -6,6 +6,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"github.com/nao1215/rabbitrun/internal/character"
 	"github.com/nao1215/rabbitrun/internal/engine"
 	"github.com/nao1215/rabbitrun/internal/input"
 	"github.com/nao1215/rabbitrun/road"
@@ -84,8 +85,8 @@ func TestMissMenu(t *testing.T) {
 		if !s.eng.Over() || s.allClear {
 			t.Fatalf("over %v, all clear %v after GIVE UP", s.eng.Over(), s.allClear)
 		}
-		if s.expr != ExprGameOver {
-			t.Errorf("expression %s after GIVE UP, want %s", s.expr, ExprGameOver)
+		if s.expr != character.ExprGameOver {
+			t.Errorf("expression %s after GIVE UP, want %s", s.expr, character.ExprGameOver)
 		}
 		if p := reloadSave(t).Characters[heroID]; p == nil || p.BestStage < 1 {
 			t.Errorf("the run was not recorded: %+v", p)
@@ -136,8 +137,8 @@ func TestGameOverMenu(t *testing.T) {
 					t.Fatalf("not a new run on %s", over.char.ID)
 				}
 				// a frame of the new run has gone by
-				if s.comeback == 0 || s.comeback > comebackDelay || s.expr != ExprGameOver {
-					t.Errorf("comeback %d in %s, want her down in %s and getting up", s.comeback, s.expr, ExprGameOver)
+				if s.comeback == 0 || s.comeback > comebackDelay || s.expr != character.ExprGameOver {
+					t.Errorf("comeback %d in %s, want her down in %s and getting up", s.comeback, s.expr, character.ExprGameOver)
 				}
 			},
 		},
@@ -191,7 +192,7 @@ func TestRetryGetsBackUp(t *testing.T) { //nolint:paralleltest // shares the sav
 	if s.comeback != 0 {
 		t.Errorf("comeback still %d after READY", s.comeback)
 	}
-	if s.expr == ExprGameOver {
+	if s.expr == character.ExprGameOver {
 		t.Error("she is still down after READY")
 	}
 }

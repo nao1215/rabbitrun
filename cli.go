@@ -9,6 +9,7 @@ import (
 
 	flag "github.com/spf13/pflag"
 
+	"github.com/nao1215/rabbitrun/internal/character"
 	"github.com/nao1215/rabbitrun/internal/engine"
 	"github.com/nao1215/rabbitrun/road"
 )
@@ -84,7 +85,7 @@ func checkArgs(fs *flag.FlagSet) error {
 
 // checkRecordChar checks that id (from --record-char) names one of chars; an empty id
 // picks the main character.
-func checkRecordChar(id string, chars []*Character) error {
+func checkRecordChar(id string, chars []*character.Character) error {
 	if id == "" {
 		return nil
 	}

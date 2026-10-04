@@ -4,6 +4,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/nao1215/rabbitrun/internal/assets"
+	"github.com/nao1215/rabbitrun/internal/character"
 	"github.com/nao1215/rabbitrun/internal/engine"
 	"github.com/nao1215/rabbitrun/internal/input"
 	"github.com/nao1215/rabbitrun/internal/save"
@@ -84,7 +86,7 @@ func steps(parts ...[]scriptFrame) []scriptFrame {
 // first, as the progress of earlier games).
 func newScenario(t *testing.T, prepare func()) *Game {
 	t.Helper()
-	chars, err := readCharacters(assetFS)
+	chars, err := character.Read(assets.FS())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -92,7 +94,7 @@ func newScenario(t *testing.T, prepare func()) *Game {
 }
 
 // newScenarioWith is newScenario on the characters chars.
-func newScenarioWith(t *testing.T, chars []*Character, prepare func()) *Game {
+func newScenarioWith(t *testing.T, chars []*character.Character, prepare func()) *Game {
 	t.Helper()
 	useTempConfig(t)
 	sound.SetMuted(true)

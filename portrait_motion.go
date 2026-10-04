@@ -1,14 +1,13 @@
 package main
 
 import (
-	"image"
-	"image/draw"
 	"math"
 	"math/rand/v2"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/colorm"
 
+	"github.com/nao1215/rabbitrun/internal/character"
 	"github.com/nao1215/rabbitrun/internal/sound"
 )
 
@@ -55,9 +54,9 @@ func (s *PlayScene) motion() portraitMotion {
 	// Calm breathing; quick, deeper breaths in danger.
 	period, depth := 200.0, 0.006
 	switch s.expr {
-	case ExprPanic, ExprCrying:
+	case character.ExprPanic, character.ExprCrying:
 		period, depth = 50, 0.01
-	case ExprNervous:
+	case character.ExprNervous:
 		period, depth = 90, 0.008
 	}
 	breath := depth * math.Sin(float64(s.frame)*2*math.Pi/period)
@@ -93,13 +92,13 @@ func popScale(f int) float64 {
 // the closer to the top, the more restless she gets.
 func poseInterval(expr string) int {
 	switch expr {
-	case ExprGameOver:
+	case character.ExprGameOver:
 		return 1 << 30 // she stays down
-	case ExprCrying:
+	case character.ExprCrying:
 		return 120
-	case ExprPanic:
+	case character.ExprPanic:
 		return 150
-	case ExprNervous:
+	case character.ExprNervous:
 		return 200
 	}
 	return 300
@@ -111,7 +110,7 @@ func (s *PlayScene) montageFor(state string) []string {
 		return nil
 	}
 	switch state {
-	case ExprTreat, ExprCombo, ExprPerfect, ExprExcited, ExprComeback, ExprGreat:
+	case character.ExprTreat, character.ExprCombo, character.ExprPerfect, character.ExprExcited, character.ExprComeback, character.ExprGreat:
 	default:
 		return nil // only the happy moments flash through their poses
 	}
@@ -132,7 +131,7 @@ func (s *PlayScene) montageFor(state string) []string {
 
 // comboPose returns the combo pose for the n-th combo step, going through them in order.
 func (s *PlayScene) comboPose(n int) string {
-	vs := s.char.Variants(ExprCombo)
+	vs := s.char.Variants(character.ExprCombo)
 	return vs[max(0, n)%len(vs)].ID
 }
 
@@ -143,7 +142,7 @@ func (s *PlayScene) bounce() float64 {
 		return 0
 	}
 	switch family(s.expr) {
-	case ExprHappy, ExprExcited:
+	case character.ExprHappy, character.ExprExcited:
 	default:
 		return 0
 	}
@@ -162,12 +161,12 @@ var beatPhase = sound.BeatPhase
 // middle of its feet (so she squashes and springs from the floor), moved by dx and lifted
 // by lift. gray drains the color (0 none, 1 fully gray).
 func drawPortrait(dst, img *ebiten.Image, w, h, sx, sy, dx, lift float64, alpha float32, gray float64, scale float64) {
-	drawPortraitFigure(dst, img, figureOf(img), w, h, sx, sy, dx, lift, alpha, gray, scale)
+	drawPortraitFigure(dst, img, character.FigureOf(img), w, h, sx, sy, dx, lift, alpha, gray, scale)
 }
 
 // drawPortraitFigure is drawPortrait with the figure already measured (f, in img's
 // coordinates), for pictures that are not on the GPU yet when they are measured.
-func drawPortraitFigure(dst, img *ebiten.Image, f figure, w, h, sx, sy, dx, lift float64, alpha float32, gray float64, scale float64) {
+func drawPortraitFigure(dst, img *ebiten.Image, f character.Figure, w, h, sx, sy, dx, lift float64, alpha float32, gray float64, scale float64) {
 	// Every standing pose is drawn to the same height (portraitFill of the frame), measured
 	// on her figure, so she does not grow or shrink as the pose changes. A crouching or
 	// sitting pose is drawn at the character's standing size (scale, see portraitScale),
@@ -176,23 +175,23 @@ func drawPortraitFigure(dst, img *ebiten.Image, f figure, w, h, sx, sy, dx, lift
 	// frame altogether is drawn smaller.
 	b := img.Bounds()
 	ih := float64(b.Dy())
-	figH := float64(f.box.Dy())
-	if f.box.Empty() || figH == 0 {
-		f.box, f.bodyX, figH = b, b.Min.X+b.Dx()/2, ih
+	figH := float64(f.Box.Dy())
+	if f.Box.Empty() || figH == 0 {
+		f.Box, f.BodyX, figH = b, b.Min.X+b.Dx()/2, ih
 	}
 	fit := scaleOr(scale, portraitFill*h/(standingHeight*ih))
 	// standing: the figure takes most of the picture's height, or it is tall and narrow
 	// (a standing figure drawn small in its picture is still a standing figure)
-	if figH >= standingShare*ih || figH >= standingAspect*float64(f.box.Dx()) {
+	if figH >= standingShare*ih || figH >= standingAspect*float64(f.Box.Dx()) {
 		fit = portraitFill * h / figH // standing: the same height in every pose
 	} else if figH*fit < minCrouch*portraitFill*h {
 		fit = minCrouch * portraitFill * h / figH // crouching: never tiny
 	}
-	if bw := float64(f.box.Dx()) * fit; bw > w*0.98 {
+	if bw := float64(f.Box.Dx()) * fit; bw > w*0.98 {
 		fit *= w * 0.98 / bw // too wide even when moved aside
 	}
-	left := w/2 - float64(f.bodyX-f.box.Min.X)*fit
-	right := left + float64(f.box.Dx())*fit
+	left := w/2 - float64(f.BodyX-f.Box.Min.X)*fit
+	right := left + float64(f.Box.Dx())*fit
 	shift := 0.0
 	switch {
 	case left < w*0.01:
@@ -202,7 +201,7 @@ func drawPortraitFigure(dst, img *ebiten.Image, f figure, w, h, sx, sy, dx, lift
 	}
 	floor := (h + portraitFill*h) / 2 // where the feet stand
 	var geo ebiten.GeoM
-	geo.Translate(-float64(f.bodyX), -float64(f.box.Max.Y)) // her feet, under the body's middle, at the origin
+	geo.Translate(-float64(f.BodyX), -float64(f.Box.Max.Y)) // her feet, under the body's middle, at the origin
 	geo.Scale(fit*sx, fit*sy)
 	geo.Translate(w/2+shift+dx, floor-lift)
 	if gray > 0 {
@@ -256,94 +255,6 @@ func (s *PlayScene) portraitScale(h float64) float64 {
 	return 0
 }
 
-// figure is where the figure is in a portrait: the box around it and the middle of her
-// body (the median of the opaque pixels across the middle half of her height).
-type figure struct {
-	box   image.Rectangle
-	bodyX int
-}
-
-// figureCache keeps the figure of each portrait, measured when it was decoded (or read
-// from the GPU once).
-var figureCache = map[*ebiten.Image]figure{}
-
-// figureOf finds the figure in a portrait. Every portrait Img loads was measured on the
-// CPU as it was decoded; only another picture (a placeholder) is read back from the GPU.
-func figureOf(img *ebiten.Image) figure {
-	if f, ok := figureCache[img]; ok {
-		return f
-	}
-	b := img.Bounds()
-	pix := make([]byte, 4*b.Dx()*b.Dy())
-	img.ReadPixels(pix)
-	f := measureFigure(pix, b.Dx(), b.Dy())
-	f.box = f.box.Add(b.Min)
-	f.bodyX += b.Min.X
-	figureCache[img] = f
-	return f
-}
-
-// alphaPixels returns the pixels of img as rows of 4*w bytes with the alpha at offset 3,
-// as measureFigure and portraitBox read them. A decoded picture (*image.RGBA or
-// *image.NRGBA, whose alpha is the same) is used as it is, without a copy.
-func alphaPixels(img image.Image) []byte {
-	b := img.Bounds()
-	w, h := b.Dx(), b.Dy()
-	if b.Min == (image.Point{}) {
-		switch p := img.(type) {
-		case *image.RGBA:
-			if p.Stride == 4*w && len(p.Pix) == 4*w*h {
-				return p.Pix
-			}
-		case *image.NRGBA:
-			if p.Stride == 4*w && len(p.Pix) == 4*w*h {
-				return p.Pix
-			}
-		}
-	}
-	rgba := image.NewRGBA(image.Rect(0, 0, w, h))
-	draw.Draw(rgba, rgba.Bounds(), img, b.Min, draw.Src)
-	return rgba.Pix
-}
-
-// measureFigure finds the figure in RGBA pixels of size w x h.
-func measureFigure(pix []byte, w, h int) figure {
-	opaque := func(x, y int) bool { return pix[(y*w+x)*4+3] > 24 }
-	minX, minY, maxX, maxY := w, h, -1, -1
-	for y := range h {
-		for x := range w {
-			if opaque(x, y) {
-				minX, minY = min(minX, x), min(minY, y)
-				maxX, maxY = max(maxX, x), max(maxY, y)
-			}
-		}
-	}
-	var f figure
-	if maxX < 0 {
-		return f
-	}
-	f.box = image.Rect(minX, minY, maxX+1, maxY+1)
-	// the middle of the body: half of the opaque pixels of the middle rows lie left of it
-	count := make([]int, w)
-	n := 0
-	for y := minY + (maxY-minY)/4; y <= minY+(maxY-minY)*3/4; y++ {
-		for x := range w {
-			if opaque(x, y) {
-				count[x]++
-				n++
-			}
-		}
-	}
-	acc := 0
-	for x := range w {
-		if acc += count[x]; acc*2 >= n {
-			f.bodyX = x
-			break
-		}
-	}
-	return f
-}
-
 // ---- Loading the portraits ahead ----
 
 // A portrait loads the first time it is shown, which takes a moment (decoding the PNG) and
@@ -355,11 +266,11 @@ func measureFigure(pix []byte, w, h int) figure {
 // start of a run (blocked, then excited, which flashes through all its poses within a
 // second), then every other pose. Decoding them all takes a second or two, so the show's
 // poses come first or the show caught up with the decoding.
-func portraitEntries(c *Character) []*ImageEntry {
-	first := c.Expression(ExprNormal)
-	out := []*ImageEntry{first, c.Cutin}
-	seen := map[*ImageEntry]bool{first: true}
-	for _, state := range []string{ExprBlocked, ExprExcited} {
+func portraitEntries(c *character.Character) []*character.ImageEntry {
+	first := c.Expression(character.ExprNormal)
+	out := []*character.ImageEntry{first, c.Cutin}
+	seen := map[*character.ImageEntry]bool{first: true}
+	for _, state := range []string{character.ExprBlocked, character.ExprExcited} {
 		for _, e := range c.Variants(state) {
 			if !seen[e] {
 				seen[e] = true
@@ -378,12 +289,12 @@ func portraitEntries(c *Character) []*ImageEntry {
 // releasePortraitsExcept frees the portraits (and cut-ins) of every character but c on the
 // GPU: they load again when that character is played, instead of piling up as one
 // character after another is played.
-func releasePortraitsExcept(c *Character) {
+func releasePortraitsExcept(c *character.Character) {
 	for _, o := range characters {
 		if o == c {
 			continue
 		}
-		keep := o.selectEntry() // the select screen and the title keep showing it
+		keep := o.SelectEntry() // the select screen and the title keep showing it
 		for _, e := range portraitEntries(o) {
 			if e != keep {
 				e.ReleaseImg()

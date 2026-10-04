@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/nao1215/rabbitrun/internal/assets"
+	"github.com/nao1215/rabbitrun/internal/character"
 	"github.com/nao1215/rabbitrun/internal/engine"
 	"github.com/nao1215/rabbitrun/internal/sound"
 	"github.com/nao1215/rabbitrun/road"
@@ -15,7 +17,7 @@ import (
 func TestCaptureScenesAreOnRealCourses(t *testing.T) { //nolint:paralleltest // shares the save data
 	useTempConfig(t)
 	sound.SetMuted(true)
-	chars, err := readCharacters(assetFS)
+	chars, err := character.Read(assets.FS())
 	if err != nil {
 		t.Fatal(err)
 	}

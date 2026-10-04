@@ -6,6 +6,8 @@ import (
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
+
+	"github.com/nao1215/rabbitrun/internal/assets"
 )
 
 const blockTex = 64 // block texture resolution; scaled down when drawn
@@ -31,12 +33,12 @@ var kindNames = map[Kind]string{KindSoda: "soda", KindLemon: "lemon", KindGrape:
 // Missing ones fall back to procedurally drawn glossy blocks.
 func initBlocks() {
 	for k := KindSoda; k <= KindOrange; k++ {
-		img, err := decodeAsset("assets/blocks/" + kindNames[k] + ".png")
+		img, err := assets.DecodeFile(assets.FS(), "blocks/"+kindNames[k]+".png")
 		if err == nil {
 			blockImages[k] = ebiten.NewImageFromImage(img)
 			continue
 		}
-		logBrokenImage(kindNames[k], err)
+		assets.LogBroken(kindNames[k], err)
 		blockImages[k] = ebiten.NewImageFromImage(renderGlossyBlock(kindColors[k], blockTex))
 	}
 }

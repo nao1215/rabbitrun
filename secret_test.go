@@ -3,6 +3,8 @@ package main
 import (
 	"testing"
 
+	"github.com/nao1215/rabbitrun/internal/assets"
+	"github.com/nao1215/rabbitrun/internal/character"
 	"github.com/nao1215/rabbitrun/internal/input"
 	"github.com/nao1215/rabbitrun/internal/save"
 	"github.com/nao1215/rabbitrun/internal/sound"
@@ -10,7 +12,7 @@ import (
 
 func TestSecretUnlocked(t *testing.T) {
 	t.Parallel()
-	chars := []*Character{{ID: "a"}, {ID: "b"}, {ID: "c"}, {ID: "d"}, {ID: "s", Secret: true}}
+	chars := []*character.Character{{ID: "a"}, {ID: "b"}, {ID: "c"}, {ID: "d"}, {ID: "s", Secret: true}}
 	cleared := func(ids ...string) *save.Data {
 		sd := &save.Data{Characters: map[string]*save.CharProgress{}}
 		for _, id := range ids {
@@ -37,7 +39,7 @@ func TestSecretUnlocked(t *testing.T) {
 
 func TestAllExtraCleared(t *testing.T) {
 	t.Parallel()
-	chars := []*Character{{ID: "a"}, {ID: "s", Secret: true}}
+	chars := []*character.Character{{ID: "a"}, {ID: "s", Secret: true}}
 	sd := &save.Data{Characters: map[string]*save.CharProgress{"a": {ClearedExtra: true}}}
 	if allExtraCleared(chars, sd) {
 		t.Fatal("the secret character has not cleared the extra stages yet")
@@ -51,7 +53,7 @@ func TestAllExtraCleared(t *testing.T) {
 func TestTitleBringsInANewCharacterOnce(t *testing.T) { //nolint:paralleltest // shares the save data
 	useTempConfig(t)
 	sound.SetMuted(true)
-	chars, err := readCharacters(assetFS)
+	chars, err := character.Read(assets.FS())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +93,7 @@ func TestTitleBringsInANewCharacterOnce(t *testing.T) { //nolint:paralleltest //
 func TestTitleTellsTheWordOnlyAfterTheSecretCharacterClears(t *testing.T) { //nolint:paralleltest // shares the save data
 	useTempConfig(t)
 	sound.SetMuted(true)
-	chars, err := readCharacters(assetFS)
+	chars, err := character.Read(assets.FS())
 	if err != nil {
 		t.Fatal(err)
 	}

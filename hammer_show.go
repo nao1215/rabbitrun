@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/nao1215/rabbitrun/internal/character"
 	"github.com/nao1215/rabbitrun/internal/sound"
 	"github.com/nao1215/rabbitrun/road"
 )
@@ -25,7 +26,7 @@ func (s *PlayScene) startHammerShow() {
 	}
 	s.showHold, s.showing = showHold, true
 	sound.Play(sound.Denied) // the way is shut
-	s.react(ExprBlocked, showHold, rankBig)
+	s.react(character.ExprBlocked, showHold, rankBig)
 }
 
 // updateHammerShow runs the show: the blocks stand, the cut-in, then the breaking (the

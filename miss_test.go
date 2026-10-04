@@ -3,6 +3,8 @@ package main
 import (
 	"testing"
 
+	"github.com/nao1215/rabbitrun/internal/assets"
+	"github.com/nao1215/rabbitrun/internal/character"
 	"github.com/nao1215/rabbitrun/internal/input"
 	"github.com/nao1215/rabbitrun/internal/sound"
 	"github.com/nao1215/rabbitrun/road"
@@ -11,7 +13,7 @@ import (
 func TestMissHoldsOnePose(t *testing.T) { //nolint:paralleltest // shares the save data
 	useTempConfig(t)
 	sound.SetMuted(true)
-	chars, err := readCharacters(assetFS)
+	chars, err := character.Read(assets.FS())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,7 +33,7 @@ func TestMissHoldsOnePose(t *testing.T) { //nolint:paralleltest // shares the sa
 	id := s.exprID
 	for range 600 { // ten seconds of deciding
 		s.Update(g)
-		if s.exprID != id || s.expr != ExprCrying {
+		if s.exprID != id || s.expr != character.ExprCrying {
 			t.Fatalf("the pose changed to %s (%s) while deciding", s.exprID, s.expr)
 		}
 	}
@@ -40,7 +42,7 @@ func TestMissHoldsOnePose(t *testing.T) { //nolint:paralleltest // shares the sa
 func TestPauseKeyDoesNothingOnTheMissScreen(t *testing.T) { //nolint:paralleltest // shares the save data
 	useTempConfig(t)
 	sound.SetMuted(true)
-	chars, err := readCharacters(assetFS)
+	chars, err := character.Read(assets.FS())
 	if err != nil {
 		t.Fatal(err)
 	}

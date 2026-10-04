@@ -9,6 +9,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	flag "github.com/spf13/pflag"
 
+	"github.com/nao1215/rabbitrun/internal/assets"
 	"github.com/nao1215/rabbitrun/internal/input"
 	"github.com/nao1215/rabbitrun/internal/save"
 	"github.com/nao1215/rabbitrun/internal/sound"
@@ -129,6 +130,7 @@ func main() {
 		}
 		return
 	}
+	assets.Use(embeddedAssets())
 	loadAssets()
 	if *recordPath != "" {
 		// told before a window opens, rather than after the game has loaded

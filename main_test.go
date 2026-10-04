@@ -3,6 +3,8 @@ package main
 import (
 	"os"
 	"testing"
+
+	"github.com/nao1215/rabbitrun/internal/assets"
 )
 
 // TestMain points the save data at a scratch directory for the whole package, so no
@@ -17,6 +19,7 @@ func TestMain(m *testing.M) {
 			panic(err)
 		}
 	}
+	assets.Use(embeddedAssets())
 	code := m.Run()
 	if err := os.RemoveAll(dir); err != nil {
 		panic(err)

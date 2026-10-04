@@ -6,6 +6,9 @@ import (
 	"testing"
 
 	flag "github.com/spf13/pflag"
+
+	"github.com/nao1215/rabbitrun/internal/assets"
+	"github.com/nao1215/rabbitrun/internal/character"
 )
 
 // parseArgs parses args into the program's own flags, as main does, and puts every
@@ -86,7 +89,7 @@ func TestDemoStagesMatchTheGame(t *testing.T) {
 
 func TestCheckRecordChar(t *testing.T) {
 	t.Parallel()
-	chars, err := readCharacters(assetFS)
+	chars, err := character.Read(assets.FS())
 	if err != nil {
 		t.Fatal(err)
 	}

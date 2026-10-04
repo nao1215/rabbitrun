@@ -1,6 +1,10 @@
 package main
 
-import "github.com/nao1215/rabbitrun/internal/save"
+import (
+	"github.com/nao1215/rabbitrun/internal/assets"
+	"github.com/nao1215/rabbitrun/internal/character"
+	"github.com/nao1215/rabbitrun/internal/save"
+)
 
 // The rewards for clearing (running every course of a game to the end):
 //   - the four regular characters each clearing the regular stages brings out the secret
@@ -12,7 +16,7 @@ import "github.com/nao1215/rabbitrun/internal/save"
 
 // secretUnlocked reports whether the secret character can be played: every regular
 // character has cleared the regular stages.
-func secretUnlocked(chars []*Character, sd *save.Data) bool {
+func secretUnlocked(chars []*character.Character, sd *save.Data) bool {
 	if *debugMode {
 		return true
 	}
@@ -30,7 +34,7 @@ func secretUnlocked(chars []*Character, sd *save.Data) bool {
 }
 
 // allExtraCleared reports whether every character has cleared the extra stages.
-func allExtraCleared(chars []*Character, sd *save.Data) bool {
+func allExtraCleared(chars []*character.Character, sd *save.Data) bool {
 	for _, c := range chars {
 		if p := sd.Characters[c.ID]; p == nil || !p.ClearedExtra {
 			return false
@@ -43,11 +47,11 @@ func allExtraCleared(chars []*Character, sd *save.Data) bool {
 // (assets/ui/title_complete): every character has cleared the extra stages, and the
 // picture exists.
 func titleComplete() bool {
-	return allExtraCleared(characters, store.Data) && uiImage("title_complete") != nil
+	return allExtraCleared(characters, store.Data) && assets.UI("title_complete") != nil
 }
 
 // locked reports whether the character cannot be chosen yet.
-func (c *Character) locked() bool {
+func locked(c *character.Character) bool {
 	return c.Secret && !secretUnlocked(characters, store.Data)
 }
 

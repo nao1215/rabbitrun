@@ -1,8 +1,15 @@
 package main
 
 import (
+	"bytes"
+	"fmt"
+	"image"
+	"image/png"
+	"strings"
 	"testing"
+	"testing/fstest"
 
+	"github.com/nao1215/rabbitrun/internal/character"
 	"github.com/nao1215/rabbitrun/internal/engine"
 	"github.com/nao1215/rabbitrun/internal/save"
 )
@@ -10,19 +17,40 @@ import (
 // The stage tests below share the package-level save data (courseClear changes it), so
 // they do not run in parallel.
 
-// stageScene is a play scene on a test character with n illustrations that all have a picture.
-func stageScene(n int) *PlayScene {
-	c := &Character{ID: "t", Expressions: []ImageEntry{{ID: ExprNormal, State: ExprNormal}}}
-	for i := range n {
-		c.CGs = append(c.CGs, ImageEntry{ID: "cg" + string(rune('a'+i)), has: 1})
+// tinyPNG is a one-pixel picture.
+func tinyPNG(t *testing.T) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, image.NewNRGBA(image.Rect(0, 0, 1, 1))); err != nil {
+		t.Fatal(err)
 	}
-	return &PlayScene{char: c, eng: engine.NewRun(heroID, false),
+	return buf.Bytes()
+}
+
+// stageScene is a play scene on a test character with n illustrations that all have a picture.
+func stageScene(t *testing.T, n int) *PlayScene {
+	t.Helper()
+	pic := tinyPNG(t)
+	fsys := fstest.MapFS{"characters/t/images/normal.png": {Data: pic}}
+	cgs := make([]string, 0, n)
+	for i := range n {
+		id := "cg" + string(rune('a'+i))
+		cgs = append(cgs, fmt.Sprintf(`{"id":%q,"score":%d}`, id, i+1))
+		fsys["characters/t/images/"+id+".png"] = &fstest.MapFile{Data: pic}
+	}
+	fsys["characters/t/game.json"] = &fstest.MapFile{Data: []byte(`{"id":"t","expressions":[{"id":"normal","state":"normal"}],"cgs":[` +
+		strings.Join(cgs, ",") + `]}`)}
+	chars, err := character.Read(fsys)
+	if err != nil || len(chars) != 1 {
+		t.Fatalf("the test character did not load: %v", err)
+	}
+	return &PlayScene{char: chars[0], eng: engine.NewRun(heroID, false),
 		prog: &save.CharProgress{SeenExpr: map[string]bool{}, UnlockedCG: map[string]bool{}}}
 }
 
 func TestCourseClearUnlocksItsIllustration(t *testing.T) { //nolint:paralleltest // shares the save data
 	useTempConfig(t)
-	s := stageScene(engine.GameCourses - 1) // one illustration a course
+	s := stageScene(t, engine.GameCourses-1) // one illustration a course
 	s.courseClear(1)
 	if s.stageCG != &s.char.CGs[0] || !s.prog.UnlockedCG["cga"] {
 		t.Fatalf("after course 1: background %v, unlocked %v", s.stageCG, s.prog.UnlockedCG)
@@ -35,7 +63,7 @@ func TestCourseClearUnlocksItsIllustration(t *testing.T) { //nolint:paralleltest
 
 func TestAllClearEndsTheRun(t *testing.T) { //nolint:paralleltest // shares the save data
 	useTempConfig(t)
-	s := stageScene(2)
+	s := stageScene(t, 2)
 	s.allClearNow()
 	if !s.allClear || !s.committed {
 		t.Fatalf("all clear %v, committed %v", s.allClear, s.committed)

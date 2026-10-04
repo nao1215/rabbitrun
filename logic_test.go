@@ -4,6 +4,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/nao1215/rabbitrun/internal/character"
 	"github.com/nao1215/rabbitrun/internal/engine"
 	"github.com/nao1215/rabbitrun/internal/input"
 	"github.com/nao1215/rabbitrun/internal/save"
@@ -11,7 +12,7 @@ import (
 
 func TestMoodFamily(t *testing.T) {
 	t.Parallel()
-	families := []string{ExprNormal, ExprHappy, ExprExcited, ExprWorried, ExprPanic, ExprGameOver}
+	families := []string{character.ExprNormal, character.ExprHappy, character.ExprExcited, character.ExprWorried, character.ExprPanic, character.ExprGameOver}
 	for _, st := range allStates {
 		if f := family(st); !slices.Contains(families, f) {
 			t.Errorf("family(%q) = %q, not one of the six families", st, f)
@@ -35,15 +36,15 @@ func TestReactPriority(t *testing.T) {
 		wantTimer int
 		wantHop   bool
 	}{
-		{"first reaction", "", 0, ExprHappy, ExprHappy, 90, false},
-		{"weaker is ignored while active", ExprExcited, 50, ExprHappy, ExprExcited, 50, false},
-		{"weaker replaces an expired one", ExprExcited, 0, ExprHappy, ExprHappy, 90, false},
-		{"stronger overrides", ExprHappy, 50, ExprPerfect, ExprPerfect, 90, true},
-		{"equal rank overrides", ExprExcited, 50, ExprTreat, ExprTreat, 90, true},
-		{"combo hops", "", 0, ExprCombo, ExprCombo, 90, true},
+		{"first reaction", "", 0, character.ExprHappy, character.ExprHappy, 90, false},
+		{"weaker is ignored while active", character.ExprExcited, 50, character.ExprHappy, character.ExprExcited, 50, false},
+		{"weaker replaces an expired one", character.ExprExcited, 0, character.ExprHappy, character.ExprHappy, 90, false},
+		{"stronger overrides", character.ExprHappy, 50, character.ExprPerfect, character.ExprPerfect, 90, true},
+		{"equal rank overrides", character.ExprExcited, 50, character.ExprTreat, character.ExprTreat, 90, true},
+		{"combo hops", "", 0, character.ExprCombo, character.ExprCombo, 90, true},
 	}
 	rankOf := map[string]int{
-		"": rankHint, ExprHappy: rankSmall, ExprCombo: rankCombo, ExprExcited: rankBig, ExprTreat: rankBig, ExprPerfect: rankPerfect,
+		"": rankHint, character.ExprHappy: rankSmall, character.ExprCombo: rankCombo, character.ExprExcited: rankBig, character.ExprTreat: rankBig, character.ExprPerfect: rankPerfect,
 	}
 	for _, tc := range cases {
 		s := &PlayScene{reactExpr: tc.current, reactTimer: tc.timer, reactRank: rankOf[tc.current]}
@@ -59,22 +60,22 @@ func TestReactPriority(t *testing.T) {
 
 func TestRetryShowsComebackAfterGameOverPose(t *testing.T) {
 	t.Parallel()
-	c := &Character{ID: "t", Expressions: []ImageEntry{
-		{ID: ExprNormal, State: ExprNormal}, {ID: ExprGameOver, State: ExprGameOver}, {ID: ExprComeback, State: ExprComeback},
+	c := &character.Character{ID: "t", Expressions: []character.ImageEntry{
+		{ID: character.ExprNormal, State: character.ExprNormal}, {ID: character.ExprGameOver, State: character.ExprGameOver}, {ID: character.ExprComeback, State: character.ExprComeback},
 	}}
 	s := &PlayScene{char: c, eng: engine.NewRun(heroID, false), prog: &save.CharProgress{SeenExpr: map[string]bool{}}}
-	s.expr, s.exprID, s.comeback = ExprGameOver, ExprGameOver, comebackDelay
+	s.expr, s.exprID, s.comeback = character.ExprGameOver, character.ExprGameOver, comebackDelay
 	for range comebackDelay - 1 {
 		s.updateComeback()
 	}
-	if s.expr != ExprGameOver {
+	if s.expr != character.ExprGameOver {
 		t.Fatalf("the game over pose stays first, got %q", s.expr)
 	}
 	s.updateComeback()
 	for range windupFrames { // she crouches for a moment before springing up
 		s.updateComeback()
 	}
-	if s.reactExpr != ExprComeback || s.expr != ExprComeback {
+	if s.reactExpr != character.ExprComeback || s.expr != character.ExprComeback {
 		t.Errorf("then the comeback pose shows, got reaction %q expression %q", s.reactExpr, s.expr)
 	}
 	if s.hop != 1 {

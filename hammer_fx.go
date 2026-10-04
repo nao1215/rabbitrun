@@ -7,6 +7,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 
+	"github.com/nao1215/rabbitrun/internal/assets"
+	"github.com/nao1215/rabbitrun/internal/character"
 	"github.com/nao1215/rabbitrun/internal/gfx"
 	"github.com/nao1215/rabbitrun/internal/sound"
 	"github.com/nao1215/rabbitrun/road"
@@ -39,7 +41,7 @@ func (s *PlayScene) keepWalls() {
 func (s *PlayScene) swingHammer() {
 	sound.Play(sound.Hammer)
 	s.cutin = cutinFrames
-	s.react(ExprExcited, 120, rankBig)
+	s.react(character.ExprExcited, 120, rankBig)
 }
 
 // drawCutin draws the cut-in of a hammer: a pastel band with speed lines sweeps across
@@ -87,13 +89,13 @@ func (s *PlayScene) drawCutin(screen *ebiten.Image) {
 
 // hammerImage is the picture of the hammer item: a pop squeaky toy hammer that smashes the walls
 // (assets/ui/hammer.png), shown on the road and in the stock.
-func hammerImage() *ebiten.Image { return uiImage("hammer") }
+func hammerImage() *ebiten.Image { return assets.UI("hammer") }
 
 // cutinImage is the big picture of the hammer's cut-in: images/cutin.png (no background, a
 // "here I go!" pose), or the character select picture until it exists. It is decoded in
 // the background with her portraits (portraitEntries) and is not waited for: nil until it
 // is ready (the band sweeps in from the right meanwhile).
-func cutinImage(c *Character) *ebiten.Image {
+func cutinImage(c *character.Character) *ebiten.Image {
 	if c.Cutin != nil && c.Cutin.HasImage() {
 		return c.Cutin.ImgReady()
 	}

@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/hajimehoshi/ebiten/v2"
+
+	"github.com/nao1215/rabbitrun/internal/character"
 )
 
 // The drawing tests run every screen into an offscreen image. Without RunGame the pixels
@@ -22,7 +24,7 @@ var (
 	// drawChars are the characters of the drawing tests, loaded once and shared like the
 	// game shares them between its screens: the pictures decoded for one test (the slow
 	// part, cached on the entries) serve the next.
-	drawChars []*Character
+	drawChars []*character.Character
 )
 
 // newDrawScenario is newScenario with what drawing needs: the fonts and the blocks

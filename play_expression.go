@@ -4,6 +4,7 @@ import (
 	"image/color"
 	"math/rand/v2"
 
+	"github.com/nao1215/rabbitrun/internal/character"
 	"github.com/nao1215/rabbitrun/road"
 )
 
@@ -22,9 +23,9 @@ func (s *PlayScene) updateComeback() {
 		s.comeback--
 	case s.comeback == 1:
 		s.comeback = 0
-		s.react(ExprComeback, 150, rankBig) // rankBig also makes her hop
+		s.react(character.ExprComeback, 150, rankBig) // rankBig also makes her hop
 		s.updateExpression()
-	case s.reactExpr == ExprComeback && s.reactTimer > 0:
+	case s.reactExpr == character.ExprComeback && s.reactTimer > 0:
 		s.updateExpression()
 	}
 }
@@ -66,13 +67,13 @@ func (s *PlayScene) readRoad() {
 	e := s.eng
 	d := e.Danger()
 	if s.danger >= 3 && d <= 1 {
-		s.react(ExprRelief, 120, rankCombo) // through the narrow stretch
+		s.react(character.ExprRelief, 120, rankCombo) // through the narrow stretch
 	}
 	s.danger = d
 	if e.G.SweetAhead(10, road.SweetOneUp) {
 		if !s.oneUpSeen {
 			s.oneUpSeen = true
-			s.react(ExprWaiting, 80, rankHint) // an extra life is coming
+			s.react(character.ExprWaiting, 80, rankHint) // an extra life is coming
 		}
 	} else {
 		s.oneUpSeen = false
@@ -83,35 +84,35 @@ func (s *PlayScene) readRoad() {
 	}
 	if !s.droughtSeen && s.sinceSweet >= 60 {
 		s.droughtSeen = true
-		s.react(ExprDrought, 100, rankSmall)
+		s.react(character.ExprDrought, 100, rankSmall)
 	}
 }
 
 // updateExpression picks the expression from how tight the road is and recent events.
 func (s *PlayScene) updateExpression() {
 	// After a miss, while the player decides, she keeps one crying pose.
-	if s.eng.G.Missed && s.expr == ExprCrying {
+	if s.eng.G.Missed && s.expr == character.ExprCrying {
 		if s.popFrame >= 0 {
 			s.popFrame++
 		}
 		return
 	}
-	want := ExprNormal
+	want := character.ExprNormal
 	d := s.eng.Danger()
 	switch {
 	case s.eng.Over():
-		want = ExprGameOver
+		want = character.ExprGameOver
 	case s.reactTimer > 0 && (d < 3 || s.reactRank >= rankCombo):
 		// Reactions win, except that small ones do not hide panic.
 		want = s.reactExpr
 	case d >= 4:
-		want = ExprPanic // the narrowest road on the last life
+		want = character.ExprPanic // the narrowest road on the last life
 	case d >= 3:
-		want = ExprNervous
+		want = character.ExprNervous
 	case d >= 2:
-		want = ExprWorried
+		want = character.ExprWorried
 	case d == 0 && s.eng.G.Lives == road.StartLives:
-		want = ExprRelaxed
+		want = character.ExprRelaxed
 	}
 	if s.reactTimer > 0 {
 		s.reactTimer--
@@ -147,7 +148,7 @@ func (s *PlayScene) updateExpression() {
 		pop := s.popNext || (want != s.expr && reactionExpr(want))
 		s.repick, s.popNext = false, false
 		id := s.pickVariant(want)
-		if want == ExprCombo {
+		if want == character.ExprCombo {
 			id = s.comboPose(s.comboStep)
 		}
 		s.setPose(want, id, pop)
@@ -157,7 +158,7 @@ func (s *PlayScene) updateExpression() {
 // reactionExpr reports whether expr is a reaction (as opposed to a mood of the road ahead).
 func reactionExpr(expr string) bool {
 	switch expr {
-	case ExprNormal, ExprRelaxed, ExprWorried, ExprNervous, ExprPanic, ExprCrying:
+	case character.ExprNormal, character.ExprRelaxed, character.ExprWorried, character.ExprNervous, character.ExprPanic, character.ExprCrying:
 		return false
 	}
 	return true
@@ -202,25 +203,25 @@ func (s *PlayScene) pickVariant(state string) string {
 
 // moodBackground maps each expression to a solid background color that reflects its mood.
 var moodBackground = map[string]color.NRGBA{
-	ExprNormal:   popMint,
-	ExprHappy:    popYellow,
-	ExprExcited:  popPink,
-	ExprWorried:  popLavender,
-	ExprPanic:    popOrange,
-	ExprGameOver: popGray,
+	character.ExprNormal:   popMint,
+	character.ExprHappy:    popYellow,
+	character.ExprExcited:  popPink,
+	character.ExprWorried:  popLavender,
+	character.ExprPanic:    popOrange,
+	character.ExprGameOver: popGray,
 }
 
 // moodFamily groups the situations into six families that share a background color and
-// frame image. A reaction (exprFallback) is in the family of the situation whose portraits
+// frame image. A reaction (character.StandIn) is in the family of the situation whose portraits
 // stand in for it, so the two tables cannot disagree.
 var moodFamily = map[string]string{
-	ExprRelaxed: ExprNormal, ExprGreat: ExprHappy, ExprTreat: ExprExcited, ExprCombo: ExprExcited,
-	ExprPerfect: ExprExcited, ExprNervous: ExprWorried, ExprCrying: ExprPanic,
+	character.ExprRelaxed: character.ExprNormal, character.ExprGreat: character.ExprHappy, character.ExprTreat: character.ExprExcited, character.ExprCombo: character.ExprExcited,
+	character.ExprPerfect: character.ExprExcited, character.ExprNervous: character.ExprWorried, character.ExprCrying: character.ExprPanic,
 }
 
 // family is the family of the expression expr (see moodFamily).
 func family(expr string) string {
-	if stand, ok := exprFallback[expr]; ok {
+	if stand, ok := character.StandIn(expr); ok {
 		expr = stand
 	}
 	if f, ok := moodFamily[expr]; ok {

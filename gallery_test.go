@@ -71,7 +71,7 @@ func TestGalleryTilesAreMade(t *testing.T) { //nolint:paralleltest // shares the
 	var cg string
 	g, screen := newDrawScenario(t, func() {
 		c := characters[0] // the gallery opens on the first character
-		for _, e := range c.GalleryCGs() {
+		for _, e := range galleryCGs(c) {
 			if e.HasImage() {
 				cg = e.ID
 				progress(c.ID).UnlockedCG[cg] = true
@@ -94,17 +94,17 @@ func TestGalleryTilesAreMade(t *testing.T) { //nolint:paralleltest // shares the
 		t.Fatalf("entries %v are not both open", want)
 	}
 	for _, i := range want { // made by an earlier test on the shared characters
-		items[i].e.tile = nil
+		delete(galleryTiles, items[i].e)
 	}
 	s.loading = nil
 	playDrawn(t, g, screen, wait(2)) // the portrait's tile is asked for
 	s.sel = want[1]
 	g.in.SetScript(&script{})
 	deadline := time.Now().Add(30 * time.Second)
-	for items[want[0]].e.tile == nil || items[want[1]].e.tile == nil {
+	for galleryTiles[items[want[0]].e] == nil || galleryTiles[items[want[1]].e] == nil {
 		if time.Now().After(deadline) {
 			t.Fatalf("the tiles are not made after 30 seconds (portrait %v, illustration %v)",
-				items[want[0]].e.tile != nil, items[want[1]].e.tile != nil)
+				galleryTiles[items[want[0]].e] != nil, galleryTiles[items[want[1]].e] != nil)
 		}
 		if err := g.Update(); err != nil {
 			t.Fatal(err)

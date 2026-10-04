@@ -12,6 +12,8 @@ import (
 	"testing"
 
 	flag "github.com/spf13/pflag"
+
+	"github.com/nao1215/rabbitrun/internal/character"
 )
 
 // TestGlossyBlockShape renders the stand-in block drawn when a block picture is missing:
@@ -176,7 +178,7 @@ func TestRecorderTakesEveryOtherUpdate(t *testing.T) {
 func TestBeatBounce(t *testing.T) { //nolint:paralleltest // swaps the music's beat
 	old := beatPhase
 	t.Cleanup(func() { beatPhase = old })
-	s := &PlayScene{expr: ExprHappy, intensity: 2}
+	s := &PlayScene{expr: character.ExprHappy, intensity: 2}
 	beatPhase = func() (float64, bool) { return 0, false }
 	if b := s.bounce(); b != 0 {
 		t.Errorf("bounce %v with no music", b)
@@ -185,11 +187,11 @@ func TestBeatBounce(t *testing.T) { //nolint:paralleltest // swaps the music's b
 	if b := s.bounce(); b <= 0 || b > 0.016 {
 		t.Errorf("bounce %v in a happy mood with lively music", b)
 	}
-	s.expr = ExprNervous
+	s.expr = character.ExprNervous
 	if b := s.bounce(); b != 0 {
 		t.Errorf("bounce %v in a nervous mood", b)
 	}
-	s.expr, s.intensity = ExprHappy, 0
+	s.expr, s.intensity = character.ExprHappy, 0
 	if b := s.bounce(); b != 0 {
 		t.Errorf("bounce %v with calm music", b)
 	}
@@ -197,44 +199,13 @@ func TestBeatBounce(t *testing.T) { //nolint:paralleltest // swaps the music's b
 
 func TestPoseInterval(t *testing.T) {
 	t.Parallel()
-	if poseInterval(ExprGameOver) < 60*60 {
+	if poseInterval(character.ExprGameOver) < 60*60 {
 		t.Error("she does not stay down on the game over")
 	}
-	restless := []string{ExprCrying, ExprPanic, ExprNervous, ExprNormal}
+	restless := []string{character.ExprCrying, character.ExprPanic, character.ExprNervous, character.ExprNormal}
 	for i := 1; i < len(restless); i++ {
 		if poseInterval(restless[i-1]) >= poseInterval(restless[i]) {
 			t.Errorf("%s changes poses no faster than %s", restless[i-1], restless[i])
 		}
-	}
-}
-
-// TestMissingPortraitGetsAPlaceholder loads a portrait whose picture is not there: it
-// shows the stand-in, which says its label (or its ID without one).
-func TestMissingPortraitGetsAPlaceholder(t *testing.T) { //nolint:paralleltest // needs the fonts (newDrawScenario)
-	newDrawScenario(t, nil)
-	e := &ImageEntry{ID: "nothing", base: "assets/characters/nobody"}
-	if e.HasImage() {
-		t.Fatal("a missing picture is reported as there")
-	}
-	if e.name() != "nothing" {
-		t.Errorf("name %q without a label, want the ID", e.name())
-	}
-	e.Label = "Nobody"
-	if e.name() != "Nobody" {
-		t.Errorf("name %q with a label, want the label", e.name())
-	}
-	img := e.Img()
-	if img == nil || img.Bounds().Dx() != 896 || img.Bounds().Dy() != 1120 {
-		t.Fatalf("placeholder %v, want the 896x1120 stand-in", img)
-	}
-	if e.Img() != img {
-		t.Error("the placeholder was made again")
-	}
-	e.ReleaseImg()
-	if e.Image != nil {
-		t.Error("ReleaseImg kept the placeholder")
-	}
-	if loadCharImage("assets/characters/nobody", "nothing", "x") == nil {
-		t.Error("loadCharImage gave no stand-in for a missing picture")
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 
+	"github.com/nao1215/rabbitrun/internal/assets"
 	"github.com/nao1215/rabbitrun/internal/gfx"
 	"github.com/nao1215/rabbitrun/road"
 )
@@ -23,7 +24,7 @@ func (s *PlayScene) drawBoard(screen *ebiten.Image) {
 	gfx.FillRoundRect(screen, float32(bx), float32(by)+2, w+16, h+16, 18, shadowColor())
 	gfx.FillRoundRect(screen, float32(bx)-8, float32(by)-8, w+16, h+16, 18, gfx.PanelFill)
 	// The base picture under the road (assets/ui/board), covering the frame
-	if img := uiImage("board"); img != nil {
+	if img := assets.UI("board"); img != nil {
 		gfx.DrawImageCover(screen, img, bx, by, float64(w), float64(h), 1)
 	}
 	// After the first course, the latest illustration fills the frame behind the road.
@@ -162,7 +163,7 @@ const (
 // has run (in rows): she hops once every two rows, squashing as she lands. lean (-1..1)
 // tilts her toward the way she slides, and her ears trail behind.
 func drawBunny(dst *ebiten.Image, cx, footY, dist, lean float64, alpha float32) {
-	img := uiImage("pet")
+	img := assets.UI("pet")
 	if img == nil {
 		return
 	}
@@ -284,14 +285,14 @@ var macaronClash = map[int8]string{1: macMint, 2: macLemon, 4: macMint, 5: macPi
 
 // macaronImage is the macaron of the i-th color (the colors take turns).
 func macaronImage(i int) *ebiten.Image {
-	return uiImage(macaronNames(-1)[i%len(macaronColors)])
+	return assets.UI(macaronNames(-1)[i%len(macaronColors)])
 }
 
 // macaronFor is the macaron for column i among walls of the color wall: the colors take
 // turns across the road, leaving out the one that looks like the walls.
 func macaronFor(i int, wall int8) *ebiten.Image {
 	names := macaronNames(wall)
-	return uiImage(names[i%len(names)])
+	return assets.UI(names[i%len(names)])
 }
 
 // macaronSets are the artwork names of the macaron colors that go with each wall color

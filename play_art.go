@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"github.com/nao1215/rabbitrun/internal/character"
 	"github.com/nao1215/rabbitrun/internal/engine"
 	"github.com/nao1215/rabbitrun/internal/sound"
 )
@@ -13,7 +14,7 @@ import (
 // restartBackground puts back the background the course she restarts on began with: the
 // illustration of the course before it (the plain background on the first course).
 func (s *PlayScene) restartBackground() {
-	cgs := s.char.PlayCGs()
+	cgs := playCGs(s.char)
 	n := unlockedAfter(s.eng.G.Level-1, len(cgs)) // earned before this course
 	for i := n - 1; i >= 0; i-- {                 // the newest drawn yet (as courseClear)
 		if cgs[i].HasImage() {
@@ -45,7 +46,7 @@ func unlockedAfter(n, illustrations int) int {
 // illustrations earned by then are unlocked, and the newest becomes the background of
 // the next course.
 func (s *PlayScene) courseClear(n int) {
-	cgs := s.char.PlayCGs()
+	cgs := playCGs(s.char)
 	upto := unlockedAfter(n, len(cgs))
 	if upto == 0 {
 		return
@@ -87,7 +88,7 @@ func (s *PlayScene) allClearNow() {
 	store.Mark()
 }
 
-func (s *PlayScene) setStageCG(cg *ImageEntry) {
+func (s *PlayScene) setStageCG(cg *character.ImageEntry) {
 	if cg == s.stageCG {
 		return // the same picture: no fade again
 	}
@@ -123,8 +124,8 @@ func (s *PlayScene) prefetchArt() {
 
 // stageCGAfter is the illustration behind the road once n courses are cleared, as
 // courseClear picks it: the newest unlocked one that is drawn yet (nil: the plain board).
-func (s *PlayScene) stageCGAfter(n int) *ImageEntry {
-	cgs := s.char.PlayCGs()
+func (s *PlayScene) stageCGAfter(n int) *character.ImageEntry {
+	cgs := playCGs(s.char)
 	for i := unlockedAfter(n, len(cgs)) - 1; i >= 0; i-- {
 		if cgs[i].HasImage() {
 			return &cgs[i]
@@ -133,7 +134,7 @@ func (s *PlayScene) stageCGAfter(n int) *ImageEntry {
 	return nil
 }
 
-func (s *PlayScene) prefetchCG(e *ImageEntry) {
+func (s *PlayScene) prefetchCG(e *character.ImageEntry) {
 	if e == nil || e == s.stageCG || !e.HasImage() {
 		return
 	}
@@ -142,7 +143,7 @@ func (s *PlayScene) prefetchCG(e *ImageEntry) {
 }
 
 // ending is the picture of the all clear: of the extra stages when they are played.
-func (s *PlayScene) ending() *ImageEntry {
+func (s *PlayScene) ending() *character.ImageEntry {
 	if extraMode() {
 		return s.char.EndingExtra
 	}
