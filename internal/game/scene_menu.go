@@ -131,6 +131,11 @@ func (s *titleScene) Update(g *Game) {
 		sound.Play(sound.Unlock)
 	}
 	s.sel = menuNav(&g.in, s.sel, len(titleItems), input.Up, input.Down)
+	if s.sel == 1 {
+		// the gallery's artwork, decoded while GALLERY is chosen: its first frame waited
+		// 50 to 70 ms for the background and the frames of the portraits otherwise
+		assets.PrefetchUI(galleryArtwork...)
+	}
 	if g.in.Pressed(input.Confirm) {
 		sound.Play(sound.Confirm)
 		switch s.sel {

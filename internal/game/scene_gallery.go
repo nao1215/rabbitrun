@@ -4,6 +4,7 @@ import (
 	"image"
 	"image/color"
 	"math"
+	"slices"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/colorm"
@@ -36,15 +37,29 @@ type galleryScene struct {
 	listChar int
 
 	// Pictures for tiles are decoded on worker goroutines (decoding a PNG is the slow part)
-	// and arrive on decoded; the tile itself is made on the main goroutine.
+	// and arrive on decoded; the tile itself is made on the main goroutine. quit is closed
+	// when the gallery is left: the decodes not started yet are given up.
 	loading map[*character.ImageEntry]bool
 	decoded chan decodedPicture
+	quit    chan struct{}
+
+	// The enlarged view never decodes on the main goroutine: the picture shown and those
+	// beside it are decoded ahead in the background (held), and until the one chosen is in,
+	// the one shown before stays (shown, of the entry shownOf).
+	held              []*character.ImageEntry // illustrations decoded ahead at full size
+	loaded            []*character.ImageEntry // portraits the enlarged view loaded (freed when it closes)
+	shown             *ebiten.Image
+	shownOf           galleryItem
+	dwell             int // frames the grid selection has stayed on its tile (warmSel of warmChar)
+	warmSel, warmChar int
 }
 
-// decodedPicture is a tile picture decoded off the main goroutine.
+// decodedPicture is a tile picture decoded off the main goroutine, a portrait's figure
+// measured there too.
 type decodedPicture struct {
 	it  galleryItem
 	img image.Image
+	fig character.Figure
 }
 
 const (
@@ -132,19 +147,14 @@ func (s *galleryScene) Update(g *Game) {
 			step = 1
 		}
 		if step != 0 {
-			for i := 1; i < n; i++ {
-				j := (s.sel + step*i + n*n) % n
-				if s.open[j] {
-					s.releaseViewed(items)
-					s.sel = j
-					sound.Play(sound.Move)
-					break
-				}
+			if j := s.nextOpen(s.sel, step); j != s.sel {
+				s.sel = j
+				s.prepareView()
+				sound.Play(sound.Move)
 			}
 		}
 		if g.in.Pressed(input.Cancel) || g.in.Pressed(input.Confirm) {
-			s.releaseViewed(items)
-			s.viewing = false
+			s.closeView()
 			sound.Play(sound.Cancel)
 		}
 		return
@@ -160,6 +170,7 @@ func (s *galleryScene) Update(g *Game) {
 			}
 		}
 		s.sel, s.scroll, s.scrollView = 0, 0, 0
+		s.hold(nil)
 		sound.Play(sound.Move)
 		return
 	}
@@ -179,6 +190,14 @@ func (s *galleryScene) Update(g *Game) {
 	if s.sel != old {
 		sound.Play(sound.Move)
 	}
+	// an illustration the selection rests on is decoded ahead, so it opens at once
+	if s.sel != s.warmSel || s.listChar != s.warmChar {
+		s.warmSel, s.warmChar, s.dwell = s.sel, s.listChar, 0
+		s.hold(nil)
+	}
+	if s.dwell++; s.dwell == warmFrames && s.open[s.sel] && items[s.sel].cg {
+		s.hold([]*character.ImageEntry{items[s.sel].e})
+	}
 	// Scroll by whole rows so the selected row is on screen and no row is cut off.
 	row := s.sel / galleryCols
 	first := int(s.scroll/(tileH+tileGap) + 0.5)
@@ -193,6 +212,7 @@ func (s *galleryScene) Update(g *Game) {
 	if g.in.Pressed(input.Confirm) {
 		if s.open[s.sel] {
 			s.viewing = true
+			s.prepareView()
 			sound.Play(sound.Confirm)
 		} else {
 			sound.Play(sound.Denied)
@@ -211,10 +231,94 @@ func boolInt(b bool) int {
 	return 0
 }
 
-// releaseViewed frees the full-size image of the illustration being viewed (so 100 of them are not held).
-func (s *galleryScene) releaseViewed(items []galleryItem) {
-	if it := items[s.sel]; it.cg {
-		it.e.ReleaseFull()
+// warmFrames is how long the grid selection rests on an illustration before it is decoded
+// ahead (moving across the grid decodes nothing).
+const warmFrames = 10
+
+// nextOpen is the open entry step entries (one way or the other) from i, going around;
+// i itself when no other is open.
+func (s *galleryScene) nextOpen(i, step int) int {
+	n := len(s.list)
+	for k := 1; k < n; k++ {
+		if j := ((i+step*k)%n + n) % n; s.open[j] {
+			return j
+		}
+	}
+	return i
+}
+
+// prepareView decodes ahead the picture chosen in the enlarged view and the open ones on
+// either side (where a step goes next), and frees those further away: three are held at
+// most, however many are looked through.
+func (s *galleryScene) prepareView() {
+	near := []int{s.sel, s.nextOpen(s.sel, 1), s.nextOpen(s.sel, -1)}
+	var cgs, portraits []*character.ImageEntry
+	for _, i := range near {
+		if it := s.list[i]; it.cg {
+			cgs = append(cgs, it.e)
+		} else {
+			portraits = append(portraits, it.e)
+		}
+	}
+	s.hold(cgs)
+	keep := s.loaded[:0]
+	for _, e := range s.loaded {
+		if slices.Contains(portraits, e) {
+			keep = append(keep, e)
+		} else {
+			s.forgetShown(e)
+			e.ReleaseImg()
+		}
+	}
+	s.loaded = keep
+	for _, e := range portraits {
+		if e.Image == nil && !slices.Contains(s.loaded, e) && !slices.Contains(selectEntries(), e) {
+			s.loaded = append(s.loaded, e) // loaded for the view: freed with it (the title keeps the select cards)
+		}
+	}
+	character.PrefetchImgs(portraits)
+}
+
+// hold keeps the illustrations es decoded at full size (decoding those not yet) and frees
+// the others held before.
+func (s *galleryScene) hold(es []*character.ImageEntry) {
+	for _, e := range s.held {
+		if !slices.Contains(es, e) {
+			s.forgetShown(e)
+			e.ReleaseFull()
+		}
+	}
+	s.held = append(s.held[:0], es...)
+	for _, e := range es {
+		e.PrefetchFull()
+	}
+}
+
+// forgetShown stops showing the picture of e, which is being freed.
+func (s *galleryScene) forgetShown(e *character.ImageEntry) {
+	if s.shownOf.e == e {
+		s.shown, s.shownOf = nil, galleryItem{}
+	}
+}
+
+// closeView closes the enlarged view and frees what it held.
+func (s *galleryScene) closeView() {
+	s.viewing = false
+	s.hold(nil)
+	for _, e := range s.loaded {
+		e.ReleaseImg()
+	}
+	s.loaded = nil
+	s.shown, s.shownOf = nil, galleryItem{}
+}
+
+// release frees what the gallery holds when it is left (Game.SetScene) and gives up the
+// tile pictures not decoded yet.
+func (s *galleryScene) release() {
+	s.closeView()
+	if s.quit != nil {
+		close(s.quit)
+		s.quit = nil
 	}
 }
 
@@ -223,19 +327,7 @@ func (s *galleryScene) Draw(screen *ebiten.Image) {
 	items := s.items()
 	if s.viewing {
 		dimScreen(screen, 0xf0)
-		it := items[s.sel]
-		if it.cg {
-			gfx.DrawImageFit(screen, it.e.Full(), 0, 0, ScreenW, ScreenH, 1) // whole, with bands at the sides
-		} else {
-			if bgImg := assets.UI("frame_" + family(it.e.State)); bgImg != nil {
-				gfx.DrawImageCover(screen, bgImg, 0, 0, ScreenW, ScreenH, 0.9)
-			}
-			// the same size and place as in the play screen's frame: every standing pose
-			// equally tall, a crouching one not tiny, nothing cut off
-			if img := it.e.Img(); img != nil {
-				drawPortrait(screen, img, ScreenW, ScreenH, 1, 1, 0, 0, 1, 0, 0)
-			}
-		}
+		s.drawView(screen, items[s.sel])
 		return
 	}
 
@@ -281,6 +373,34 @@ func (s *galleryScene) Draw(screen *ebiten.Image) {
 	s.pull = drawFaceStrip(screen, s.charIdx, s.pull, 12, 1)
 }
 
+// drawView draws the entry it enlarged. While its picture is still being decoded, the
+// one shown before stays (on the first, only the dimmed screen shows for those frames).
+func (s *galleryScene) drawView(screen *ebiten.Image, it galleryItem) {
+	var img *ebiten.Image
+	if it.cg {
+		img = it.e.FullReady()
+	} else {
+		img = it.e.ImgReady()
+	}
+	if img != nil {
+		s.shown, s.shownOf = img, it
+	} else {
+		img, it = s.shown, s.shownOf
+	}
+	switch {
+	case img == nil:
+	case it.cg:
+		gfx.DrawImageFit(screen, img, 0, 0, ScreenW, ScreenH, 1) // whole, with bands at the sides
+	default:
+		if bgImg := assets.UI("frame_" + family(it.e.State)); bgImg != nil {
+			gfx.DrawImageCover(screen, bgImg, 0, 0, ScreenW, ScreenH, 0.9)
+		}
+		// the same size and place as in the play screen's frame: every standing pose
+		// equally tall, a crouching one not tiny, nothing cut off
+		drawPortrait(screen, img, ScreenW, ScreenH, 1, 1, 0, 0, 1, 0, 0)
+	}
+}
+
 // requestPicture starts decoding e's picture on a worker goroutine, once.
 func (s *galleryScene) requestPicture(it galleryItem) {
 	e := it.e
@@ -290,6 +410,7 @@ func (s *galleryScene) requestPicture(it galleryItem) {
 	if s.loading == nil {
 		s.loading = map[*character.ImageEntry]bool{}
 		s.decoded = make(chan decodedPicture, 64)
+		s.quit = make(chan struct{})
 	}
 	s.loading[e] = true
 	// A portrait already loaded for play (with its figure measured) makes its tile at once,
@@ -303,27 +424,37 @@ func (s *galleryScene) requestPicture(it galleryItem) {
 			return
 		}
 	}
-	go func(out chan<- decodedPicture) {
+	go func(out chan<- decodedPicture, quit <-chan struct{}) {
 		// Twice the tile height, so the tile is drawn from a sharper picture.
-		img := e.DecodeScaled(2 * tileInnerH)
-		out <- decodedPicture{it, img}
-	}(s.decoded)
+		d := decodedPicture{it: it, img: e.DecodeScaled(2*tileInnerH, quit)}
+		if d.img != nil && !it.cg {
+			d.fig = character.MeasureFigure(d.img) // here, not on the main goroutine
+		}
+		select {
+		case out <- d:
+		case <-quit: // the gallery was left: nobody makes the tile
+		}
+	}(s.decoded, s.quit)
 }
 
 // finishTiles makes the tiles of pictures that finished decoding. Uploading to the GPU is
 // quick, but it is capped per frame so a frame never stalls.
 func (s *galleryScene) finishTiles() {
-	for range 8 {
+	for range tilesPerFrame {
 		select {
 		case d := <-s.decoded:
 			if e := d.it.e; galleryTiles[e] == nil {
-				galleryTiles[e] = makeTile(func(l *ebiten.Image) { drawTilePicture(l, d.it, d.img) })
+				galleryTiles[e] = makeTile(func(l *ebiten.Image) { drawTilePicture(l, d.it, d.img, d.fig) })
 			}
 		default:
 			return
 		}
 	}
 }
+
+// tilesPerFrame caps the tiles made in a frame: a dozen in view at once each took a few
+// ms to make and upload, and the frame took them all.
+const tilesPerFrame = 3
 
 // galleryTiles are the finished tiles of the pictures, made once and kept (the entries
 // never move).
@@ -351,7 +482,7 @@ func makeTile(paint func(l *ebiten.Image)) *ebiten.Image {
 
 // drawTilePicture paints an unlocked entry's picture into the tile layer l: an
 // illustration as it is, a portrait over the backdrop of its situation.
-func drawTilePicture(l *ebiten.Image, it galleryItem, pic image.Image) {
+func drawTilePicture(l *ebiten.Image, it galleryItem, pic image.Image, fig character.Figure) {
 	e := it.e
 	lw, lh := float64(l.Bounds().Dx()), float64(l.Bounds().Dy())
 	drawTileBackdrop(l, it)
@@ -369,7 +500,7 @@ func drawTilePicture(l *ebiten.Image, it galleryItem, pic image.Image) {
 	}
 	// a portrait is drawn as in the play screen's frame (see drawPortrait)
 	img := ebiten.NewImageFromImage(pic)
-	drawPortraitFigure(l, img, character.MeasureFigure(pic), lw, lh, 1, 1, 0, 0, 1, 0, 0)
+	drawPortraitFigure(l, img, fig, lw, lh, 1, 1, 0, 0, 1, 0, 0)
 	img.Deallocate()
 }
 
@@ -492,6 +623,18 @@ func silhouette(dst, img *ebiten.Image, op *ebiten.DrawImageOptions) {
 	cm.Translate(float64(silhouetteColor.R)/0xff, float64(silhouetteColor.G)/0xff, float64(silhouetteColor.B)/0xff, 0)
 	colorm.DrawImage(dst, img, cm, &colorm.DrawImageOptions{GeoM: op.GeoM, Filter: op.Filter})
 }
+
+// galleryArtwork is the artwork of the gallery: its background and the frames behind the
+// portraits (one a family of expressions).
+var galleryArtwork = func() []string {
+	names := make([]string, 0, 1+len(moodBackground))
+	names = append(names, "gallery")
+	for f := range moodBackground {
+		names = append(names, "frame_"+f)
+	}
+	slices.Sort(names)
+	return names
+}()
 
 var galleryBG *ebiten.Image
 

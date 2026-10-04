@@ -233,9 +233,14 @@ func UploadPrefetched(entries []*ImageEntry, n int) {
 
 // DecodeScaled decodes the picture at most maxH pixels high, or returns nil if it is
 // missing. It may run on any goroutine, and waits while a few other pictures are being
-// decoded (see decoders).
-func (e *ImageEntry) DecodeScaled(maxH int) image.Image {
-	decoders <- struct{}{}
+// decoded (see decoders). Closing quit gives up the wait (it returns nil): the screen that
+// wanted the picture was left, and the decoders are wanted for the next one's pictures.
+func (e *ImageEntry) DecodeScaled(maxH int, quit <-chan struct{}) image.Image {
+	select {
+	case decoders <- struct{}{}:
+	case <-quit:
+		return nil
+	}
 	defer func() { <-decoders }()
 	return decodeScaled(e.fsys, e.base, e.ID, maxH)
 }
@@ -248,18 +253,41 @@ func (e *ImageEntry) Full() *ebiten.Image {
 	}
 	if e.full == nil {
 		if e.fullPending != nil {
-			img := <-e.fullPending
-			e.fullPending = nil
-			if img != nil {
-				e.full = ebiten.NewImageFromImage(img)
-			} else {
-				e.full = Placeholder(e.Title)
-			}
+			e.uploadFull(<-e.fullPending)
 		} else {
 			e.full = loadCharImage(e.fsys, e.base, e.ID, e.Title)
 		}
 	}
 	return e.full
+}
+
+// uploadFull hands the illustration decoded in the background to the GPU (a placeholder
+// if it is missing).
+func (e *ImageEntry) uploadFull(img image.Image) {
+	e.fullPending = nil
+	if img != nil {
+		e.full = ebiten.NewImageFromImage(img)
+	} else {
+		e.full = Placeholder(e.Title)
+	}
+}
+
+// FullReady is Full without the wait: it starts decoding the illustration in the
+// background if nothing has (PrefetchFull), and is nil until it is decoded. The gallery's
+// enlarged view decoded each picture on the main goroutine, a frame of 40 to 80 ms at
+// every step.
+func (e *ImageEntry) FullReady() *ebiten.Image {
+	if e.Image != nil || e.full != nil {
+		return e.Full()
+	}
+	e.PrefetchFull()
+	select {
+	case img := <-e.fullPending:
+		e.uploadFull(img)
+		return e.full
+	default:
+		return nil
+	}
 }
 
 // PrefetchFull starts decoding the full-size illustration in the background, so the frame

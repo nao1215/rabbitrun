@@ -6,6 +6,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"github.com/nao1215/rabbitrun/internal/character"
 	"github.com/nao1215/rabbitrun/internal/input"
 )
 
@@ -206,6 +207,101 @@ func TestGalleryDebugUnlocksEverything(t *testing.T) { //nolint:paralleltest // 
 	for i, it := range s.items() {
 		if !s.open[i] {
 			t.Errorf("%s is locked in debug mode", it.e.ID)
+		}
+	}
+}
+
+// viewUntilShown draws the enlarged view until it shows the chosen entry's own picture
+// (it is decoded in the background, never on the main goroutine).
+func viewUntilShown(t *testing.T, g *Game, s *galleryScene, screen *ebiten.Image) {
+	t.Helper()
+	g.in.SetScript(&script{})
+	deadline := time.Now().Add(30 * time.Second)
+	for s.shownOf.e != s.list[s.sel].e {
+		if time.Now().After(deadline) {
+			t.Fatalf("%s is not shown after 30 seconds", s.list[s.sel].e.ID)
+		}
+		if err := g.Update(); err != nil {
+			t.Fatal(err)
+		}
+		g.Draw(screen)
+		time.Sleep(time.Millisecond)
+	}
+}
+
+// TestGalleryViewerHoldsFewPictures looks through the enlarged pictures one after another:
+// each is shown once it is decoded, no more than the one shown and those on either side
+// are held, and closing the view (and leaving the gallery) frees them all.
+func TestGalleryViewerHoldsFewPictures(t *testing.T) { //nolint:paralleltest // shares the save data and the characters
+	g, screen := newDrawScenario(t, unlockEverything)
+	s := openGallery(t, g, screen)
+	items := s.items()
+	first := -1
+	for i, it := range items {
+		if it.cg {
+			first = i
+			break
+		}
+	}
+	if first < 0 {
+		t.Skip("no illustration is drawn yet")
+	}
+	// rest on a portrait, then on the first illustration: it is decoded ahead
+	s.sel = max(0, first-1)
+	playDrawn(t, g, screen, wait(warmFrames+2))
+	if len(s.held) != 0 {
+		t.Fatalf("a portrait's tile decoded %d illustrations ahead", len(s.held))
+	}
+	s.sel = first
+	playDrawn(t, g, screen, wait(warmFrames+2))
+	if len(s.held) != 1 || s.held[0] != items[first].e {
+		t.Fatalf("resting on the illustration held %d pictures", len(s.held))
+	}
+	playDrawn(t, g, screen, press(input.Confirm))
+	if !s.viewing {
+		t.Fatal("the illustration did not open")
+	}
+	viewUntilShown(t, g, s, screen)
+	for step := range 6 {
+		action := input.Right
+		if step >= 4 {
+			action = input.Left
+		}
+		playDrawn(t, g, screen, press(action))
+		viewUntilShown(t, g, s, screen)
+		if len(s.held)+len(s.loaded) > 3 {
+			t.Fatalf("step %d: %d illustrations and %d portraits held", step, len(s.held), len(s.loaded))
+		}
+	}
+	playDrawn(t, g, screen, press(input.Cancel))
+	if s.viewing || len(s.held) != 0 || len(s.loaded) != 0 || s.shown != nil {
+		t.Fatalf("closing the view kept %d illustrations and %d portraits", len(s.held), len(s.loaded))
+	}
+	playDrawn(t, g, screen, press(input.Cancel))
+	titleOf(t, g)
+	if s.quit != nil {
+		t.Error("leaving the gallery did not give up its decodes")
+	}
+}
+
+// TestGalleryViewerPortraits steps through portraits in the enlarged view: each is shown,
+// and those the view loaded are freed when it closes (the select cards stay for the title).
+func TestGalleryViewerPortraits(t *testing.T) { //nolint:paralleltest // shares the save data and the characters
+	g, screen := newDrawScenario(t, unlockEverything)
+	s := openGallery(t, g, screen)
+	if len(s.items()) < 3 || s.items()[2].cg {
+		t.Skip("too few portraits")
+	}
+	s.sel = 1
+	playDrawn(t, g, screen, press(input.Confirm))
+	viewUntilShown(t, g, s, screen)
+	playDrawn(t, g, screen, press(input.Right))
+	viewUntilShown(t, g, s, screen)
+	loaded := append([]*character.ImageEntry(nil), s.loaded...)
+	playDrawn(t, g, screen, press(input.Confirm))
+	for _, e := range loaded {
+		if e.Image != nil {
+			t.Errorf("%s is still loaded after the view closed", e.ID)
 		}
 	}
 }
