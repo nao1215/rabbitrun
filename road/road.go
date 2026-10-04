@@ -310,6 +310,21 @@ func (g *Game) pushRow() {
 	g.Rows[0], g.ids[0] = g.Ahead, g.aheadID
 	g.aheadID = rowID{g.Level, g.courseRow}
 	g.Ahead = g.buildRow(true)
+	g.dropTaken()
+}
+
+// dropTaken takes out of the row about to come in the sweets she has picked up from it
+// before: a retry builds the road again, and what she has taken stays taken (lives taken
+// again made a run easy to force through); what she left lies there still. It is done for
+// every row built, not only for the rows on the screen at a retry: two retries in a row
+// go back further than the screen, and the rows built again after the second brought back
+// what she had picked up before the first.
+func (g *Game) dropTaken() {
+	for x := range W {
+		if g.taken[takenKey{g.aheadID, x}] {
+			g.Ahead[x].Sweet = 0
+		}
+	}
 }
 
 // StageCourses is how many courses the current stage has: four, or what is left of the
@@ -1252,7 +1267,9 @@ func (g *Game) Restart() bool {
 	level, rows := g.rewindTo()
 	g.finishing, g.finishLeft = false, 0
 	oldX := g.X
-	g.Rows, g.Ahead = [Rows]Row{}, Row{}
+	// the open road of a game's start has no rows of a course (the ids of the road of
+	// before stayed on its empty rows)
+	g.Rows, g.Ahead, g.ids = [Rows]Row{}, Row{}, [Rows]rowID{}
 	for x := range g.reach {
 		g.reach[x] = true
 	}
@@ -1279,20 +1296,9 @@ func (g *Game) Restart() bool {
 		g.courseRow = 1 // the row just built is the first of the course
 	}
 	g.X = g.openColumn(oldX)
-	// what she has taken stays taken: a retry is not a second helping (lives taken again
-	// made a run easy to force through); what she left lies there still
-	for y := range g.Rows {
-		for x := range W {
-			if g.taken[takenKey{g.ids[y], x}] {
-				g.Rows[y][x].Sweet = 0
-			}
-		}
-	}
-	for x := range W {
-		if g.taken[takenKey{g.aheadID, x}] {
-			g.Ahead[x].Sweet = 0
-		}
-	}
+	// what she has taken stays taken: the rows built again went through dropTaken, the
+	// first row of a game (built above) did not
+	g.dropTaken()
 	g.SideRowBehind = true // the road starts again with its last row just come in
 	g.Events = append(g.Events, Event{Kind: EventRestart})
 	return true
