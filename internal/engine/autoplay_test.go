@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"os"
 	"sort"
 	"testing"
 
@@ -58,15 +59,15 @@ func TestCarefulPlayerClearsEveryRun(t *testing.T) {
 	}
 }
 
-// skipWholeRuns skips a test that plays or searches whole runs: in -short, and when the
-// coverage is measured (the coverage job runs the tests under the race detector, whose
-// atomic coverage counters make the frame-by-frame search tens of times slower). The plain
-// test job runs them; TestCarefulPlayerReadsTheScreen and the tests of the search cover the
-// same code in a few seconds.
+// skipWholeRuns skips a test that plays or searches whole runs unless RABBITRUN_LONG_TESTS=1.
+// They are the same on every OS, so the long-tests workflow runs them once on Linux (on
+// every push and pull request, and nightly under the race detector) instead of on every
+// job of the test matrix; TestCarefulPlayerReadsTheScreen and the tests of the search
+// cover the same code in a few seconds everywhere. `make test-long` runs them locally.
 func skipWholeRuns(t *testing.T) {
 	t.Helper()
-	if testing.Short() || testing.CoverMode() != "" {
-		t.Skip("plays whole runs (skipped in -short and when measuring the coverage)")
+	if testing.Short() || os.Getenv("RABBITRUN_LONG_TESTS") != "1" {
+		t.Skip("plays whole runs (set RABBITRUN_LONG_TESTS=1 to run)")
 	}
 }
 

@@ -1,0 +1,44 @@
+name: LongTests
+
+# The tests that play or search every character's whole run, on both sides and at every
+# speed (internal/engine: TestEveryRunCanBePassed, TestCarefulPlayerClearsEveryRun,
+# TestCarefulPlayerClearsAtFullSpeed). They depend only on the road rules, not on the OS or
+# the screen, so they run once on Linux instead of on every job of the test matrix: on
+# every push and pull request, and nightly under the race detector as well.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 18 * * *" # 03:00 JST
+
+permissions:
+  contents: read
+
+jobs:
+  long_tests:
+    name: Whole runs
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.26.6"
+
+      - name: Play and search every run
+        env:
+          RABBITRUN_LONG_TESTS: "1"
+        run: go test -count=1 -run 'EveryRunCanBePassed|CarefulPlayerClears' -v ./internal/engine/
+
+      - name: The same under the race detector (nightly)
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        env:
+          RABBITRUN_LONG_TESTS: "1"
+        run: go test -race -count=1 -run 'EveryRunCanBePassed|CarefulPlayerClears' ./internal/engine/

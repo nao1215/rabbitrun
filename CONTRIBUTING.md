@@ -52,6 +52,7 @@ The `main` package at the repository root only reads the command line and opens 
 
 ```shell
 make test    # unit tests with the race detector and coverage
+make test-long  # the tests that play and search every whole run (CI: LongTests, also nightly)
 make e2e     # end-to-end tests of the built binary (requires atago)
 make vet
 make fmt
