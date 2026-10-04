@@ -67,11 +67,11 @@ const (
 // NewRun).
 var courseThemes = map[string][2][GameCourses]road.Theme{
 	coolID: {
-		{tWarm, tLane, tFork, tTrail, tSwing, tTrail, tPill, tDiam, tGate, tRoom, tStep, tLane, tCheck, tFork, tSwing, tMix},
+		{tWarm, tFork, tLane, tTrail, tSwing, tTrail, tPill, tDiam, tGate, tRoom, tStep, tLane, tCheck, tFork, tSwing, tMix},
 		{tWarm, tFork, tGate, tRoom, tDiam, tGate, tPill, tWave, tSwing, tLess, tStep, tDoor, tTrail, tStep, tDiam, tMix},
 	},
 	"cute": {
-		{tWarm, tDiam, tAlc, tTrail, tFunn, tSnake, tJar, tSwing, tHour, tSwing, tHour, tTrail, tWobb, tAlc, tJar, tMix},
+		{tWarm, tAlc, tDiam, tTrail, tFunn, tSnake, tJar, tSwing, tHour, tSwing, tHour, tTrail, tWobb, tAlc, tJar, tMix},
 		{tWarm, tWobb, tAlc, tTrail, tJar, tSnake, tFunn, tSwing, tWobb, tSnake, tSwing, tJar, tTrail, tHour, tDiam, tMix},
 	},
 	"gyal": {
@@ -98,6 +98,13 @@ const coolID = "cool"
 // than given at the start (the user's choice).
 var extraHammerRow = map[string]int{coolID: 40}
 
+// idleUntil is the last course of the regular side on which a road that would let her
+// stand still for more than half a screen gets a block in her way (road.Game.IdleUntil):
+// the first stage, the easy roads where that happened most (the user found them too easy,
+// going most of the screen without a key). On the stage after it the regular courses would
+// come out harder than the same courses of the extra stages.
+const idleUntil = 4
+
 // frontHardFrom is the course from which the regular side is as tight as the extra stages
 // (the second half of a run). The extra stages are tight from the first course, and faster.
 const frontHardFrom = 7
@@ -123,6 +130,7 @@ func NewRun(id string, extra bool) *Engine {
 	e.G.Hard = extra
 	if !extra {
 		e.G.HardFrom = frontHardFrom
+		e.G.IdleUntil = idleUntil
 	}
 	return e
 }
