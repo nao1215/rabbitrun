@@ -30,6 +30,18 @@ const (
 	ThemeEdgeRun                // a narrow road along one side of the screen, then the other
 	ThemeLanes                  // two walls part the road into three lanes for a while
 	ThemeWobble                 // a road that shakes from side to side
+	// The designed themes: each is one idea that can be told in a sentence and read on the
+	// screen well before she gets there, with its sweets and items laid as part of it (see
+	// designSweets). They keep their shape: no block of a long straight run comes into them
+	// (trap), and the random sweets stay off them.
+	ThemeFork       // a wall down the middle parts the road: a hard lane with a prize at its end, an easy one lined with macarons
+	ThemeTrail      // one long S across the screen with a trail of macarons along its middle
+	ThemeRooms      // wide rooms joined by short corridors at either side in turn, a line of macarons across each room
+	ThemeJar        // the road closes in to a neck at one side, then opens into a field of macarons
+	ThemeHammerHall // a hammer lies on the road, and a hall of walls with a wandering doorway follows
+	ThemeAlcoves    // a narrow road with dents in its walls on either side in turn, a macaron in each
+	ThemeDoors      // walls with two doors at the sides, then one in the middle, a macaron behind one side door
+	ThemeWave       // walls whose gaps follow a slow wave across the road, lit by a line of sweets
 	themeCount
 )
 
@@ -121,6 +133,14 @@ func (g *Game) themeTarget(t Theme, r int) (center, width int) {
 	case ThemeFunnel:
 		f := 0.5 + 0.5*math.Cos(2*math.Pi*float64(r)/14)
 		return W / 2, 2 + int(math.Round(5*f)) - hard*int(math.Round(f))
+	case ThemeFork, ThemeRooms, ThemeJar, ThemeDoors, ThemeWave:
+		return W / 2, 7 // the walls inside the road make the shape (themeBlocks)
+	case ThemeTrail:
+		return wave(trailPeriod, 2.5), 4 - hard
+	case ThemeHammerHall:
+		return W / 2, 5
+	case ThemeAlcoves:
+		return wave(32, 1), 3
 	default:
 		return g.center, g.width
 	}
@@ -204,6 +224,7 @@ func (g *Game) buildThemedRow() (Row, int, int) {
 		g.settle--
 		return row, left, right
 	}
+	g.themeRow = true
 	g.themeBlocks(&row, t, r, left, right)
 	if !g.passable(row) {
 		row = walls
@@ -386,6 +407,8 @@ func (g *Game) themeBlocks(row *Row, t Theme, r, left, right int) {
 				block(x)
 			}
 		}
+	case ThemeFork, ThemeRooms, ThemeJar, ThemeHammerHall, ThemeDoors, ThemeWave:
+		g.designBlocks(block, t, r, left, right)
 	default: // the road alone: its shape is the theme
 	}
 }
@@ -463,4 +486,343 @@ func (g *Game) updateReach(row Row) {
 		}
 	}
 	g.reach = next
+}
+
+// designed reports whether t is one of the designed themes (ThemeFork and the ones after
+// it), which lay their own sweets and keep their shape.
+func (t Theme) designed() bool { return t >= ThemeFork && t < themeCount }
+
+// ThemeFork, the fork: every forkPeriod rows a wall down the middle of the wide road, from
+// row forkFrom to forkTo of the period, parts it in two lanes three cells wide. One lane
+// (the left one, then the right one) has a block in two of its three cells every few rows,
+// the open cell stepping from its outer side to its inner side and back: it looks hard,
+// but it is a plain weave of one cell at a time. At its very end lies a prize: an extra
+// life at the first fork of a course, a hammer at the later ones. The other lane runs
+// straight and has a macaron on every other row.
+//
+// Memorable: one choice, told in a sentence (the hard lane pays). Fair: the wall starts in
+// sight, both lanes get through, and once in a lane she never has to cross the wall.
+const (
+	forkPeriod = 40
+	forkFrom   = 8
+	forkTo     = 30
+)
+
+// ThemeTrail, the macaron trail: a road four cells wide (three when hard) sweeps across the
+// screen and back in one long S every trailPeriod rows, with a sweet on every other row
+// down its middle and a macaron at each far end of the S.
+//
+// Memorable: follow the macarons. Fair: the S is so slow that the road never shifts on two
+// rows running, and the trail itself shows where the road goes next.
+const trailPeriod = 48
+
+// ThemeRooms, rooms and corridors: a room (the whole width of the road, open) and then a
+// corridor two cells wide against one side of the road, the left and the right side in
+// turn, so each room is crossed from corner to corner. A line of macarons crosses each
+// room from the door she came in by to the next one. rooms is the length of a room and of
+// a corridor; rooms are shorter when hard.
+//
+// Memorable: left door, right door, like walking through a house. Fair: the next door is in
+// sight from the one before, a whole room away, and the way is drawn on the floor.
+func (g *Game) rooms() (room, corridor int) {
+	if g.hard() {
+		return 7, 4
+	}
+	return 9, 5
+}
+
+// ThemeJar, the candy jar: a field of open road, then the road closes in one cell a row from
+// both sides toward a neck (jarClose rows), and the neck runs on (jarNeck rows). The neck is
+// three cells wide (two when hard) and stands at the left, the right and the middle of the
+// road in turn; the field after it holds a patch of macarons, the jar's sweets. jar is the
+// length of a field and the width of the neck; a field is shorter when hard.
+//
+// Memorable: squeeze through the neck of the jar, then help yourself. Fair: the walls close
+// in one cell a row, as fast as she can slide, and the neck shows from the field before.
+func (g *Game) jar() (field, neck int) {
+	if g.hard() {
+		return 8, 2
+	}
+	return 10, 3
+}
+
+const (
+	jarClose = 4
+	jarNeck  = 6
+)
+
+// jarNeckAt is the first cell of the neck of the k-th jar (of width neck) on a road from
+// left to right: at the left, the right and the middle in turn.
+func jarNeckAt(k, neck, left, right int) int {
+	switch k % 3 {
+	case 0:
+		return left + 1
+	case 1:
+		return right - neck
+	default:
+		return (left+right+1)/2 - neck/2
+	}
+}
+
+// ThemeHammerHall, the hammer hall: every hallPeriod rows a hall of walls across the road,
+// one every other row from row hallFrom to hallTo of the period, each with a doorway two
+// cells wide that moves one cell along from wall to wall, across the road and back
+// (hallDoors). A hammer lies in the middle of the road hallHammer rows into the first
+// period, just before the first hall; the next hall has none before it.
+//
+// Memorable: a hammer, then a wall of walls: smash it, or weave through and keep the hammer
+// for the next hall. Fair: each doorway overlaps the one before, so the weave is one cell
+// at a time, and a sweet in every doorway shows the way.
+const (
+	hallPeriod = 40
+	hallFrom   = 14
+	hallTo     = 32
+	hallHammer = 8
+)
+
+// hallDoors is where the doorway of each wall of a hall is, from the left of the road.
+var hallDoors = [...]int{0, 1, 2, 3, 2, 1}
+
+// ThemeAlcoves, the alcoves: a narrow road with a dent in one of its walls every
+// alcoveEvery rows (one fewer when hard), at the left and the right in turn, two rows deep
+// and a macaron in each.
+//
+// Memorable: left, right, left, a macaron in every window. Fair: the road itself is plain;
+// darting in and out of the dents is the risk she takes for the macarons, and passing them
+// by costs nothing.
+const alcoveEvery = 6
+
+// ThemeDoors, two doors and one: every doorEvery rows (one fewer when hard) a wall across
+// the wide road: one with a door two cells wide at each side, then one with a door three
+// cells wide in the middle, and so on. A macaron waits in one of the two side doors, the
+// left one and then the right one.
+//
+// Memorable: the rhythm side, middle, side, middle, with the macaron's side swapping.
+// Fair: every wall has a wide door, the next one is two cells away at most, and no column
+// stays open past two walls, so she reads each wall rather than running down a lane.
+const doorEvery = 6
+
+// ThemeWave, the wave: every waveEvery rows (one fewer when hard) a wall across the wide
+// road with a gap three cells wide (two when hard). The gap's middle follows a slow wave
+// across the road, a full swing in waveGates walls. A sweet sits in every gap, a macaron at
+// the top of every swing.
+//
+// Memorable: the gaps make one smooth line, the shape of a wave. Fair: the line can be read
+// half a screen ahead, and a gap is never more than two cells from the one before.
+const (
+	waveEvery = 4
+	waveGates = 8
+)
+
+// waveGap is the first cell and the width of the gap of the k-th wall of the wave.
+func (g *Game) waveGap(k, left int) (from, n int) {
+	c := left + 3 + int(math.Round(2*math.Sin(2*math.Pi*float64(k)/waveGates)))
+	if g.hard() {
+		return c - 1, 2
+	}
+	return c - 1, 3
+}
+
+// designBlocks puts the blocks of a designed theme in row r of the road (between left and
+// right, by block).
+func (g *Game) designBlocks(block func(int), t Theme, r, left, right int) {
+	wall := func(from, n int) { // a wall across the road but for the cells from..from+n-1
+		for x := left; x <= right; x++ {
+			if x < from || x >= from+n {
+				block(x)
+			}
+		}
+	}
+	wide := right-left == 6
+	switch t {
+	case ThemeFork:
+		p := r % forkPeriod
+		if p < forkFrom || p >= forkTo || !wide {
+			return
+		}
+		mid := (left + right) / 2
+		block(mid)
+		outer, inner := left, mid-1 // the hard lane
+		if (r/forkPeriod)%2 == 1 {
+			outer, inner = right, mid+1
+		}
+		every := 4 - g.hardN()
+		if q := p - forkFrom; q%every == 2 && p < forkTo-2 {
+			// the open cell steps one cell a time: outer, middle, inner, middle
+			gap := outer + []int{0, 1, 2, 1}[(q/every)%4]*(inner-outer)/2
+			for x := min(outer, inner); x <= max(outer, inner); x++ {
+				if x != gap {
+					block(x)
+				}
+			}
+		}
+	case ThemeRooms:
+		room, corridor := g.rooms()
+		if p := r % (room + corridor); p >= room && right-left >= 4 {
+			door := left
+			if (r/(room+corridor))%2 == 1 {
+				door = right - 1
+			}
+			wall(door, 2)
+		}
+	case ThemeJar:
+		field, neck := g.jar()
+		period := field + jarClose + jarNeck
+		p := r % period
+		if p < field || !wide {
+			return
+		}
+		from := jarNeckAt(r/period, neck, left, right)
+		reach := max(0, jarClose-1-(p-field)) // how far from the neck the road is still open
+		wall(from-reach, neck+2*reach)
+	case ThemeHammerHall:
+		if p := r % hallPeriod; p >= hallFrom && p < hallTo && (p-hallFrom)%2 == 0 && right-left >= 4 {
+			wall(left+hallDoors[((p-hallFrom)/2)%len(hallDoors)], 2)
+		}
+	case ThemeDoors:
+		every := doorEvery - g.hardN()
+		if r > 0 && r%every == 0 && wide {
+			if (r/every)%2 == 0 {
+				for x := left + 2; x <= right-2; x++ {
+					block(x)
+				}
+			} else {
+				wall(left+2, 3)
+			}
+		}
+	case ThemeWave:
+		every := waveEvery - g.hardN()
+		if r > 0 && r%every == 0 && wide {
+			wall(g.waveGap(r/every, left))
+		}
+	default:
+	}
+}
+
+// designSweets lays the sweets and items of a designed theme on row r of the road (between
+// left and right), on open cells that have nothing on them yet.
+func (g *Game) designSweets(row *Row, t Theme, r, left, right int) {
+	put := func(x int, s int8) {
+		if x >= 0 && x < W && row[x].Wall == 0 && row[x].Sweet == SweetNone {
+			row[x].Sweet = s
+		}
+	}
+	wide := right-left == 6
+	switch t {
+	case ThemeFork:
+		p := r % forkPeriod
+		if p < forkFrom || p >= forkTo || !wide {
+			return
+		}
+		hard, easy := left+1, right-1 // the middles of the lanes
+		if (r/forkPeriod)%2 == 1 {
+			hard, easy = easy, hard
+		}
+		if (p-forkFrom)%2 == 0 {
+			put(easy, SweetMacaron)
+		}
+		if p == forkTo-1 {
+			prize := SweetBomb
+			if r/forkPeriod == 0 {
+				prize = SweetOneUp
+			}
+			put(hard, prize)
+		}
+	case ThemeTrail:
+		mid := (left + right + 1) / 2
+		switch {
+		case r%(trailPeriod/2) == trailPeriod/4: // the far ends of the S
+			put(mid, SweetMacaron)
+		case r%2 == 0:
+			put(mid, SweetCandy)
+		}
+	case ThemeRooms:
+		room, corridor := g.rooms()
+		p, k := r%(room+corridor), r/(room+corridor)
+		if p == 0 || p >= room-1 {
+			return
+		}
+		// from the door she came in by (the other side) to the next one
+		from, to := right-1, left+1
+		if k%2 == 1 {
+			from, to = to, from
+		}
+		x := from + int(math.Round(float64((to-from)*(p-1))/float64(room-3)))
+		switch {
+		case p == room/2:
+			put(x, SweetMacaron)
+		case p%2 == 1:
+			put(x, SweetCandy)
+		}
+	case ThemeJar:
+		field, neck := g.jar()
+		period := field + jarClose + jarNeck
+		p := r % period
+		switch {
+		case !wide:
+		case p >= field+jarClose: // a sweet down the neck
+			put(jarNeckAt(r/period, neck, left, right)+neck/2, SweetCandy)
+		case p >= 2 && p <= 6 && p%2 == 0: // the patch of macarons in the field
+			for x := left + (p/2)%2; x <= right; x += 2 {
+				s := SweetCandy
+				if p == 4 && x == (left+right)/2 {
+					s = SweetMacaron
+				}
+				put(x, s)
+			}
+		}
+	case ThemeHammerHall:
+		p := r % hallPeriod
+		switch {
+		case p == hallHammer && r < hallPeriod:
+			put((left+right)/2, SweetBomb)
+		case p >= hallFrom && p < hallTo && (p-hallFrom)%2 == 0:
+			put(left+hallDoors[((p-hallFrom)/2)%len(hallDoors)], SweetCandy)
+		}
+	case ThemeAlcoves:
+		every := alcoveEvery - g.hardN()
+		if p := r % every; p <= 1 && r >= every {
+			x := left - 1
+			if (r/every)%2 == 1 {
+				x = right + 1
+			}
+			if p == 0 {
+				g.alcove, g.alcoveFor = x, 1
+			} else if g.alcoveFor > 0 {
+				x, g.alcoveFor = g.alcove, 0 // the second row of the dent, where the first one was
+			}
+			if x >= 0 && x < W {
+				row[x].Wall = 0 // the dent, two rows deep
+				if p == 0 {
+					put(x, SweetMacaron)
+				}
+			}
+		}
+	case ThemeDoors:
+		every := doorEvery - g.hardN()
+		if r == 0 || r%every != 0 || !wide {
+			return
+		}
+		switch k := r / every; {
+		case k%2 == 1:
+			put((left+right)/2, SweetCandy)
+		case (k/2)%2 == 0:
+			put(left, SweetMacaron)
+		default:
+			put(right, SweetMacaron)
+		}
+	case ThemeWave:
+		every := waveEvery - g.hardN()
+		if r == 0 || r%every != 0 || !wide {
+			return
+		}
+		k := r / every
+		from, n := g.waveGap(k, left)
+		s := SweetCandy
+		if k%(waveGates/2) == waveGates/4 {
+			s = SweetMacaron
+		}
+		put(from+n/2, s)
+	default:
+	}
 }
