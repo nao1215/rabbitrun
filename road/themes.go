@@ -299,12 +299,14 @@ func (g *Game) themeBlocks(row *Row, t Theme, r, left, right int) {
 		}
 	case ThemeComb:
 		// a tooth of three blocks (four, when hard) reaching in every third row, from the
-		// left wall for a while and then from the right
+		// left wall for a while and then from the right. Where the teeth change sides one
+		// tooth is left out: from beside the last tooth of one wall to the far side of the
+		// first tooth of the other was two cells or more in two rows, too quick on a fast road
 		n := 3
 		if hard {
 			n = 4
 		}
-		if r > 0 && r%3 == 0 {
+		if r > 0 && r%3 == 0 && r%9 != 0 {
 			for i := range n {
 				if (r/9)%2 == 0 {
 					block(left + i)
@@ -371,9 +373,12 @@ func (g *Game) themeBlocks(row *Row, t Theme, r, left, right int) {
 				continue
 			}
 			x := left + g.rng.IntN(right-left+1)
+			// nor beside a block of the two rows before: a block a step to the side of one just
+			// passed asked for a step back at once, too quick on a fast road
 			near := false
 			for dx := -1; dx <= 1; dx++ {
-				if nx := x + dx; nx >= 0 && nx < W && (row[nx].Wall != 0 && nx >= left && nx <= right || g.lastRow[nx].Wall != 0 && nx >= left && nx <= right) {
+				if nx := x + dx; nx >= 0 && nx < W && (row[nx].Wall != 0 && nx >= left && nx <= right || g.lastRow[nx].Wall != 0 && nx >= left && nx <= right ||
+					dx != 0 && nx >= left && nx <= right && g.openRun[nx] < 2) {
 					near = true
 				}
 			}
