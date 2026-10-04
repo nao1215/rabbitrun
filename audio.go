@@ -227,13 +227,8 @@ func synthEffects(d *[seCount][]byte) {
 // hammerSound is an explosion: a deep boom falling in pitch, a burst of noise that darkens
 // as it fades (a low-pass filter closing), and crackles of debris scattering after it.
 func hammerSound() []byte {
-	seed := uint32(0x9e3779b9)
-	rnd := func() float64 { // a small deterministic noise source
-		seed ^= seed << 13
-		seed ^= seed >> 17
-		seed ^= seed << 5
-		return float64(seed)/float64(1<<32)*2 - 1
-	}
+	seed := xorshift(0x9e3779b9)
+	rnd := seed.next
 	var low, low2 float64
 	return synth(1.4, func(t float64) float64 {
 		// 475 Hz falling to 55 Hz
@@ -255,15 +250,24 @@ func hammerSound() []byte {
 // breakSound is a short crack of a row of blocks breaking: a click falling in pitch over
 // a quick burst of noise.
 func breakSound() []byte {
-	seed := uint32(0x2545f491)
+	seed := xorshift(0x2545f491)
+	rnd := seed.next
 	return synth(0.12, func(t float64) float64 {
-		seed ^= seed << 13
-		seed ^= seed >> 17
-		seed ^= seed << 5
-		n := float64(seed)/float64(1<<32)*2 - 1
+		n := rnd()
 		click := math.Sin(2*math.Pi*(900*t-2500*t*t)) * math.Exp(-t*45)
 		return (click*0.5 + n*0.45*math.Exp(-t*60)) * 0.55
 	})
+}
+
+// xorshift is a small deterministic noise source for the sound effects.
+type xorshift uint32
+
+// next steps the generator and returns a value from -1 to 1.
+func (x *xorshift) next() float64 {
+	*x ^= *x << 13
+	*x ^= *x >> 17
+	*x ^= *x << 5
+	return float64(*x)/float64(1<<32)*2 - 1
 }
 
 func sine(t, f float64) float64 { return math.Sin(2 * math.Pi * f * t) }
