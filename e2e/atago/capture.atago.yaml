@@ -91,3 +91,30 @@ scenarios:
             created: []
             modified: []
             deleted: []
+
+  # A screenshot that cannot be saved (here a directory has the first one's name) ends
+  # the capture with status 1 at once. It was only logged, and the capture went on
+  # through every screen and exited 0 with the screen missing.
+  - name: a screenshot that cannot be saved exits 1 and stops there
+    only:
+      env: RABBITRUN_E2E_DISPLAY
+    env:
+      MESA_SHADER_CACHE_DISABLE: "true"
+    steps:
+      - fixture:
+          file: shots/title.png/keep
+          content: ""
+      - run:
+          command: rabbitrun --capture shots
+          sandbox_home: true
+          timeout: 300s
+      - assert:
+          exit_code: 1
+          stdout:
+            empty: true
+          stderr:
+            contains: "cannot save shots"
+          changes:
+            created: []
+            modified: []
+            deleted: []

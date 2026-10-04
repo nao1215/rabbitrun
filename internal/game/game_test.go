@@ -10,6 +10,9 @@ import (
 // TestMain points the save data at a scratch directory for the whole package, so no
 // test ever writes the player's real save.
 func TestMain(m *testing.M) {
+	if mode := os.Getenv(fakeFFmpegEnv); mode != "" {
+		fakeFFmpeg(mode) // the test binary started as the encoder of a recording test
+	}
 	dir, err := os.MkdirTemp("", "rabbitrun-test")
 	if err != nil {
 		panic(err)
