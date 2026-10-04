@@ -29,14 +29,30 @@ type TitleScene struct {
 var titleItems = []string{"PLAY", "GALLERY", "EXIT"}
 
 func newTitleScene() *TitleScene {
-	s := &TitleScene{group: extraMode(), reveal: -1, word: wordDue()}
+	s := &TitleScene{group: extraMode(), reveal: newSecret(), word: wordDue()}
 	prefetchImgs(selectEntries())
+	return s
+}
+
+// newSecret is the index of the secret character unlocked and not yet announced (the
+// rightmost when there are several), or -1.
+func newSecret() int {
+	n := -1
 	for i, c := range characters {
 		if c.Secret && !c.locked() && !save.Announced[c.ID] {
-			s.reveal = i
+			n = i
 		}
 	}
-	return s
+	return n
+}
+
+// markAnnounced records that the unlock of the character id has been announced.
+func markAnnounced(id string) {
+	if save.Announced == nil {
+		save.Announced = map[string]bool{}
+	}
+	save.Announced[id] = true
+	markSave()
 }
 
 // The reveal of a new character on the title: she comes in grey, takes her colors over
@@ -78,11 +94,7 @@ func (s *TitleScene) Update(g *Game) {
 		}
 		if s.revealFrame > revealWordsAt+20 && g.in.Pressed(ActConfirm) {
 			playSE(seConfirm)
-			if save.Announced == nil {
-				save.Announced = map[string]bool{}
-			}
-			save.Announced[characters[s.reveal].ID] = true
-			markSave()
+			markAnnounced(characters[s.reveal].ID)
 			s.reveal = -1
 		}
 		return
@@ -170,7 +182,7 @@ func (s *TitleScene) drawReveal(screen *ebiten.Image) {
 		return
 	}
 	a := float32(math.Min(1, float64(s.revealFrame-revealWordsAt)/20))
-	outline := color.NRGBA{0x40, 0x30, 0x48, 0xff}
+	outline := darkOutline
 	drawTextOutlineColor(screen, "A NEW CHARACTER", ScreenW/2, 40, 50, candyPink, outline, a)
 	drawTextOutlineColor(screen, "HAS COME!", ScreenW/2, 100, 50, candyPink, outline, a)
 	if s.revealFrame > revealWordsAt+20 && (s.revealFrame/30)%2 == 0 {
@@ -201,7 +213,7 @@ func wordDue() bool {
 func (s *TitleScene) drawWord(screen *ebiten.Image) {
 	a := float32(math.Min(1, float64(s.wordFrame)/20))
 	vector.FillRect(screen, 0, 0, ScreenW, ScreenH, color.NRGBA{0x20, 0x16, 0x2a, uint8(0xb0 * a)}, false)
-	outline := color.NRGBA{0x40, 0x30, 0x48, 0xff}
+	outline := darkOutline
 	drawTextOutlineColor(screen, "THE SECRET WORD", ScreenW/2, 250, 46, color.White, outline, a)
 	drawTextOutlineColor(screen, `"`+secretWord+`"`, ScreenW/2, 350, 64, candyPink, outline, a)
 	drawTextOutlineColor(screen, "TYPE IT ON THE TITLE SCREEN", ScreenW/2, 470, 32, color.White, outline, a)
@@ -260,16 +272,14 @@ func defaultCharIndex() int {
 // newCharSelectScene starts with the gyaru selected, or with the secret character
 // when it has just been unlocked (selected with a chime the first time only).
 func newCharSelectScene(mode int) *CharSelectScene {
-	s := &CharSelectScene{mode: mode, sel: defaultCharIndex(), announce: -1}
+	s := &CharSelectScene{mode: mode, sel: defaultCharIndex(), announce: newSecret()}
 	if mode == modePlay {
 		// the play screen's artwork, so its first frame (the hammer show) only uploads it:
 		// decoding it as play started held that frame for 30 to 50 ms
 		prefetchUI(playArtwork...)
 	}
-	for i, c := range characters {
-		if c.Secret && !c.locked() && !save.Announced[c.ID] {
-			s.sel, s.announce = i, i // the most recently opened secret wins (rightmost)
-		}
+	if s.announce >= 0 {
+		s.sel = s.announce // the most recently opened secret wins (rightmost)
 	}
 	return s
 }
@@ -277,11 +287,7 @@ func newCharSelectScene(mode int) *CharSelectScene {
 // leave records that the newly unlocked secret character has been announced.
 func (s *CharSelectScene) leave() {
 	if s.announce >= 0 {
-		if save.Announced == nil {
-			save.Announced = map[string]bool{}
-		}
-		save.Announced[characters[s.announce].ID] = true
-		markSave()
+		markAnnounced(characters[s.announce].ID)
 	}
 }
 
@@ -322,9 +328,7 @@ func (s *CharSelectScene) Update(g *Game) {
 		s.leave()
 		stopBGM() // play starts music after READY; the gallery plays sound effects only
 		if s.mode == modePlay {
-			p := newPlayScene(c)
-			p.startHammerShow()
-			g.SetScene(p)
+			g.SetScene(newRunScene(c))
 		} else {
 			g.SetScene(newGalleryScene())
 		}
@@ -368,13 +372,7 @@ func (s *CharSelectScene) card(c *Character) *ebiten.Image {
 		// A pastel card with the character's soft silhouette.
 		fillRoundRect(inner, 0, 0, float32(iw), float32(ih), 0, lockedCardFill)
 		if c.selectEntry().HasImage() {
-			op := &ebiten.DrawImageOptions{}
-			pic := c.SelectImage()
-			sc := math.Min(iw/float64(pic.Bounds().Dx()), ih/float64(pic.Bounds().Dy()))
-			op.GeoM.Scale(sc, sc)
-			op.GeoM.Translate((iw-float64(pic.Bounds().Dx())*sc)/2, (ih-float64(pic.Bounds().Dy())*sc)/2)
-			op.Filter = ebiten.FilterLinear
-			silhouette(inner, pic, op)
+			drawSilhouette(inner, c.SelectImage(), 0, 0, iw, ih, false)
 		}
 	default:
 		if bgImg := uiImage("frame_normal"); bgImg != nil {

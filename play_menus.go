@@ -78,9 +78,7 @@ func (s *PlayScene) updatePause(g *Game) {
 		case 1:
 			stopBGM()
 			s.commitRun()
-			p := newPlayScene(s.char)
-			p.startHammerShow()
-			g.SetScene(p)
+			g.SetScene(newRunScene(s.char))
 			return
 		case 2:
 			stopBGM()
@@ -227,9 +225,9 @@ func (s *PlayScene) drawGameOver(screen *ebiten.Image) {
 		return
 	}
 	a := float32(math.Min(1, float64(s.overFrame-curtainStart-curtainFrames)/20))
-	drawTextOutlineColor(screen, "GAME OVER", ScreenW/2, 240, 64, color.White, color.NRGBA{0x40, 0x30, 0x48, 0xff}, a)
-	drawTextOutlineColor(screen, "STAGE "+s.eng.Progress(), ScreenW/2, 330, 44, candyPink, color.NRGBA{0x40, 0x30, 0x48, 0xff}, a)
-	drawMenuOn(screen, overItems, s.overSel, ScreenW/2, 460, 40, color.NRGBA{0xee, 0xe6, 0xf2, 0xff}, color.NRGBA{0x40, 0x30, 0x48, 0xff})
+	drawTextOutlineColor(screen, "GAME OVER", ScreenW/2, 240, 64, color.White, darkOutline, a)
+	drawTextOutlineColor(screen, "STAGE "+s.eng.Progress(), ScreenW/2, 330, 44, candyPink, darkOutline, a)
+	drawMenuOn(screen, overItems, s.overSel, ScreenW/2, 460, 40, color.NRGBA{0xee, 0xe6, 0xf2, 0xff}, darkOutline)
 }
 
 // The curtain of the full game over: it starts curtainStart frames in, takes

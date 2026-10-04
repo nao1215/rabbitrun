@@ -135,6 +135,13 @@ func newRetryScene(c *Character) *PlayScene {
 	return s
 }
 
+// newRunScene starts a new run of the character c, opening with the hammer show.
+func newRunScene(c *Character) *PlayScene {
+	s := newPlayScene(c)
+	s.startHammerShow()
+	return s
+}
+
 func newPlayScene(c *Character) *PlayScene {
 	s := &PlayScene{
 		char:  c,

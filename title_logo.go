@@ -35,17 +35,8 @@ func drawTitleLogo(dst *ebiten.Image, cx, cy, scale float64) {
 	}
 	for li, line := range titleLogoLines {
 		size := line.size * scale
-		f := face(size, line.word)
 		spacing := size * 0.04
-		// Letter widths from the shaped word (the logo words are ASCII, one byte per letter).
-		widths := make([]float64, 0, len(line.word))
-		total := 0.0
-		for i := range len(line.word) {
-			w := text.AdvanceAt(line.word, i+1, f) - text.AdvanceAt(line.word, i, f)
-			widths = append(widths, w)
-			total += w + spacing
-		}
-		total -= spacing
+		widths, total := letterWidths(line.word, size, spacing)
 		x := cx - total/2
 		for i, r := range line.word {
 			s := string(r)
@@ -69,14 +60,11 @@ func drawCandyText(dst *ebiten.Image, s string, cx, y, size float64, kind Kind) 
 	drawText(dst, s, cx, y, size, kindColors[kind])
 }
 
-// logoLineKinds are the candy colors the letters of a one-line logo take in turn.
-var logoLineKinds = []Kind{KindStrawberry, KindOrange, KindLemon, KindMelon, KindSoda, KindGrape, KindBlueberry}
-
-// drawLogoLine draws str on one line in the logo's candy letters (each letter its own
-// color, white outline and shadow), centered on cx with its top at y.
-func drawLogoLine(dst *ebiten.Image, str string, cx, y, size float64) {
+// letterWidths returns the width of each letter of str shaped at size (the logo words are
+// ASCII, one byte per letter) and the width of the whole word with spacing between the
+// letters.
+func letterWidths(str string, size, spacing float64) ([]float64, float64) {
 	f := face(size, str)
-	spacing := size * 0.04
 	widths := make([]float64, 0, len(str))
 	total := 0.0
 	for i := range len(str) {
@@ -84,7 +72,18 @@ func drawLogoLine(dst *ebiten.Image, str string, cx, y, size float64) {
 		widths = append(widths, w)
 		total += w + spacing
 	}
-	x := cx - (total-spacing)/2
+	return widths, total - spacing
+}
+
+// logoLineKinds are the candy colors the letters of a one-line logo take in turn.
+var logoLineKinds = []Kind{KindStrawberry, KindOrange, KindLemon, KindMelon, KindSoda, KindGrape, KindBlueberry}
+
+// drawLogoLine draws str on one line in the logo's candy letters (each letter its own
+// color, white outline and shadow), centered on cx with its top at y.
+func drawLogoLine(dst *ebiten.Image, str string, cx, y, size float64) {
+	spacing := size * 0.04
+	widths, total := letterWidths(str, size, spacing)
+	x := cx - total/2
 	k := 0
 	for i, r := range str {
 		if r != ' ' {
