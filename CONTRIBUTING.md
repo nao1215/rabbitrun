@@ -28,7 +28,7 @@ The screenshots and the demo GIF in the README come from `--capture` and `--reco
 
 ### 3. Keep the quality bar high
 
-- Add or update unit tests when you add features or fix bugs. The game rules live in `engine.go` and are fully testable without a window.
+- Add or update unit tests when you add features or fix bugs. The rules of the road live in the `road` package (with the timing in `engine.go`) and are fully testable without a window; `scenario_test.go` plays whole screens through a scripted input.
 - Keep the game working on Linux, macOS and Windows; CI tests all three.
 - Keep comments in English.
 
