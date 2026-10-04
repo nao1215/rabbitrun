@@ -5,10 +5,12 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"slices"
 	"strings"
 
 	flag "github.com/spf13/pflag"
 
+	"github.com/nao1215/rabbitrun/internal/engine"
 	"github.com/nao1215/rabbitrun/road"
 )
 
@@ -43,7 +45,7 @@ var exitModes = []string{"bgm-wav", "capture", "reset-save", "record-demo"}
 var recordOptions = []string{"record-char", "record-stage", "record-seconds"}
 
 // demoStages is how many stages a demo recording can start at.
-const demoStages = (GameCourses + road.Courses - 1) / road.Courses
+const demoStages = (engine.GameCourses + road.Courses - 1) / road.Courses
 
 // checkArgs checks the parsed command line fs for options the game would otherwise
 // ignore or misread.
@@ -81,18 +83,11 @@ func checkArgs(fs *flag.FlagSet) error {
 	return nil
 }
 
-// checkRecordChar checks that id (from --record-char) names one of chars; an empty id
-// picks the main character.
-func checkRecordChar(id string, chars []*Character) error {
-	if id == "" {
+// checkRecordChar checks that id (from --record-char) is one of the character IDs ids; an
+// empty id picks the main character.
+func checkRecordChar(id string, ids []string) error {
+	if id == "" || slices.Contains(ids, id) {
 		return nil
-	}
-	ids := make([]string, 0, len(chars))
-	for _, c := range chars {
-		if c.ID == id {
-			return nil
-		}
-		ids = append(ids, c.ID)
 	}
 	return usageErrorf("unknown character %q for --record-char (choose from %s)", id, strings.Join(ids, ", "))
 }

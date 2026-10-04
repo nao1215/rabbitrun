@@ -19,8 +19,8 @@ var showVersion = flag.BoolP("version", "V", false, "print the version and exit"
 // captureDir: with -capture <dir>, each screen is saved as a PNG and the game exits (for visual checks).
 var captureDir = flag.String("capture", "", "save a screenshot of every screen to `DIR` and exit")
 
-// debugMode: with --debug, the whole gallery is unlocked (for checking images; save data is unchanged).
-var debugMode = flag.Bool("debug", false, "unlock every character, portrait and illustration for this run")
+// debugFlag: with --debug, the whole gallery is unlocked (for checking images; save data is unchanged).
+var debugFlag = flag.Bool("debug", false, "unlock every character, portrait and illustration for this run")
 
 // resetSaveFlag: with --reset-save, the save data is moved aside and the program exits
 // without starting the game.

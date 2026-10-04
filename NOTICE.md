@@ -11,7 +11,7 @@ rabbitrun is released under the [MIT License](./LICENSE). The following parts ar
 
 ## Music
 
-The background music is original drum'n'bass arrangements synthesized at run time (`music.go`). The melodies and chords come from these scores of Antonio Vivaldi's *The Four Seasons* (Il cimento dell'armonia e dell'inventione, Op. 8), typeset in LilyPond by Anonymous for the [Mutopia Project](https://www.mutopiaproject.org/) (copyright 2010) from Performers' Facsimiles, and licensed under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/):
+The background music is original drum'n'bass arrangements synthesized at run time (`internal/sound/music.go`). The melodies and chords come from these scores of Antonio Vivaldi's *The Four Seasons* (Il cimento dell'armonia e dell'inventione, Op. 8), typeset in LilyPond by Anonymous for the [Mutopia Project](https://www.mutopiaproject.org/) (copyright 2010) from Performers' Facsimiles, and licensed under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/):
 
 | Song | Source | Mutopia reference | License |
 | ---- | ------ | ----------------- | ------- |
@@ -20,7 +20,7 @@ The background music is original drum'n'bass arrangements synthesized at run tim
 | *L'Autunno (Autumn)* Op. 8 No. 3, 1st movement (Allegro) | [Mutopia Project piece 350](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=350) | Mutopia-2010/02/08-350 | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) |
 | *L'Inverno (Winter)* Op. 8 No. 4, 1st movement (Allegro non molto) | [Mutopia Project piece 351](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=351) | Mutopia-2010/02/08-351 | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) |
 
-The note data for the *Four Seasons* in `songs_data.go` (`songSpring`, `songSummer`, `songAutumn`, `songWinter`) are adaptations of the first-movement MIDI files of those editions and are shared under the same CC BY-SA 3.0 license. They were changed as follows: the melody is the highest note of the solo violin part, one MIDI quarter note becomes two beats of the game's tempo, all five string parts are reduced to one major or minor triad per two beats (the root of which drives the bass line), each song is padded to a whole number of two-bar drum patterns so that it loops, and Spring's opening eighth-note pickup is moved to the end of the loop. The arrangement in `music.go` (drums, bass, piano, pad and effects) is new.
+The note data for the *Four Seasons* in `internal/sound/songs_data.go` (`songSpring`, `songSummer`, `songAutumn`, `songWinter`) are adaptations of the first-movement MIDI files of those editions and are shared under the same CC BY-SA 3.0 license. They were changed as follows: the melody is the highest note of the solo violin part, one MIDI quarter note becomes two beats of the game's tempo, all five string parts are reduced to one major or minor triad per two beats (the root of which drives the bass line), each song is padded to a whole number of two-bar drum patterns so that it loops, and Spring's opening eighth-note pickup is moved to the end of the loop. The arrangement in `internal/sound/music.go` (drums, bass, piano, pad and effects) is new.
 
 ## Go modules
 

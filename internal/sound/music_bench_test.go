@@ -1,0 +1,24 @@
+package sound
+
+import "testing"
+
+// BenchmarkMusicRead measures the drum and bass synthesizer: one call makes about 80ms of
+// sound, the size of an audio buffer.
+func BenchmarkMusicRead(b *testing.B) {
+	m := newMusicStream(songs[GameSong])
+	buf := make([]byte, sampleRate*8*80/1000)
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := m.Read(buf); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// BenchmarkSynthEffects measures synthesizing every sound effect, done once at startup.
+func BenchmarkSynthEffects(b *testing.B) {
+	var d [effectCount][]byte
+	for b.Loop() {
+		synthEffects(&d)
+	}
+}
