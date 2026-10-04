@@ -234,6 +234,7 @@ func (g *Game) buildThemedRow() (Row, int, int) {
 	if !g.passable(row) {
 		row = walls
 	}
+	g.figure = row != walls
 	return row, left, right
 }
 
@@ -530,8 +531,13 @@ const trailPeriod = 48
 // Memorable: left door, right door, like walking through a house. Fair: the next door is in
 // sight from the one before, a whole room away, and the way is drawn on the floor.
 func (g *Game) rooms() (room, corridor int) {
-	if g.hard() {
+	switch {
+	case g.hard():
 		return 7, 4
+	case g.Level <= g.IdleUntil:
+		// on the courses of the idle rule a room and a corridor are half a screen together:
+		// she stood in a corridor's door through it and the whole room after it
+		return 5, 3
 	}
 	return 9, 5
 }
@@ -555,6 +561,20 @@ const (
 	jarClose = 4
 	jarNeck  = 6
 )
+
+// jarNeckRows is how many rows the neck of a jar runs on: jarNeck, and jarIdleNeck on the
+// courses of the idle rule (Game.IdleUntil), where she would otherwise stand still through
+// the closing walls and the whole neck in a column of it, more than half a screen.
+func (g *Game) jarNeckRows() int {
+	if g.Level <= g.IdleUntil {
+		return jarIdleNeck
+	}
+	return jarNeck
+}
+
+// jarIdleNeck is the neck of a jar on the courses of the idle rule: the closing walls and the
+// neck together are less than half a screen.
+const jarIdleNeck = 2
 
 // jarNeckAt is the first cell of the neck of the k-th jar (of width neck) on a road from
 // left to right: at the left, the right and the middle in turn.
@@ -672,7 +692,7 @@ func (g *Game) designBlocks(block func(int), t Theme, r, left, right int) {
 		}
 	case ThemeJar:
 		field, neck := g.jar()
-		period := field + jarClose + jarNeck
+		period := field + jarClose + g.jarNeckRows()
 		p := r % period
 		if p < field || !wide {
 			return
@@ -767,7 +787,7 @@ func (g *Game) designSweets(row *Row, t Theme, r, left, right int) {
 		}
 	case ThemeJar:
 		field, neck := g.jar()
-		period := field + jarClose + jarNeck
+		period := field + jarClose + g.jarNeckRows()
 		p := r % period
 		switch {
 		case !wide:

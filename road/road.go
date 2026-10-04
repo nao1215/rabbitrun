@@ -85,10 +85,11 @@ type Game struct {
 	Events   []Event
 
 	rng     *rand.Rand
-	seed    uint64  // the road of each course is built from this and the course number
-	vaultAt int     // the row of the course where its vault starts (-1: none)
-	feastAt int     // the row of the course where its feast starts (-1: none)
-	reach   [W]bool // the cells of the last row built that she can be on (themed courses keep to it)
+	src     *rand.PCG // the source of rng (the idle rule's look ahead copies it)
+	seed    uint64    // the road of each course is built from this and the course number
+	vaultAt int       // the row of the course where its vault starts (-1: none)
+	feastAt int       // the row of the course where its feast starts (-1: none)
+	reach   [W]bool   // the cells of the last row built that she can be on (themed courses keep to it)
 	// Themes gives each course (by Level-1) its theme; without it every course is
 	// ThemeMixed. Hard makes the themes tighter (the extra stages).
 	Themes []Theme
@@ -156,6 +157,15 @@ type Game struct {
 	// themeRow: the row being built has the theme's blocks (it is past the rows that settle
 	// the road into the theme)
 	themeRow bool
+	// IdleUntil is the last course (Level) on which a block comes into the column where she
+	// could otherwise stand still for more than half a screen (see idleBlock); 0: none. The
+	// game sets it for the first stage of the regular side.
+	IdleUntil int
+	idle      idleState // the lazy line and the idle rule's last block (see idle.go)
+	feastRow  bool      // the row being built is a row of a feast
+	figure    bool      // the row being built has blocks of a designed theme's figure
+	// lookingAhead: this is the idle rule's copy of the game, building the rows to come
+	lookingAhead bool
 	// designFrom is the row of the course being built where its theme began on the wide road
 	// (-1: not yet): the themes laid out from there (ThemeSeconds, ThemeLesson) count their
 	// rows from it, so a vault or a feast first only pushes them along
@@ -220,6 +230,7 @@ func NewWith(seed uint64, p Profile) *Game {
 	for x := range g.reach {
 		g.reach[x] = true
 	}
+	g.idle.x = g.Col() // the lazy line starts where she stands
 	g.startCourse()
 	g.aheadID = rowID{1, 0}
 	g.Ahead = g.buildRow(true) // the visible rows start open
@@ -351,7 +362,7 @@ func (g *Game) difficulty() int { return max(0, g.Level-1) / 2 }
 func (g *Game) buildRow(withThings bool) Row {
 	reach, last := g.reach, g.lastRow
 	g.sinceTrap++
-	g.themeRow = false
+	g.themeRow, g.feastRow, g.figure = false, false, false
 	row := g.buildRoad(withThings)
 	g.hold = max(0, g.hold-1)
 	if withThings && !g.finishing && !g.AllClear {
@@ -363,6 +374,9 @@ func (g *Game) buildRow(withThings bool) Row {
 		} else {
 			g.openRun[x] = 0
 		}
+	}
+	if withThings {
+		row = g.idleBlock(row)
 	}
 	if g.Bonus() { // a bonus course is walled in every candy color
 		for x := range row {
@@ -690,6 +704,7 @@ func (g *Game) buildRoad(withThings bool) Row {
 		g.sinceObs = 0
 	}
 	if feast {
+		g.feastRow = true
 		for x := left; x <= right; x++ {
 			row[x].Sweet = SweetCandy
 		}
@@ -767,7 +782,7 @@ func (g *Game) addThings(row Row, left, right int) Row {
 	var thing int8
 	// The very start of the game: a trail of sweets down the middle of the road, one a
 	// row, which leads straight to the first extra life.
-	if g.Stage == 1 && g.Course == 0 && g.stageRow > 6 && g.stageRow <= 6+trailRows {
+	if g.Stage == 1 && g.Course == 0 && g.stageRow > settleRows && g.stageRow <= OpeningRows {
 		for _, x := range []int{(left + right) / 2, left, right} { // the middle, unless a pillar stands there
 			if row[x].Wall == 0 {
 				row[x].Sweet = SweetCandy
@@ -925,18 +940,20 @@ type roadShape struct {
 	openRun                                   [W]int
 	sinceTrap, hold                           int
 	pathLeft, pathX                           int
+	idle                                      idleState
 }
 
 func shapeOf(g *Game) roadShape {
 	return roadShape{center: g.center, width: g.width, targetWidth: g.targetWidth, still: g.still,
 		settle: g.settle, shifted: g.shifted, lastRow: g.lastRow, reach: g.reach, openRun: g.openRun, sinceTrap: g.sinceTrap, hold: g.hold,
-		pathLeft: g.pathLeft, pathX: g.pathX}
+		pathLeft: g.pathLeft, pathX: g.pathX, idle: g.idle}
 }
 
 func (s roadShape) restore(g *Game) {
 	g.center, g.width, g.targetWidth, g.still, g.settle = s.center, s.width, s.targetWidth, s.still, s.settle
 	g.shifted, g.lastRow, g.reach, g.openRun, g.sinceTrap, g.hold = s.shifted, s.lastRow, s.reach, s.openRun, s.sinceTrap, s.hold
 	g.pathLeft, g.pathX = s.pathLeft, s.pathX
+	g.idle = s.idle
 }
 
 // specialAt is the row of a course where its vault or feast starts: early, so it is all
@@ -949,7 +966,8 @@ const specialAt = 2
 // number). The road runs on from the course before: there is no open stretch between
 // courses (it was there to show the new illustration, which now shows all the time).
 func (g *Game) startCourse() {
-	g.rng = rand.New(rand.NewPCG(g.seed, uint64(g.Level)*0x9e3779b97f4a7c15)) //nolint:gosec // G404: game randomness, not security sensitive
+	g.src = rand.NewPCG(g.seed, uint64(g.Level)*0x9e3779b97f4a7c15) //nolint:gosec // G115: the course number is small and positive
+	g.rng = rand.New(g.src)                                         //nolint:gosec // G404: game randomness, not security sensitive
 	if s, ok := g.starts[g.Level]; ok {
 		s.restore(g) // built again (a retry): from where it began the first time
 	} else {
