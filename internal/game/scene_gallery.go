@@ -276,7 +276,7 @@ func (s *galleryScene) prepareView() {
 			s.loaded = append(s.loaded, e) // loaded for the view: freed with it (the title keeps the select cards)
 		}
 	}
-	character.PrefetchImgs(portraits)
+	character.PrefetchImgsNow(portraits) // not behind the tiles' decodes: three at most
 }
 
 // hold keeps the illustrations es decoded at full size (decoding those not yet) and frees

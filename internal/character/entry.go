@@ -156,6 +156,27 @@ func PrefetchImgs(entries []*ImageEntry) {
 	}
 }
 
+// PrefetchImgsNow starts decoding the portraits entries on a goroutine each, outside the
+// prefetch queue and the decoder slots: for the few pictures wanted at once (the gallery's
+// enlarged view and the ones beside it), which waited behind dozens of tile decodes on a
+// two-CPU machine. Img and ImgReady take them as they take PrefetchImgs's.
+func PrefetchImgsNow(entries []*ImageEntry) {
+	for _, e := range entries {
+		if e == nil || e.Image != nil || !e.HasImage() {
+			continue
+		}
+		if e.pending != nil {
+			if !unqueue(e, false) {
+				continue // already being decoded
+			}
+		}
+		ch := make(chan decodedImg, 1)
+		e.pending = ch
+		fsys, base, id := e.fsys, e.base, e.ID
+		go func() { ch <- decodePortrait(fsys, base, id) }()
+	}
+}
+
 // prefetchQueue holds the pictures waiting to be decoded in the background, and how many
 // workers are decoding them.
 var prefetchQueue struct {
