@@ -154,6 +154,11 @@ func (s *titleScene) Update(g *Game) {
 	}
 }
 
+// completeMenuY is the top of the title menu once everything is cleared: under the
+// characters and the words of the thank-you picture (tools/make_reward.py lays them out
+// above y 540, with two characters in the bottom corners beside the menu).
+const completeMenuY = 700.0
+
 func (s *titleScene) Draw(screen *ebiten.Image) {
 	if s.reveal >= 0 {
 		s.drawReveal(screen)
@@ -163,14 +168,23 @@ func (s *titleScene) Draw(screen *ebiten.Image) {
 		s.drawWord(screen)
 		return
 	}
+	if titleComplete() {
+		// Everything cleared: the thank-you picture (the characters in the middle and the
+		// words under them), a small logo at the top and the menu at the bottom, so nothing
+		// covers them. The same on the regular and the extra stages.
+		gfx.DrawImageCover(screen, assets.UI(titleCompleteArt), 0, 0, ScreenW, ScreenH, 1)
+		logo := "RABBIT RUN"
+		if s.group {
+			logo = "RABBIT RUN EXTRA"
+		}
+		drawLogoLine(screen, logo, ScreenW/2, 14, 50)
+		drawMenu(screen, titleItems, s.sel, completeMenuY, 42)
+		return
+	}
 	if s.group {
 		// The group picture: a small logo at the top and the menu at the bottom, so the
 		// text never covers the characters' faces.
-		if titleComplete() {
-			gfx.DrawImageCover(screen, assets.UI(titleCompleteArt), 0, 0, ScreenW, ScreenH, 1)
-		} else {
-			screen.DrawImage(buildGroupPicture(groupMembers()), nil)
-		}
+		screen.DrawImage(buildGroupPicture(groupMembers()), nil)
 		drawLogoLine(screen, "RABBIT RUN EXTRA", ScreenW/2, 14, 50)
 		// the menu in the middle, on a soft band so it reads over the characters
 		const menuY, menuSize = 380.0, 42.0
