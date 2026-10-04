@@ -131,7 +131,12 @@ func (s *titleScene) Update(g *Game) {
 		sound.Play(sound.Unlock)
 	}
 	s.sel = menuNav(&g.in, s.sel, len(titleItems), input.Up, input.Down)
-	if s.sel == 1 {
+	switch s.sel {
+	case 0:
+		// the select screen's background and the backdrop of its cards, decoded while PLAY
+		// is chosen: its first frame waited 10 to 30 ms for them otherwise
+		assets.PrefetchUI("select", "frame_normal")
+	case 1:
 		// the gallery's artwork, decoded while GALLERY is chosen: its first frame waited
 		// 50 to 70 ms for the background and the frames of the portraits otherwise
 		assets.PrefetchUI(galleryArtwork...)
