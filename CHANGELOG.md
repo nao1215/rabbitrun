@@ -10,6 +10,7 @@ All notable changes to this project are documented in this file. The format is b
 - Macarons that add up to extra lives (every 100), some laid in lines along the way, and vaults with an extra life that only the hammer opens.
 - Bonus courses: one course in each stage after the first is walled with blocks of every candy color, with a wider road, twice the sweets and a feast of macarons.
 - The hammer: a squeaky toy hammer that smashes every wall on the screen, with a cut-in of the character.
+- On the first stage of the regular side, a road that would let her stand still for more than half a screen puts one block in her way, with a step around it; the other courses are the roads they were.
 - Holding up speeds the road up until a miss; the music follows the speed of the road.
 - Misses on a wall from the front or the side; a retry uses a life and goes back ten rows on the same road, without the sweets already taken.
 - Illustrations: each course cleared unlocks one and shows it behind the road; fifteen per character, fifteen more on the extra stages, and an ending picture for each.
