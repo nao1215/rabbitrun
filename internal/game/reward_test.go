@@ -15,11 +15,11 @@ import (
 func withTitleArt(t *testing.T) {
 	t.Helper()
 	old := assets.FS()
-	assets.Use(overlayFS{old, fstest.MapFS{"ui/title_complete.png": {Data: tinyPNG(t)}}})
-	assets.ReleaseUI("title_complete")
+	assets.Use(overlayFS{old, fstest.MapFS{"ui/" + titleCompleteArt + ".png": {Data: tinyPNG(t)}}})
+	assets.ReleaseUI(titleCompleteArt)
 	t.Cleanup(func() {
 		assets.Use(old)
-		assets.ReleaseUI("title_complete")
+		assets.ReleaseUI(titleCompleteArt)
 	})
 }
 
@@ -37,7 +37,9 @@ func (o overlayFS) Open(name string) (fs.File, error) {
 // character, the secret one too, has cleared both the regular and the extra stages; it
 // shows after the next launch, in the regular stages and in the extra ones, and the
 // gallery never lists it.
-func TestTitleRewardNeedsBothStagesOfEveryone(t *testing.T) { //nolint:paralleltest // shares the save data and the characters
+//
+//nolint:paralleltest // shares the save data and the characters
+func TestTitleRewardNeedsBothStagesOfEveryone(t *testing.T) {
 	clearAll := func(regular, extra bool, except string) func() {
 		return func() {
 			for _, c := range characters {
@@ -82,12 +84,12 @@ func TestTitleRewardNeedsBothStagesOfEveryone(t *testing.T) { //nolint:parallelt
 				if got := titleComplete(); got != tc.want {
 					t.Fatalf("extra %v: title picture %v, want %v", extra, got, tc.want)
 				}
-				if got := bg.image == "title_complete"; got != tc.want {
+				if got := bg.image == titleCompleteArt; got != tc.want {
 					t.Errorf("extra %v: the title background is %q", extra, bg.image)
 				}
 				gs := galleryOf(t, g, heroID)
 				for _, it := range gs.items() {
-					if it.e.ID == "title_complete" {
+					if it.e.ID == titleCompleteArt {
 						t.Error("the gallery lists the title picture")
 					}
 				}
@@ -129,12 +131,12 @@ func TestTitleRewardShowsAfterTheLastClear(t *testing.T) { //nolint:paralleltest
 		play(t, g, press(input.Confirm))
 	}
 	play(t, g, wait(2))
-	if !titleComplete() || bg.image != "title_complete" {
+	if !titleComplete() || bg.image != titleCompleteArt {
 		t.Fatal("the title has no picture after the last clear")
 	}
 	g = relaunch(t) // the regular stages, as every launch starts
 	play(t, g, wait(2))
-	if store.Data.ExtraMode || !titleComplete() || bg.image != "title_complete" {
+	if store.Data.ExtraMode || !titleComplete() || bg.image != titleCompleteArt {
 		t.Fatal("the title picture is gone after the next launch")
 	}
 }
