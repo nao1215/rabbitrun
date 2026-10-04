@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"image/png"
+	"slices"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -58,6 +59,38 @@ func TestCourseClearUnlocksItsIllustration(t *testing.T) { //nolint:paralleltest
 	s.courseClear(2)
 	if s.stageCG != &s.char.CGs[1] || !s.prog.UnlockedCG["cgb"] || s.prog.UnlockedCG["cgc"] {
 		t.Fatalf("after course 2: background %v, unlocked %v", s.stageCG, s.prog.UnlockedCG)
+	}
+}
+
+// TestIllustrationWantedNextStaysLoaded: an illustration fading out behind the road that
+// is shown again next (a retry goes back to it) is not freed at the end of its fade, so
+// the frame that shows it again does not decode it on the main goroutine; once it is no
+// longer wanted next it is freed.
+func TestIllustrationWantedNextStaysLoaded(t *testing.T) { //nolint:paralleltest // shares the save data
+	useTempConfig(t)
+	s := stageScene(t, 3)
+	a, b := &s.char.CGs[0], &s.char.CGs[1]
+	t.Cleanup(func() { s.release() })
+	s.setStageCG(a)
+	if a.Full() == nil {
+		t.Fatal("the first illustration did not load")
+	}
+	s.setStageCG(b) // a fades out under b
+	s.next = []*character.ImageEntry{a}
+	for s.prevCG != nil {
+		s.updateEffects()
+	}
+	if a.FullReady() == nil {
+		t.Fatal("the illustration wanted next was freed as its fade ended")
+	}
+	s.eng.G.Level = engine.GameCourses - 1 // a later course: its illustration is the last one
+	s.artFor = -1                          // the course changes: a is not wanted any more
+	s.prefetchArt()
+	if slices.Contains(s.next, a) {
+		t.Fatal("still wanted")
+	}
+	if a.FullReady() != nil {
+		t.Fatal("the illustration no longer wanted next is still loaded")
 	}
 }
 

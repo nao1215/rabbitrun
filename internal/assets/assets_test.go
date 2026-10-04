@@ -1,9 +1,11 @@
 package assets
 
 import (
+	"bytes"
 	"errors"
 	"image"
 	"image/color"
+	"image/png"
 	"io/fs"
 	"os"
 	"testing"
@@ -67,6 +69,32 @@ func TestUIArtwork(t *testing.T) { //nolint:paralleltest // uses the package-lev
 	}
 }
 
+// TestReleaseUI forgets a piece of artwork, loaded or still decoding: the next UI reads
+// it again, so a picture added under the same name is found.
+func TestReleaseUI(t *testing.T) { //nolint:paralleltest // uses the package-level artwork cache
+	old := FS()
+	t.Cleanup(func() { Use(old); ReleaseUI("late") })
+	ReleaseUI("late")
+	if UI("late") != nil {
+		t.Fatal("a missing picture loaded")
+	}
+	Use(fstest.MapFS{"ui/late.png": {Data: onePixelPNG(t)}})
+	if UI("late") != nil {
+		t.Fatal("the missing picture was not remembered as missing")
+	}
+	ReleaseUI("late")
+	a := UI("late")
+	if a == nil {
+		t.Fatal("the picture added after a release was not read")
+	}
+	ReleaseUI("late") // loaded: freed
+	PrefetchUI("late")
+	ReleaseUI("late") // decoding: dropped
+	if UI("late") == nil {
+		t.Fatal("the picture was not read again after its decode was dropped")
+	}
+}
+
 // TestToRGBA converts a picture to RGBA once: one already in that form comes back as it is.
 func TestToRGBA(t *testing.T) {
 	t.Parallel()
@@ -79,4 +107,14 @@ func TestToRGBA(t *testing.T) {
 	if ToRGBA(got) != image.Image(got) {
 		t.Fatal("an RGBA picture was copied again")
 	}
+}
+
+// onePixelPNG is a picture one pixel large.
+func onePixelPNG(t *testing.T) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, image.NewNRGBA(image.Rect(0, 0, 1, 1))); err != nil {
+		t.Fatal(err)
+	}
+	return buf.Bytes()
 }

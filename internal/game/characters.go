@@ -47,9 +47,10 @@ func playCGs(c *character.Character) []character.ImageEntry {
 }
 
 // galleryCGs are the illustrations the gallery lists: only the regular ones until the
-// hidden command has been found, so a full gallery looks complete.
+// hidden command has been found, so a full gallery looks complete. --debug opens
+// everything for its run, the extras too.
 func galleryCGs(c *character.Character) []character.ImageEntry {
-	if store.Data.ExtraFound {
+	if store.Data.ExtraFound || debugMode {
 		return c.CGs
 	}
 	return c.MainCGs()

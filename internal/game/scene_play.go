@@ -135,6 +135,9 @@ type playScene struct {
 	// started, freed with the scene.
 	artFor     int
 	prefetched []*character.ImageEntry
+	// next are the illustrations prefetchArt wants next: kept when they are freed from
+	// behind the road (releaseCG), or the next course decoded the one it had just let go
+	next []*character.ImageEntry
 }
 
 // newRetryScene starts a new run after a game over: the character is still down in her
@@ -227,10 +230,14 @@ func (s *playScene) Update(g *Game) {
 		switch s.ready {
 		case readyFr:
 			sound.Play(sound.Ready)
+			s.getReady()
 		case goFrames:
 			sound.Play(sound.Go)
 		}
 		s.updateComeback()
+		if s.reactExpr == character.ExprReady {
+			s.updateExpression()
+		}
 		s.ready--
 		if s.ready == 0 {
 			sound.StartBGM(sound.GameSong)
@@ -463,7 +470,7 @@ func (s *playScene) updateEffects() {
 	if s.stageCG != nil {
 		s.stageFade = math.Min(1, s.stageFade+1.0/60)
 		if s.stageFade == 1 && s.prevCG != nil {
-			s.prevCG.ReleaseFull()
+			s.releaseCG(s.prevCG)
 			s.prevCG = nil
 		}
 	}

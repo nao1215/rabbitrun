@@ -37,6 +37,7 @@ var titleItems = []string{"PLAY", "GALLERY", "EXIT"}
 func newTitleScene() *titleScene {
 	s := &titleScene{group: extraMode(), reveal: newSecret(), word: wordDue()}
 	character.PrefetchImgs(selectEntries())
+	prefetchTitleComplete()
 	return s
 }
 
@@ -97,7 +98,7 @@ func (s *titleScene) Update(g *Game) {
 	bg.set(popPink)
 	bg.setImage("title")
 	if titleComplete() {
-		bg.setImage("title_complete") // every character cleared the extra stages
+		bg.setImage(titleCompleteArt) // every character cleared both stages
 	}
 	if s.reveal >= 0 {
 		s.revealFrame++
@@ -130,6 +131,16 @@ func (s *titleScene) Update(g *Game) {
 		sound.Play(sound.Unlock)
 	}
 	s.sel = menuNav(&g.in, s.sel, len(titleItems), input.Up, input.Down)
+	switch s.sel {
+	case 0:
+		// the select screen's background and the backdrop of its cards, decoded while PLAY
+		// is chosen: its first frame waited 10 to 30 ms for them otherwise
+		assets.PrefetchUI("select", "frame_normal")
+	case 1:
+		// the gallery's artwork, decoded while GALLERY is chosen: its first frame waited
+		// 50 to 70 ms for the background and the frames of the portraits otherwise
+		assets.PrefetchUI(galleryArtwork...)
+	}
 	if g.in.Pressed(input.Confirm) {
 		sound.Play(sound.Confirm)
 		switch s.sel {
@@ -156,7 +167,7 @@ func (s *titleScene) Draw(screen *ebiten.Image) {
 		// The group picture: a small logo at the top and the menu at the bottom, so the
 		// text never covers the characters' faces.
 		if titleComplete() {
-			gfx.DrawImageCover(screen, assets.UI("title_complete"), 0, 0, ScreenW, ScreenH, 1)
+			gfx.DrawImageCover(screen, assets.UI(titleCompleteArt), 0, 0, ScreenW, ScreenH, 1)
 		} else {
 			screen.DrawImage(buildGroupPicture(groupMembers()), nil)
 		}

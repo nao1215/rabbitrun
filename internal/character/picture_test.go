@@ -9,6 +9,8 @@ import (
 	"testing"
 	"testing/fstest"
 	"time"
+
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // figurePicture is a 100x200 standing figure on a transparent ground: a pair of thin ears
@@ -176,6 +178,38 @@ func TestUnqueue(t *testing.T) { //nolint:paralleltest // uses the prefetch queu
 	}
 }
 
+// TestFullReadyDoesNotWait: FullReady starts the decoding and gives nil until the
+// picture is decoded, then the picture itself, once.
+func TestFullReadyDoesNotWait(t *testing.T) { //nolint:paralleltest // loads the fonts
+	useFonts(t)
+	c := testCharacter(t)
+	cg, missing := &c.CGs[0], &c.CGs[1]
+	t.Cleanup(func() { cg.ReleaseFull(); missing.ReleaseFull() })
+	for _, e := range []*ImageEntry{cg, missing} {
+		deadline := time.Now().Add(10 * time.Second)
+		var img *ebiten.Image
+		for img = e.FullReady(); img == nil; img = e.FullReady() {
+			if e.fullPending == nil {
+				t.Fatalf("%s: nil without a decode on its way", e.ID)
+			}
+			if time.Now().After(deadline) {
+				t.Fatalf("%s is not decoded after 10 seconds", e.ID)
+			}
+			time.Sleep(time.Millisecond)
+		}
+		if e.FullReady() != img || e.Full() != img {
+			t.Fatalf("%s: a second call gave another picture", e.ID)
+		}
+	}
+	if cg.Full().Bounds().Dy() != 200 || missing.Full().Bounds().Dx() != 896 {
+		t.Fatal("the pictures are not the illustration and the stand-in")
+	}
+	e := c.Expression(ExprNormal)
+	if img := e.Img(); e.FullReady() != img {
+		t.Fatal("a portrait is its own full picture")
+	}
+}
+
 func TestIllustrationsLoadAtFullSize(t *testing.T) { //nolint:paralleltest // loads the fonts
 	useFonts(t)
 	c := testCharacter(t)
@@ -211,13 +245,25 @@ func TestIllustrationsLoadAtFullSize(t *testing.T) { //nolint:paralleltest // lo
 func TestDecodeScaled(t *testing.T) {
 	t.Parallel()
 	c := testCharacter(t)
-	if img := c.Expression(ExprNormal).DecodeScaled(100); img == nil || img.Bounds().Dy() != 100 || img.Bounds().Dx() != 50 {
+	if img := c.Expression(ExprNormal).DecodeScaled(100, nil); img == nil || img.Bounds().Dy() != 100 || img.Bounds().Dx() != 50 {
 		t.Fatalf("scaled to 100 high: %v", img)
 	}
-	if img := c.Expression(ExprNormal).DecodeScaled(400); img == nil || img.Bounds().Dy() != 200 {
+	if img := c.Expression(ExprNormal).DecodeScaled(400, nil); img == nil || img.Bounds().Dy() != 200 {
 		t.Fatalf("a picture lower than the limit was scaled: %v", img)
 	}
-	if c.Expression("happy_2").DecodeScaled(100) != nil {
+	for range cap(decoders) { // every decoder busy
+		decoders <- struct{}{}
+	}
+	quit := make(chan struct{})
+	close(quit)
+	img := c.Expression(ExprNormal).DecodeScaled(100, quit)
+	for range cap(decoders) {
+		<-decoders
+	}
+	if img != nil {
+		t.Fatal("a decode given up while the decoders were busy still decoded")
+	}
+	if c.Expression("happy_2").DecodeScaled(100, nil) != nil {
 		t.Fatal("a missing picture decoded")
 	}
 }

@@ -11,8 +11,9 @@ import (
 //     character (until then her card is a silhouette);
 //   - the secret character clearing the regular stages tells the secret word (rabbitrun,
 //     which opens the extra stages);
-//   - every character clearing the extra stages gives the title screen an illustration of
-//     its own (titleComplete).
+//   - every character, the secret one too, clearing both the regular and the extra stages
+//     gives the title screen an illustration of its own (titleComplete). It is a reward of
+//     the title only: the gallery never lists it.
 
 // secretUnlocked reports whether the secret character can be played: every regular
 // character has cleared the regular stages, or --debug opened everything for this run.
@@ -38,21 +39,34 @@ func secretEarned(chars []*character.Character, sd *save.Data) bool {
 	return regular > 0
 }
 
-// allExtraCleared reports whether every character has cleared the extra stages.
-func allExtraCleared(chars []*character.Character, sd *save.Data) bool {
+// allCleared reports whether every character has cleared both the regular and the extra
+// stages (the extra stages alone are not enough).
+func allCleared(chars []*character.Character, sd *save.Data) bool {
 	for _, c := range chars {
-		if p := sd.Characters[c.ID]; p == nil || !p.ClearedExtra {
+		if p := sd.Characters[c.ID]; p == nil || !p.Cleared || !p.ClearedExtra {
 			return false
 		}
 	}
 	return len(chars) > 0
 }
 
+// titleCompleteArt is the artwork of the title once everything is cleared (assets/ui).
+const titleCompleteArt = "title_complete"
+
 // titleComplete reports whether the title screen shows its own illustration
-// (assets/ui/title_complete): every character has cleared the extra stages, and the
-// picture exists.
+// (assets/ui/title_complete): every character has cleared both stages (allCleared), and
+// the picture exists. Without the picture the title stays as it is.
 func titleComplete() bool {
-	return allExtraCleared(characters, store.Data) && assets.UI("title_complete") != nil
+	return allCleared(characters, store.Data) && assets.UI(titleCompleteArt) != nil
+}
+
+// prefetchTitleComplete starts decoding the title's own picture in the background once
+// everything is cleared, so the title does not decode it on the main goroutine as it
+// first shows it.
+func prefetchTitleComplete() {
+	if allCleared(characters, store.Data) {
+		assets.PrefetchUI(titleCompleteArt)
+	}
 }
 
 // locked reports whether the character cannot be chosen yet.
