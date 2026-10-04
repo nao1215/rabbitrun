@@ -236,7 +236,16 @@ func synthEffects(d *[effectCount][]byte) {
 	d[GameOver] = arp([]int{72, 67, 64, 60, 55, 48}, 0.12, 0.3)
 	d[Confirm] = arp([]int{79, 84}, 0.05, 0.3)
 	d[Cancel] = arp([]int{76, 69}, 0.05, 0.25)
-	d[Denied] = synth(0.15, func(t float64) float64 { return sq(t, 140) * decay(t, 12) * .2 })
+	// "Buh-buzz": two low buzzes falling in pitch, so a locked choice is unmistakable.
+	d[Denied] = synth(0.36, func(t float64) float64 {
+		switch {
+		case t < 0.14:
+			return sq(t, 233) * soft(t, 0.004, 9) * math.Min(1, (0.14-t)/0.012) * .2
+		case t > 0.18:
+			return sq(t-0.18, 175) * soft(t-0.18, 0.004, 9) * math.Min(1, (0.36-t)/0.03) * .2
+		}
+		return 0
+	})
 	ready, goF := noteFreq(69), noteFreq(81)
 	d[Ready] = synth(0.15, func(t float64) float64 { return sq(t, ready) * decay(t, 10) * .25 })
 	d[Go] = synth(0.4, func(t float64) float64 { return sq(t, goF) * decay(t, 5) * .25 })
