@@ -142,7 +142,7 @@ func TestEveryRunHasDesignedThemes(t *testing.T) {
 			t.Errorf("%s: %d designed themes in her runs, want 3 at least", id, len(mine))
 		}
 	}
-	for th := road.ThemeFork; th <= road.ThemeWave; th++ {
+	for th := road.ThemeFork; th <= road.ThemeLesson; th++ {
 		if len(users[th]) < 2 {
 			t.Errorf("theme %d is in the runs of %d characters, want 2 at least", th, len(users[th]))
 		}
@@ -241,7 +241,7 @@ func themeRun(id string, extra bool, t road.Theme) *Engine {
 // lays sweets of its own.
 func TestDesignedThemesCanBeReadAhead(t *testing.T) {
 	t.Parallel()
-	for th := road.ThemeFork; th <= road.ThemeWave; th++ {
+	for th := road.ThemeFork; th <= road.ThemeLesson; th++ {
 		for _, extra := range []bool{false, true} {
 			r := scoreEngine(themeRun("bunny", extra, th), "bunny", extra)
 			for _, c := range r.courses[1 : GameCourses-1] {

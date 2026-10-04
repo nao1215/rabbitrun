@@ -33,6 +33,8 @@ const (
 	tAlc   = road.ThemeAlcoves
 	tDoor  = road.ThemeDoors
 	tWave  = road.ThemeWave
+	tSec   = road.ThemeSeconds
+	tLess  = road.ThemeLesson
 )
 
 // courseThemes is the theme of each of a character's 16 courses, on the regular side and
@@ -48,15 +50,17 @@ const (
 // on its road and hold the tables to that; change a table and they tell you what moved.
 //
 //   - cool: clear, readable roads (lanes, the fork, the trail, rooms, doors, diamonds,
-//     gates and pillars), the checkerboard only on stage 4 of the regular side
+//     gates and pillars), the lesson on the extra side, the checkerboard only on stage 4 of
+//     the regular side
 //   - cute: soft curves (the trail, swings, wobbles, funnels, snakes) with the jar and the
 //     alcoves for sweets
 //   - gyal: busy, restless roads (scattered blocks, chicanes, pillars, slaloms, stairs), the
-//     jar, the alcoves and the hammer hall; one checkers course a side
+//     jar, the alcoves, second helpings and the hammer hall; one checkers course a side
 //   - street: regular patterns, like a kimono's (combs, lanes, splits, hourglasses, stairs,
-//     stepping gates), with doors, the wave and rooms
+//     stepping gates), with doors, the wave, rooms and the lesson (a pattern learned, then
+//     mirrored)
 //   - bunny: the hardest of every kind (corridors, stepping gates, chicanes, snakes, stairs),
-//     with the fork, the wave and the hammer hall, and the most checkers
+//     with the fork, second helpings, the wave and the hammer hall, and the most checkers
 //
 // No theme comes twice in a row. A run opens with the warm-up and ends on the mixed road;
 // the courses get tight from road.Game.HardFrom on (every course on the extra stages, see
@@ -64,22 +68,22 @@ const (
 var courseThemes = map[string][2][GameCourses]road.Theme{
 	coolID: {
 		{tWarm, tLane, tFork, tTrail, tSwing, tTrail, tPill, tDiam, tGate, tRoom, tStep, tLane, tCheck, tFork, tSwing, tMix},
-		{tWarm, tFork, tGate, tRoom, tDiam, tGate, tPill, tWave, tSwing, tPill, tStep, tDoor, tTrail, tStep, tDiam, tMix},
+		{tWarm, tFork, tGate, tRoom, tDiam, tGate, tPill, tWave, tSwing, tLess, tStep, tDoor, tTrail, tStep, tDiam, tMix},
 	},
 	"cute": {
 		{tWarm, tDiam, tAlc, tTrail, tFunn, tSnake, tJar, tSwing, tHour, tSwing, tHour, tTrail, tWobb, tAlc, tJar, tMix},
 		{tWarm, tWobb, tAlc, tTrail, tJar, tSnake, tFunn, tSwing, tWobb, tSnake, tSwing, tJar, tTrail, tHour, tDiam, tMix},
 	},
 	"gyal": {
-		{tWarm, tJar, tRain, tCheck, tChic, tJar, tSwing, tRain, tAlc, tChic, tPill, tStair, tAlc, tPill, tHall, tMix},
+		{tWarm, tJar, tRain, tCheck, tChic, tSec, tSwing, tRain, tAlc, tChic, tPill, tStair, tAlc, tPill, tHall, tMix},
 		{tWarm, tAlc, tCheck, tHall, tPill, tSwing, tSlal, tRain, tHall, tChic, tStair, tJar, tAlc, tSlal, tPill, tMix},
 	},
 	"street": {
-		{tWarm, tRoom, tLane, tHour, tLane, tSplit, tDoor, tComb, tDoor, tHour, tWave, tComb, tSplit, tCorr, tWave, tMix},
-		{tWarm, tCorr, tStep, tStair, tRoom, tDoor, tStair, tStep, tLane, tWave, tCorr, tComb, tStair, tComb, tWave, tMix},
+		{tWarm, tRoom, tLane, tHour, tLane, tSplit, tDoor, tComb, tDoor, tHour, tWave, tComb, tLess, tCorr, tWave, tMix},
+		{tWarm, tCorr, tStep, tStair, tRoom, tDoor, tStair, tStep, tLess, tWave, tCorr, tComb, tStair, tComb, tWave, tMix},
 	},
 	"bunny": {
-		{tWarm, tHall, tSnake, tCheck, tCorr, tStep, tSnake, tFork, tCheck, tCorr, tFork, tChic, tStair, tWave, tCheck, tMix},
+		{tWarm, tHall, tSnake, tCheck, tCorr, tStep, tSnake, tSec, tCheck, tCorr, tFork, tChic, tStair, tWave, tCheck, tMix},
 		{tWarm, tCheck, tChic, tHall, tWave, tStep, tStair, tFork, tSnake, tCorr, tSnake, tCheck, tGate, tEdge, tGate, tMix},
 	},
 }
