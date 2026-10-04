@@ -23,3 +23,6 @@ All notable changes to this project are documented in this file. The format is b
 - End-to-end tests of the built binary with [atago](https://github.com/nao1215/atago) (`make e2e`), run by CI on Linux, macOS and Windows.
 - Release archives and Linux packages for Linux, macOS and Windows (amd64 and arm64), with a cosign-signed checksum file, an SBOM per archive, GitHub build provenance and the license texts of the linked Go modules under `THIRD_PARTY_LICENSES/`.
 - A Homebrew cask in nao1215/tap (`brew install --cask nao1215/tap/rabbitrun`).
+
+### Fixed
+- `--debug` no longer writes the save data: a run with it saved the secret character as announced, so when the four regular characters later cleared for real the title never brought her in. Saves already marked that way by `--debug` show her arrival once she is earned.

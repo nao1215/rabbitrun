@@ -40,12 +40,18 @@ func newTitleScene() *titleScene {
 	return s
 }
 
-// newSecret is the index of the secret character unlocked and not yet announced (the
-// rightmost when there are several), or -1.
+// newSecret is the index of the secret character earned and not yet announced (the
+// rightmost when there are several), or -1. It goes by the real progress, not by what
+// --debug opens for one run: under --debug the title brought her in at launch, the press
+// that went on saved her as announced, and when the four regular characters later
+// cleared for real her arrival was never shown.
 func newSecret() int {
+	if !secretEarned(characters, store.Data) {
+		return -1
+	}
 	n := -1
 	for i, c := range characters {
-		if c.Secret && !locked(c) && !store.Data.Announced[c.ID] {
+		if c.Secret && !store.Data.Announced[c.ID] {
 			n = i
 		}
 	}

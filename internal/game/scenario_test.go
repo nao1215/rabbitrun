@@ -456,6 +456,93 @@ func TestScenarioSecretCharacter(t *testing.T) {
 	}
 }
 
+// launch starts the game on the title the way a launch with opts does: the save data is
+// read back from the save file (openSave), on the characters already in use.
+func launch(t *testing.T, opts Options) *Game {
+	t.Helper()
+	oldDebug := debugMode
+	t.Cleanup(func() { debugMode = oldDebug })
+	store = save.NewStore() // useTempConfig puts the store of before back
+	openSave(opts)
+	bg = newBackground()
+	g := &Game{bg: bg, scene: newTitleScene()}
+	g.in.SetScript(&script{})
+	return g
+}
+
+// TestScenarioSecretCharacterArrivesAfterDebug clears the four regular characters for real
+// after --debug had been used: the title still brings the secret character in. --debug
+// opened her for its run, the title brought her in at launch, and the press that went on
+// saved her as announced, so her real arrival was never shown.
+//
+//nolint:paralleltest // shares the save data and the characters
+func TestScenarioSecretCharacterArrivesAfterDebug(t *testing.T) {
+	cases := []struct {
+		name    string
+		prepare func()
+		before  func(t *testing.T) // the launches before the four clear
+	}{
+		{
+			name: "debug used once on a new save",
+			before: func(t *testing.T) {
+				t.Helper()
+				g := launch(t, Options{Debug: true})
+				if s := titleOf(t, g); s.reveal >= 0 {
+					t.Error("--debug brought the secret character in although she is not earned")
+				}
+				// on the title, to the select screen (where she is open) and back, then quit
+				play(t, g, steps(wait(revealWordsAt+21), press(input.Confirm, input.Confirm), toChar(t, ""), press(input.Cancel), wait(5)))
+				g.Close()
+				if reloadSave(t).Announced[secretID()] {
+					t.Error("the --debug run saved her as announced")
+				}
+			},
+		},
+		{
+			name: "save written by a debug run of before",
+			prepare: func() {
+				store.Data.Announced = map[string]bool{secretID(): true}
+				progress(heroID).Cleared = true
+			},
+			before: func(t *testing.T) {
+				t.Helper()
+				g := launch(t, Options{})
+				play(t, g, wait(5))
+				g.Close()
+			},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			newScenario(t, tc.prepare)
+			if secretID() == "" {
+				t.Skip("no secret character")
+			}
+			store.Write()
+			tc.before(t)
+
+			// the four regular characters clear for real
+			store = save.NewStore()
+			store.Load()
+			clearRegulars()
+			store.Write()
+
+			g := launch(t, Options{})
+			s := titleOf(t, g)
+			if s.reveal < 0 || characters[s.reveal].ID != secretID() {
+				t.Fatal("the title does not bring in the secret character the four clears earned")
+			}
+			play(t, g, steps(wait(revealWordsAt+21), press(input.Confirm)))
+			if s.reveal >= 0 {
+				t.Fatal("a press did not go on from her arrival")
+			}
+			if !reloadSave(t).Announced[secretID()] {
+				t.Error("her arrival was not saved: the title would bring her in again")
+			}
+		})
+	}
+}
+
 // TestScenarioGallerySkipsLockedCharacters switches characters in the gallery: a locked
 // secret character is skipped.
 func TestScenarioGallerySkipsLockedCharacters(t *testing.T) { //nolint:paralleltest // shares the save data and the characters

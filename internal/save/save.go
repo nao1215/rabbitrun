@@ -108,7 +108,8 @@ type Store struct {
 	Data *Data
 	// ReadOnly keeps the save data from being written. It is set for --capture and
 	// --record-demo: their scripted runs clear courses and reach the ending, which would
-	// otherwise unlock illustrations and characters in the player's own save.
+	// otherwise unlock illustrations and characters in the player's own save. It is also
+	// set for --debug, whose run opens everything and must not count as progress.
 	ReadOnly bool
 	// dirty is set when the save data has changed and not been written yet.
 	dirty bool

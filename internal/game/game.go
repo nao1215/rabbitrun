@@ -73,12 +73,9 @@ func CharacterIDs() []string {
 // scripted capture or demo recording when opts asks for one. Close it when the window
 // closes.
 func New(opts Options) (*Game, error) {
-	debugMode = opts.Debug
-	store.Load()
-	// the scripted runs of a capture or a demo must not change the player's save
-	store.ReadOnly = opts.CaptureDir != "" || opts.RecordPath != ""
+	openSave(opts)
 	initBlocks()
-	if store.ReadOnly {
+	if opts.CaptureDir != "" || opts.RecordPath != "" {
 		// A capture or a demo plays no sound, so it does not open the audio device: on a
 		// machine without one (a CI runner) opening it fails and ends the game.
 		sound.SetMuted(true)
@@ -102,6 +99,34 @@ func New(opts Options) (*Game, error) {
 		}
 	}
 	return g, nil
+}
+
+// openSave loads the save data for a run of the game asked for by opts.
+func openSave(opts Options) {
+	debugMode = opts.Debug
+	store.Load()
+	// The scripted runs of a capture or a demo must not change the player's save, and
+	// neither does --debug: what it opens is for this run only, and a course cleared or a
+	// character announced while everything is open would count in the real game.
+	store.ReadOnly = opts.CaptureDir != "" || opts.RecordPath != "" || opts.Debug
+	forgetUnearnedAnnouncements()
+}
+
+// forgetUnearnedAnnouncements drops the secret characters saved as announced although the
+// save data has not earned them. Before --debug left the save alone, its run brought the
+// secret character in on the title and saved her as announced; she cannot have been
+// announced for real before she was earned (the progress only grows), so such an entry
+// came from --debug, and keeping it would hide her arrival once she is earned.
+func forgetUnearnedAnnouncements() {
+	if len(store.Data.Announced) == 0 || secretEarned(characters, store.Data) {
+		return
+	}
+	for _, c := range characters {
+		if c.Secret && store.Data.Announced[c.ID] {
+			delete(store.Data.Announced, c.ID)
+			store.Mark()
+		}
+	}
 }
 
 // Close writes whatever changed last in the save data (the window was closed).

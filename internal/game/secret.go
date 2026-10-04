@@ -15,11 +15,16 @@ import (
 //     its own (titleComplete).
 
 // secretUnlocked reports whether the secret character can be played: every regular
-// character has cleared the regular stages.
+// character has cleared the regular stages, or --debug opened everything for this run.
 func secretUnlocked(chars []*character.Character, sd *save.Data) bool {
-	if debugMode {
-		return true
-	}
+	return debugMode || secretEarned(chars, sd)
+}
+
+// secretEarned reports whether the save data has earned the secret character: every
+// regular character has cleared the regular stages. Unlike secretUnlocked it ignores
+// --debug, so what is saved about her arrival (save.Data.Announced) follows only the real
+// progress.
+func secretEarned(chars []*character.Character, sd *save.Data) bool {
 	regular := 0
 	for _, c := range chars {
 		if c.Secret {
