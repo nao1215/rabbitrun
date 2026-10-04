@@ -205,3 +205,12 @@ Clear the extra stages with every character, and the title screen gets an illust
 </details>
 
 If you just want to see every character and picture, start the game with `--debug`, or look at the images in this repository on GitHub. I hope you play and unlock them yourself, though.
+
+## Limitations
+
+- I am not used to image generation yet, so the characters' faces and outfits sometimes look slightly different from one picture to another.
+- This game is a learning project. I made it to learn how to build a game together with AI.
+
+## License
+
+The source code and the bundled artwork are released under the [MIT License](./LICENSE). The fonts and the score data of the music have their own licenses. See [NOTICE.md](./NOTICE.md).
