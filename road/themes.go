@@ -42,6 +42,8 @@ const (
 	ThemeAlcoves    // a narrow road with dents in its walls on either side in turn, a macaron in each
 	ThemeDoors      // walls with two doors at the sides, then one in the middle, a macaron behind one side door
 	ThemeWave       // walls whose gaps follow a slow wave across the road, lit by a line of sweets
+	ThemeSeconds    // a safe lane beside a side lane that gets harder the deeper she goes, with ways back out and a prize at its end
+	ThemeLesson     // a bend, a gate and a rock shown one at a time, then put together into one phrase, then mirrored
 	themeCount
 )
 
@@ -133,7 +135,7 @@ func (g *Game) themeTarget(t Theme, r int) (center, width int) {
 	case ThemeFunnel:
 		f := 0.5 + 0.5*math.Cos(2*math.Pi*float64(r)/14)
 		return W / 2, 2 + int(math.Round(5*f)) - hard*int(math.Round(f))
-	case ThemeFork, ThemeRooms, ThemeJar, ThemeDoors, ThemeWave:
+	case ThemeFork, ThemeRooms, ThemeJar, ThemeDoors, ThemeWave, ThemeSeconds, ThemeLesson:
 		return W / 2, 7 // the walls inside the road make the shape (themeBlocks)
 	case ThemeTrail:
 		return wave(trailPeriod, 2.5), 4 - hard
@@ -225,6 +227,9 @@ func (g *Game) buildThemedRow() (Row, int, int) {
 		return row, left, right
 	}
 	g.themeRow = true
+	if g.designFrom < 0 && right-left == 6 {
+		g.designFrom = r // the first row of the course on the theme, on the wide road
+	}
 	g.themeBlocks(&row, t, r, left, right)
 	if !g.passable(row) {
 		row = walls
@@ -407,7 +412,7 @@ func (g *Game) themeBlocks(row *Row, t Theme, r, left, right int) {
 				block(x)
 			}
 		}
-	case ThemeFork, ThemeRooms, ThemeJar, ThemeHammerHall, ThemeDoors, ThemeWave:
+	case ThemeFork, ThemeRooms, ThemeJar, ThemeHammerHall, ThemeDoors, ThemeWave, ThemeSeconds, ThemeLesson:
 		g.designBlocks(block, t, r, left, right)
 	default: // the road alone: its shape is the theme
 	}
@@ -695,6 +700,12 @@ func (g *Game) designBlocks(block func(int), t Theme, r, left, right int) {
 		if r > 0 && r%every == 0 && wide {
 			wall(g.waveGap(r/every, left))
 		}
+	case ThemeSeconds, ThemeLesson:
+		if wide {
+			for _, x := range g.laidOutAt(t, r, left, right).blocks {
+				block(x)
+			}
+		}
 	default:
 	}
 }
@@ -823,6 +834,12 @@ func (g *Game) designSweets(row *Row, t Theme, r, left, right int) {
 			s = SweetMacaron
 		}
 		put(from+n/2, s)
+	case ThemeSeconds, ThemeLesson:
+		if wide {
+			for _, s := range g.laidOutAt(t, r, left, right).sweets {
+				put(s.x, s.kind)
+			}
+		}
 	default:
 	}
 }

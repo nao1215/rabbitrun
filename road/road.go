@@ -156,6 +156,10 @@ type Game struct {
 	// themeRow: the row being built has the theme's blocks (it is past the rows that settle
 	// the road into the theme)
 	themeRow bool
+	// designFrom is the row of the course being built where its theme began on the wide road
+	// (-1: not yet): the themes laid out from there (ThemeSeconds, ThemeLesson) count their
+	// rows from it, so a vault or a feast first only pushes them along
+	designFrom int
 }
 
 // Tuning.
@@ -364,8 +368,10 @@ const trapRun = 10
 // cells she could be on and the row before this one; the block goes in only with open
 // cells on both sides of it and if the road can still be followed.
 func (g *Game) trap(row Row, reach [W]bool, last Row) Row {
-	if g.section != sectionNone || g.themeRow && g.theme().designed() {
-		return row // not in a vault or a feast, nor in the shape of a designed theme
+	if g.section != sectionNone || g.themeRow && g.theme().designed() || g.theme().laidOut() {
+		// not in a vault or a feast, nor in the shape of a designed theme, nor anywhere on a
+		// course laid out from where it begins (a block on the way in put it off)
+		return row
 	}
 	open, best := 0, -1
 	for x := range W {
@@ -941,6 +947,7 @@ func (g *Game) startCourse() {
 	g.section, g.sinceObs, g.alcove, g.alcoveFor, g.dir = sectionNone, 0, -1, 0, 1
 	g.vaultAt, g.feastAt = -1, -1
 	g.helpLaid = 0
+	g.designFrom = -1
 	if _, ok := Vaults[g.Level]; ok && g.TotalCourses > 0 {
 		g.vaultAt = specialAt
 	}
