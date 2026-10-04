@@ -27,7 +27,8 @@ All notable changes to this project are documented in this file. The format is b
 - Difficulty and fun scores for every course, measured on the road itself (narrow rows, sideways slides, rests, blocks to aim past, speed, help; sweets, items, rewards off the easy line, feasts, how much the road repeats), with tests that keep the runs harder from left to right on the character select screen, the extra side harder than the regular side course by course, every run harder stage by stage, every stage fun enough and no theme twice in a row.
 
 ### Changed
-- The characters' courses and road speeds were retuned to those scores: the cool girl's runs are now the easiest and the bunny girl's the hardest, and the checkerboards stay where they were.
+- The characters' courses were retuned to those scores: the cool girl's runs are now the easiest and the bunny girl's the hardest, and the checkerboards stay where they were.
+- Every character's road runs at the same speed (only the extra stages are faster), so the controls feel the same whoever runs; the order of difficulty comes from the courses alone.
 - The comb leaves out one tooth where its teeth change walls, and scattered blocks keep clear of a block of the two rows before, so neither asks for a dash of two cells on a fast road.
 
 ### Fixed
