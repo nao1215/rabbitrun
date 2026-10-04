@@ -54,7 +54,7 @@ homebrew_casks:
       token: "{{ .Env.TAP_GITHUB_TOKEN }}"
     directory: Casks
     homepage: "https://github.com/nao1215/rabbitrun"
-    description: "A short, sweets-themed road runner with characters who react to your run"
+    description: "A cross-platform runner game with anime girls"
     license: MIT
     # The game is not signed or notarized, so strip the quarantine attribute on
     # install; otherwise Gatekeeper refuses to open it ("cannot verify the
@@ -123,7 +123,7 @@ signs:
     output: true
 nfpms:
   - maintainer: "CHIKAMATSU Naohiro <n.chika156@gmail.com>"
-    description: "A short, sweets-themed road runner with characters who react to your run"
+    description: "A cross-platform runner game with anime girls"
     homepage: https://github.com/nao1215/rabbitrun
     license: MIT
     section: games
