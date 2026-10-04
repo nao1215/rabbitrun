@@ -37,6 +37,7 @@ var titleItems = []string{"PLAY", "GALLERY", "EXIT"}
 func newTitleScene() *titleScene {
 	s := &titleScene{group: extraMode(), reveal: newSecret(), word: wordDue()}
 	character.PrefetchImgs(selectEntries())
+	prefetchTitleComplete()
 	return s
 }
 
@@ -97,7 +98,7 @@ func (s *titleScene) Update(g *Game) {
 	bg.set(popPink)
 	bg.setImage("title")
 	if titleComplete() {
-		bg.setImage("title_complete") // every character cleared the extra stages
+		bg.setImage(titleCompleteArt) // every character cleared both stages
 	}
 	if s.reveal >= 0 {
 		s.revealFrame++
@@ -156,7 +157,7 @@ func (s *titleScene) Draw(screen *ebiten.Image) {
 		// The group picture: a small logo at the top and the menu at the bottom, so the
 		// text never covers the characters' faces.
 		if titleComplete() {
-			gfx.DrawImageCover(screen, assets.UI("title_complete"), 0, 0, ScreenW, ScreenH, 1)
+			gfx.DrawImageCover(screen, assets.UI(titleCompleteArt), 0, 0, ScreenW, ScreenH, 1)
 		} else {
 			screen.DrawImage(buildGroupPicture(groupMembers()), nil)
 		}

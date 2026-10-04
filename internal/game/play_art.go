@@ -86,6 +86,7 @@ func (s *playScene) allClearNow() {
 		s.prog.Cleared = true
 	}
 	store.Mark()
+	prefetchTitleComplete() // the last clear: decoded while the ending shows
 }
 
 func (s *playScene) setStageCG(cg *character.ImageEntry) {

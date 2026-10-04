@@ -75,3 +75,13 @@ func PrefetchUI(names ...string) {
 		go func() { ch <- decodeUI(fsys, name) }()
 	}
 }
+
+// ReleaseUI frees the artwork name on the GPU and forgets it (and drops a decode of it
+// still running), so the next UI reads it again.
+func ReleaseUI(name string) {
+	if img := uiCache[name]; img != nil {
+		img.Deallocate()
+	}
+	delete(uiCache, name)
+	delete(uiPending, name)
+}

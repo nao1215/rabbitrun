@@ -37,16 +37,23 @@ func TestSecretUnlocked(t *testing.T) {
 	}
 }
 
-func TestAllExtraCleared(t *testing.T) {
+func TestAllCleared(t *testing.T) {
 	t.Parallel()
 	chars := []*character.Character{{ID: "a"}, {ID: "s", Secret: true}}
-	sd := &save.Data{Characters: map[string]*save.CharProgress{"a": {ClearedExtra: true}}}
-	if allExtraCleared(chars, sd) {
-		t.Fatal("the secret character has not cleared the extra stages yet")
+	sd := &save.Data{Characters: map[string]*save.CharProgress{"a": {Cleared: true, ClearedExtra: true}}}
+	if allCleared(chars, sd) {
+		t.Fatal("the secret character has not cleared anything yet")
 	}
-	sd.Characters["s"] = &save.CharProgress{ClearedExtra: true, Cleared: true}
-	if !allExtraCleared(chars, sd) {
-		t.Fatal("everyone cleared the extra stages")
+	sd.Characters["s"] = &save.CharProgress{ClearedExtra: true}
+	if allCleared(chars, sd) {
+		t.Fatal("the secret character cleared only the extra stages")
+	}
+	sd.Characters["s"].Cleared = true
+	if !allCleared(chars, sd) {
+		t.Fatal("everyone cleared both stages")
+	}
+	if allCleared(nil, sd) {
+		t.Fatal("no characters cleared everything")
 	}
 }
 
