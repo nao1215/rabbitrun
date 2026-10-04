@@ -13,7 +13,7 @@
 
 ![RABBIT RUN](./doc/img/banner.png)
 
-Rabbit Run is a cross-platform runner game with anime girls. You steer a bunny up a road of gummy blocks while your character cheers you on beside it. It is a project for learning how to make a game with AI: the program, the characters and illustrations, the blocks and items, the backgrounds and the music arrangements were all made with AI. It is written in Go with [Ebitengine](https://ebitengine.org/) and runs on Linux, macOS and Windows.
+Rabbit Run is a runner game with anime girls for Windows, macOS, and Linux. You steer a bunny up a road of gummy blocks while your character cheers you on beside it. It is a project for learning how to make a game with AI: the program, the characters and illustrations, the blocks and items, the backgrounds and the music arrangements were all made with AI. It is written in Go with [Ebitengine](https://ebitengine.org/).
 
 <p align="center"><img src="./doc/img/demo.gif" width="360" alt="the bunny hopping up the road and the hammer smashing the walls"></p>
 
