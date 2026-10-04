@@ -88,7 +88,10 @@ fi
 
 if want shots || want demo; then
   command -v ffmpeg > /dev/null || die "ffmpeg is not on PATH"
-  go build -o "$work/rabbitrun" .
+  # The binary only takes the screenshots, so it needs no VCS stamp; without
+  # -buildvcs=false the build fails where git cannot report the status, such as
+  # some git worktrees ("error obtaining VCS status").
+  go build -buildvcs=false -o "$work/rabbitrun" .
 fi
 
 if want shots; then
