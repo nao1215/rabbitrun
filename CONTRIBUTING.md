@@ -42,7 +42,7 @@ make fmt
 make lint    # golangci-lint, the same configuration CI enforces
 ```
 
-The end-to-end tests run the built binary through [atago](https://github.com/nao1215/atago) with the specs in `e2e/atago/`. Install atago with `go install github.com/nao1215/atago@latest`, then run `make e2e` (or `e2e/run.sh --filter reset` for some of the scenarios). The specs that open a window (`--capture` and `--record-demo`) run only with `RABBITRUN_E2E_DISPLAY=1`; on Linux without a desktop, use `RABBITRUN_E2E_DISPLAY=1 xvfb-run --auto-servernum make e2e`. CI runs the suite on Linux, macOS and Windows.
+The end-to-end tests run the built binary through [atago](https://github.com/nao1215/atago) with the specs in `e2e/atago/`. Install atago with `go install github.com/nao1215/atago@latest`, then run `make e2e` (or `go run ./e2e/runner --filter reset` for some of the scenarios). The specs that open a window (`--capture` and `--record-demo`) run only with `RABBITRUN_E2E_DISPLAY=1`; on Linux without a desktop, use `RABBITRUN_E2E_DISPLAY=1 xvfb-run --auto-servernum make e2e`. CI runs the suite on Linux, macOS and Windows.
 
 `make tools` installs golangci-lint, govulncheck and go-licenses at the versions CI pins. CI also runs `govulncheck` against every supported Go version and checks the licenses of every dependency with `go-licenses`:
 
