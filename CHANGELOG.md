@@ -37,3 +37,4 @@ All notable changes to this project are documented in this file. The format is b
 - The bunny no longer drops back from a wall she slides into from the side: the road kept scrolling for the frame of the miss and could jump back a row.
 - The checkerboard courses (the cool girl's, the gyaru's and the bunny girl's) leave out a block now and then, so there is a spot to stand still in instead of a step aside for every row of blocks, and each lays a hammer as its checker rows begin and an extra life halfway through.
 - The cool girl, the one to start with, finds one more hammer on her road early in the first stage.
+- Closing the window in the middle of a run (playing, paused or after a miss) records the stage reached and the time played, as quitting through the pause menu does; they were lost.

@@ -130,8 +130,16 @@ func forgetUnearnedAnnouncements() {
 	}
 }
 
-// Close writes whatever changed last in the save data (the window was closed).
-func (g *Game) Close() { store.Flush() }
+// Close writes whatever changed last in the save data (the window was closed). A run in
+// play is recorded first, as quitting it through the pause menu does: closing the window
+// lost how far it got and how long it lasted. A run already recorded (at its game over or
+// ending, or by an earlier Close) is not counted again.
+func (g *Game) Close() {
+	if s, ok := g.scene.(*playScene); ok {
+		s.commitRun()
+	}
+	store.Flush()
+}
 
 // SetScene switches to the scene s. The scene left frees what it holds on the GPU, if it
 // has a release method.
