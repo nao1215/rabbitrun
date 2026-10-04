@@ -145,6 +145,17 @@ func TestImgReadyDoesNotWait(t *testing.T) { //nolint:paralleltest // uses the p
 // now.
 func TestUnqueue(t *testing.T) { //nolint:paralleltest // uses the prefetch queue
 	a, b, x := &ImageEntry{ID: "a"}, &ImageEntry{ID: "b"}, &ImageEntry{ID: "x"}
+	// a worker the tests before started may still be decoding: it would take the jobs below
+	// out of the queue (the test failed now and then on the full run)
+	for {
+		prefetchQueue.Lock()
+		idle := prefetchQueue.workers == 0
+		prefetchQueue.Unlock()
+		if idle {
+			break
+		}
+		time.Sleep(time.Millisecond)
+	}
 	prefetchQueue.Lock()
 	old := prefetchQueue.jobs
 	prefetchQueue.jobs = []prefetchJob{{e: a}, {e: b}}
