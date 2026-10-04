@@ -71,8 +71,8 @@ func TestFirstPortraitIsTheNormalExpression(t *testing.T) {
 }
 
 // TestEveryCharacterHasHerRun checks that every character in the game data has her course
-// themes and her speed: a character missing from the tables (a renamed ID) would run the
-// plain mixed road at the usual speed without a word.
+// themes: a character missing from the tables (a renamed ID) would run the plain mixed
+// road without a word.
 func TestEveryCharacterHasHerRun(t *testing.T) {
 	t.Parallel()
 	chars, err := character.Read(assets.FS())
@@ -81,7 +81,7 @@ func TestEveryCharacterHasHerRun(t *testing.T) {
 	}
 	for _, c := range chars {
 		if !engine.HasOwnRun(c.ID) {
-			t.Errorf("%s has no course themes or road speed of her own", c.ID)
+			t.Errorf("%s has no course themes of her own", c.ID)
 		}
 	}
 }

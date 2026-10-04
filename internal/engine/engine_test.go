@@ -214,6 +214,34 @@ func TestHasOwnRun(t *testing.T) {
 	}
 }
 
+// TestEveryCharacterRunsAtTheSameSpeed checks that the road runs as fast for every
+// character, course by course, on each side: only the extra side is faster. A road of her
+// own that ran faster or slower made the controls feel different from one character to the
+// next.
+func TestEveryCharacterRunsAtTheSameSpeed(t *testing.T) {
+	t.Parallel()
+	for _, extra := range []bool{false, true} {
+		want := roadProfile.Speed
+		if extra {
+			want = extraProfile.Speed
+		}
+		for _, id := range append(runIDs(), "nobody") {
+			e := NewRun(id, extra)
+			if e.G.Profile.Speed != want {
+				t.Errorf("%s (extra %v): the road runs at %v, want %v", id, extra, e.G.Profile.Speed, want)
+			}
+			for _, lv := range []int{1, 8, GameCourses} {
+				if got, base := e.G.CourseRowsFor(lv), NewRun("nobody", extra).G.CourseRowsFor(lv); got != base {
+					t.Errorf("%s (extra %v) course %d: %d rows, want %d like everyone else", id, extra, lv, got, base)
+				}
+			}
+		}
+	}
+	if extraProfile.Speed <= roadProfile.Speed {
+		t.Errorf("the extra side runs at %v, not faster than the regular side (%v)", extraProfile.Speed, roadProfile.Speed)
+	}
+}
+
 // missOnTheWall runs e into a wall across the road just ahead of her.
 func missOnTheWall(t *testing.T, e *Engine) {
 	t.Helper()

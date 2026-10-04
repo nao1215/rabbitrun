@@ -42,8 +42,10 @@ const (
 // The runs get harder from left to right in the order of the character select screen
 // (the cool girl's are the easiest, the bunny girl's the hardest), the extra side of each
 // is harder than her regular side course by course, and each run gets harder stage by
-// stage. The tests in difficulty_test.go score every course on its road and hold the
-// tables to that; change a table and they tell you what moved.
+// stage. Every character's road runs at the same speed (a road of her own that ran faster
+// or slower made the controls feel different from one character to the next), so that
+// order comes from these tables alone. The tests in difficulty_test.go score every course
+// on its road and hold the tables to that; change a table and they tell you what moved.
 //
 //   - cool: clear, readable roads (lanes, the fork, the trail, rooms, doors, diamonds,
 //     gates and pillars), the checkerboard only on stage 4 of the regular side
@@ -62,7 +64,7 @@ const (
 var courseThemes = map[string][2][GameCourses]road.Theme{
 	coolID: {
 		{tWarm, tLane, tFork, tTrail, tSwing, tTrail, tPill, tDiam, tGate, tRoom, tStep, tLane, tCheck, tFork, tSwing, tMix},
-		{tWarm, tFork, tGate, tRoom, tDiam, tGate, tPill, tWave, tSwing, tPill, tStep, tDoor, tTrail, tStep, tDoor, tMix},
+		{tWarm, tFork, tGate, tRoom, tDiam, tGate, tPill, tWave, tSwing, tPill, tStep, tDoor, tTrail, tStep, tDiam, tMix},
 	},
 	"cute": {
 		{tWarm, tDiam, tAlc, tTrail, tFunn, tSnake, tJar, tSwing, tHour, tSwing, tHour, tTrail, tWobb, tAlc, tJar, tMix},
@@ -70,23 +72,17 @@ var courseThemes = map[string][2][GameCourses]road.Theme{
 	},
 	"gyal": {
 		{tWarm, tJar, tRain, tCheck, tChic, tJar, tSwing, tRain, tAlc, tChic, tPill, tStair, tAlc, tPill, tHall, tMix},
-		{tWarm, tAlc, tCheck, tHall, tPill, tJar, tSlal, tRain, tHall, tChic, tStair, tJar, tAlc, tSlal, tPill, tMix},
+		{tWarm, tAlc, tCheck, tHall, tPill, tSwing, tSlal, tRain, tHall, tChic, tStair, tJar, tAlc, tSlal, tPill, tMix},
 	},
 	"street": {
-		{tWarm, tStair, tLane, tHour, tLane, tSplit, tDoor, tComb, tDoor, tHour, tWave, tComb, tSplit, tCorr, tWave, tMix},
-		{tWarm, tCorr, tStep, tStair, tRoom, tDoor, tStair, tStep, tLane, tWave, tCorr, tComb, tDoor, tComb, tWave, tMix},
+		{tWarm, tRoom, tLane, tHour, tLane, tSplit, tDoor, tComb, tDoor, tHour, tWave, tComb, tSplit, tCorr, tWave, tMix},
+		{tWarm, tCorr, tStep, tStair, tRoom, tDoor, tStair, tStep, tLane, tWave, tCorr, tComb, tStair, tComb, tWave, tMix},
 	},
 	"bunny": {
-		{tWarm, tHall, tSnake, tCheck, tCorr, tStep, tSnake, tFork, tCheck, tWave, tFork, tChic, tStair, tWave, tCheck, tMix},
+		{tWarm, tHall, tSnake, tCheck, tCorr, tStep, tSnake, tFork, tCheck, tCorr, tFork, tChic, tStair, tWave, tCheck, tMix},
 		{tWarm, tCheck, tChic, tHall, tWave, tStep, tStair, tFork, tSnake, tCorr, tSnake, tCheck, tGate, tEdge, tGate, tMix},
 	},
 }
-
-// charSpeed is how much faster than the usual road each character's road runs: a little
-// slower for the cool girl on the left of the select screen, faster to the right (the
-// bunny girl's at most 1.08: faster, the careful auto player no longer cleared her mixed
-// last course with the whole speed-up held).
-var charSpeed = map[string]float64{coolID: 0.96, "cute": 1, "gyal": 1.04, "street": 1.06, "bunny": 1.08}
 
 // coolID is the cool girl's character id.
 const coolID = "cool"
@@ -102,23 +98,20 @@ var extraHammerRow = map[string]int{coolID: 40}
 // (the second half of a run). The extra stages are tight from the first course, and faster.
 const frontHardFrom = 7
 
-// HasOwnRun reports whether the character id has course themes and a road speed of her
-// own; any other character runs the mixed road at the usual speed.
+// HasOwnRun reports whether the character id has course themes of her own; any other
+// character runs the mixed road. Every character's road runs at the same speed (the
+// regular side's or the extra side's), so the controls feel the same whoever runs.
 func HasOwnRun(id string) bool {
-	_, themes := courseThemes[id]
-	_, speed := charSpeed[id]
-	return themes && speed
+	_, ok := courseThemes[id]
+	return ok
 }
 
-// NewRun starts a character's run: her roads, her themes and her speed, on the regular
-// side or on the extra stages.
+// NewRun starts a character's run: her roads and her themes, on the regular side or on
+// the extra stages (the speed is the side's, the same for every character).
 func NewRun(id string, extra bool) *Engine {
 	p := roadProfile
 	if extra {
 		p = extraProfile
-	}
-	if f, ok := charSpeed[id]; ok {
-		p.Speed *= f
 	}
 	e := newEngineWith(roadSeedFor(id), GameCourses, p)
 	e.G.ExtraHammerRow = extraHammerRow[id]

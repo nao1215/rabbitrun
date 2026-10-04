@@ -22,8 +22,8 @@ import (
 //
 // Difficulty (diffWeights):
 //
-//   - speed: rows a second (the level's speed times the character's road), the base of
-//     everything else
+//   - speed: rows a second (the level's speed times the side's road, the same for every
+//     character), the base of everything else
 //   - narrow: the share of rows with three open cells or fewer
 //   - width: the mean number of open cells a row (counts against the score: a wide road is
 //     easy)
