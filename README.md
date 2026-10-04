@@ -32,7 +32,6 @@ Move the bunny with the left and right keys, hold up to speed up, and press Spac
 | <img src="./doc/img/items/macaron.png" width="40" alt="macaron"> | Macaron | Every 100 macarons give a life. Some lie in lines that trace the way along the road. Macarons you go back over on a retry do not come back. |
 | <img src="./doc/img/items/hammer.png" width="40" alt="hammer"> | Hammer | Smashes every wall on the screen. You start with one; more lie on the road now and then, fewer in later stages. |
 | <img src="./doc/img/items/oneup.png" width="28" alt="1UP"> | 1UP | An extra life. |
-| <img src="./doc/img/items/vault.png" width="72" alt="vault"> | Vault | A 1UP and a hammer locked in blocks. Only a hammer opens it, and you get that hammer back. |
 
 | Swinging the hammer | The walls breaking |
 | :---: | :---: |
