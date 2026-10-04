@@ -1,6 +1,8 @@
 package game
 
 import (
+	"slices"
+
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"github.com/nao1215/rabbitrun/internal/character"
@@ -94,7 +96,7 @@ func (s *playScene) setStageCG(cg *character.ImageEntry) {
 		return // the same picture: no fade again
 	}
 	if s.prevCG != nil && s.prevCG != cg {
-		s.prevCG.ReleaseFull()
+		s.releaseCG(s.prevCG)
 	}
 	s.prevCG = s.stageCG
 	s.stageCG, s.stageFade = cg, 0
@@ -113,6 +115,16 @@ func (s *playScene) prefetchArt() {
 		return
 	}
 	s.artFor = key
+	old := s.next
+	s.next = nil
+	defer func() {
+		// those no longer wanted next are freed, unless they are on the road
+		for _, e := range old {
+			if e != s.stageCG && e != s.prevCG && !slices.Contains(s.next, e) {
+				e.ReleaseFull()
+			}
+		}
+	}()
 	if g.Missed {
 		s.prefetchCG(s.stageCGAfter(g.RewindLevel() - 1)) // see restartBackground
 		return
@@ -139,8 +151,19 @@ func (s *playScene) prefetchCG(e *character.ImageEntry) {
 	if e == nil || e == s.stageCG || !e.HasImage() {
 		return
 	}
-	e.PrefetchFull()
+	s.next = append(s.next, e)
+	e.PrefetchFull() // nothing to do if it is still loaded (fading out behind the road)
 	s.prefetched = append(s.prefetched, e)
+}
+
+// releaseCG frees the illustration e, which has left the road, unless it is shown next (a
+// retry going back to it, the course after a retry): it was freed as its fade ended, after
+// prefetchCG had found it still loaded, and the frame that showed it again decoded it on
+// the main goroutine (25 to 30 ms).
+func (s *playScene) releaseCG(e *character.ImageEntry) {
+	if !slices.Contains(s.next, e) {
+		e.ReleaseFull()
+	}
 }
 
 // ending is the picture of the all clear: of the extra stages when they are played.
