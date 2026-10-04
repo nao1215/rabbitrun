@@ -79,8 +79,11 @@ func (g *Game) Layout(_, _ int) (int, int) { return ScreenW, ScreenH }
 var quitRequested bool
 
 func main() {
-	flag.Usage = printUsage
-	flag.Parse()
+	// Mistakes are reported by exitUsage: the error first, then where the help is.
+	flag.CommandLine.Init("rabbitrun", flag.ContinueOnError)
+	if err := flag.CommandLine.Parse(os.Args[1:]); err != nil {
+		exitUsage(err)
+	}
 	if *showHelp {
 		writeUsage(os.Stdout)
 		return
@@ -91,6 +94,9 @@ func main() {
 		}
 		return
 	}
+	if err := checkArgs(flag.CommandLine); err != nil {
+		exitUsage(err)
+	}
 	for _, dir := range []string{*bgmWavDir, *captureDir} {
 		if dir == "" {
 			continue
@@ -100,21 +106,39 @@ func main() {
 		}
 	}
 	if *bgmWavDir != "" {
-		writeBGMWavs(*bgmWavDir)
+		if err := writeBGMWavs(*bgmWavDir); err != nil {
+			log.Fatal(err)
+		}
 		return
 	}
 	if *resetSaveFlag {
 		// only resets the save data; the game is started again without the flag
-		if err := resetSave(); err != nil {
+		moved, err := resetSave()
+		if err != nil {
 			log.Fatal(err)
 		}
-		if _, err := fmt.Printf("the save data was reset (the old one is kept as %s.bak)\n", savePath()); err != nil {
+		msg := fmt.Sprintf("the save data was reset (the old one is kept as %s.bak)", savePath())
+		if !moved {
+			msg = fmt.Sprintf("there is no save data to reset (looked for %s)", savePath())
+		}
+		if _, err := fmt.Println(msg); err != nil {
 			log.Fatal(err)
 		}
 		return
 	}
 	loadAssets()
+	if *recordPath != "" {
+		// told before a window opens, rather than after the game has loaded
+		if err := checkRecordChar(*recordChar, characters); err != nil {
+			exitUsage(err)
+		}
+		if err := findFFmpeg(); err != nil {
+			log.Fatal(err)
+		}
+	}
 	loadSave()
+	// the scripted runs of a capture or a demo must not change the player's save
+	saveReadOnly = *captureDir != "" || *recordPath != ""
 	initBlocks()
 	initAudio()
 
@@ -135,6 +159,10 @@ func main() {
 	if *captureDir != "" {
 		g.cap = &captureState{}
 		audioMuted = true
+		// Without vsync: held to the display's refresh, a window in the background got a
+		// few frames a second and the capture took minutes. The game still runs at 60
+		// ticks a second, so the pictures decoded in the background are in on time.
+		ebiten.SetVsyncEnabled(false)
 	}
 	if *recordPath != "" {
 		g.rec = &recorder{}

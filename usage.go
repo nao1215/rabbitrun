@@ -4,13 +4,9 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 
 	flag "github.com/spf13/pflag"
 )
-
-// printUsage prints a short help to stderr (used when an option is wrong).
-func printUsage() { writeUsage(os.Stderr) }
 
 // writeUsage writes a short help: what the game is, its options, and where to go next.
 func writeUsage(w io.Writer) {

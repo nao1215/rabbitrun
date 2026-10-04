@@ -85,9 +85,14 @@ Choose PLAY on the title screen, pick a character, and the run starts. GALLERY s
 | `-V`, `--version` | Print the version and exit. |
 | `--debug` | Unlock every character, portrait and illustration for this run. The save data is not changed. |
 | `--reset-save` | Delete the save data and exit without starting the game. The old save is kept next to it as `save.json.bak`. |
-| `--capture DIR` | Save a screenshot of every screen to `DIR` and exit. |
+| `--capture DIR` | Save a screenshot of every screen to `DIR` and exit. The save data is not changed. |
 | `--bgm-wav DIR` | Write each background music arrangement to `DIR` as WAV and exit. |
-| `--record-demo FILE` | Let the game play by itself and save it as a video to `FILE` (needs ffmpeg). |
+| `--record-demo FILE` | Let the game play by itself and save it as a video to `FILE` (needs ffmpeg). The save data is not changed. |
+| `--record-char ID` | The character of the demo recording (`gyal` by default). |
+| `--record-stage N` | The stage the demo recording starts at, from 1 to 4. |
+| `--record-seconds N` | The length of the demo recording in seconds (60 by default). |
+
+A mistake in the options, such as an unknown option, a stray argument or two of `--capture`, `--bgm-wav`, `--reset-save` and `--record-demo` at once, exits with status 2 before the game opens. A failure while doing the job, such as a directory that cannot be written, exits with status 1.
 
 ## How to install
 

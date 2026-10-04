@@ -20,13 +20,20 @@ import (
 )
 
 // writeBGMWavs writes 30 seconds of each song at each intensity stage to dir as WAV
-// files (the --bgm-wav option).
-func writeBGMWavs(dir string) {
+// files (the --bgm-wav option). It stops at the first file it cannot write: each file
+// takes seconds to render, and the rest would most likely fail the same way.
+func writeBGMWavs(dir string) error {
 	names := []string{"spring", "summer", "autumn", "winter"}
 	for i := range len(names) * 3 {
 		name := names[i/3]
 		lv := i % 3
 		style := name + "_" + []string{"0calm", "1groove", "2full"}[lv]
+		p := filepath.Join(dir, style+".wav")
+		// opened before rendering, so a directory that cannot be written is told at once
+		f, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600) //nolint:gosec // G304: p is under the directory the user passed with --bgm-wav
+		if err != nil {
+			return fmt.Errorf("cannot write %s: %w", p, err)
+		}
 		m := newMusicStream(songs[name])
 		m.setIntensity(lv)
 		m.level = lv
@@ -35,8 +42,7 @@ func writeBGMWavs(dir string) {
 		const sec = 30
 		pcm := make([]byte, 8*sampleRate*sec)
 		if _, err := m.Read(pcm); err != nil {
-			log.Printf("cannot render %s: %v", style, err)
-			continue
+			return errors.Join(fmt.Errorf("cannot render %s: %w", style, err), f.Close())
 		}
 		// float32 stereo -> 16-bit stereo WAV
 		data := make([]byte, 0, 4*sampleRate*sec)
@@ -59,15 +65,17 @@ func writeBGMWavs(dir string) {
 		h = binary.LittleEndian.AppendUint16(h, 16)
 		h = append(h, "data"...)
 		h = binary.LittleEndian.AppendUint32(h, dataLen)
-		p := filepath.Join(dir, style+".wav")
-		if err := os.WriteFile(p, append(h, data...), 0o600); err != nil {
-			log.Printf("cannot write %s: %v", p, err)
-			continue
+		if _, err := f.Write(append(h, data...)); err != nil {
+			return errors.Join(fmt.Errorf("cannot write %s: %w", p, err), f.Close())
+		}
+		if err := f.Close(); err != nil {
+			return fmt.Errorf("cannot write %s: %w", p, err)
 		}
 		if _, err := fmt.Println(p); err != nil {
 			log.Print(err)
 		}
 	}
+	return nil
 }
 
 type recorder struct {
