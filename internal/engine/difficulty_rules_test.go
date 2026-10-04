@@ -195,29 +195,16 @@ func TestCheckerboardsStayWhereTheyWere(t *testing.T) {
 }
 
 // TestCarefulPlayerClearsAtFullSpeed drives the careful auto player at the road's top
-// speed (the player's whole speed-up held from the start) through the runs that can be
-// cleared that way: every regular run, and the cool girl's and the cute girl's extra runs.
+// speed (the player's whole speed-up held from the start) through every run, on both sides.
 func TestCarefulPlayerClearsAtFullSpeed(t *testing.T) {
-	if testing.Short() {
-		t.Skip("plays runs to their end")
-	}
+	skipWholeRuns(t)
 	t.Parallel()
 	for _, id := range runIDs() {
 		for _, extra := range []bool{false, true} {
-			if extra && id != coolID && id != "cute" {
-				continue
-			}
-			e := NewRun(id, extra)
-			e.Boost = boostMax
-			a := &AutoPlayer{Careful: true}
-			for f := 0; f < 60*60*10 && !e.G.AllClear && !e.Over() && !e.G.Missed; f++ {
-				a.Step(e)
-				e.Tick(false)
-				e.Events = e.Events[:0]
-			}
-			if !e.G.AllClear {
-				t.Errorf("%s (extra %v) at full speed: a miss on course %s", id, extra, e.Progress())
-			}
+			t.Run(id+"/"+side(extra), func(t *testing.T) {
+				t.Parallel()
+				carefulRun(t, id, extra, boostMax)
+			})
 		}
 	}
 }

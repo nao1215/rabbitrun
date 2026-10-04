@@ -36,8 +36,11 @@ const (
 
 // RowsPerSec is how fast the road runs now, in rows a second: the speed of the course
 // times the road's profile and the player's Boost.
-func (e *Engine) RowsPerSec() float64 {
-	return RowsPerSecond(e.G.Level) * e.G.Profile.Speed * math.Max(1, e.Boost)
+func (e *Engine) RowsPerSec() float64 { return e.rowsPerSecAt(e.G.Level) }
+
+// rowsPerSecAt is RowsPerSec on the course at level.
+func (e *Engine) rowsPerSecAt(level int) float64 {
+	return RowsPerSecond(level) * e.G.Profile.Speed * math.Max(1, e.Boost)
 }
 
 // newEngineWith starts a game of courses courses on the road p (NewRun builds a
@@ -101,8 +104,11 @@ func RowsPerSecond(level int) float64 {
 // PlayerSpeed is how fast the player slides sideways, in cells per second: 8, and quicker
 // on a fast course so she can still follow it. The player's own speed-up (Boost) leaves it
 // as it is: sliding stays easy to control.
-func (e *Engine) PlayerSpeed() float64 {
-	return math.Max(7, 1.15*RowsPerSecond(e.G.Level)*e.G.Profile.Speed) // the speed-up (Boost) does not change it
+func (e *Engine) PlayerSpeed() float64 { return e.playerSpeedAt(e.G.Level) }
+
+// playerSpeedAt is PlayerSpeed on the course at level.
+func (e *Engine) playerSpeedAt(level int) float64 {
+	return math.Max(7, 1.15*RowsPerSecond(level)*e.G.Profile.Speed) // the speed-up (Boost) does not change it
 }
 
 // Sideways slides start slow, so a short tap nudges her a little, and speed up while the
@@ -114,8 +120,10 @@ const (
 
 // SlideSpeed is how fast she slides (cells a second) after a direction has been held for
 // held frames (1 on the first frame).
-func (e *Engine) SlideSpeed(held int) float64 {
-	top := e.PlayerSpeed()
+func (e *Engine) SlideSpeed(held int) float64 { return slideSpeedAt(e.PlayerSpeed(), held) }
+
+// slideSpeedAt is SlideSpeed with the top speed top.
+func slideSpeedAt(top float64, held int) float64 {
 	t := math.Min(1, float64(held-1)/slideRampFrames)
 	return slideStart + (top-slideStart)*t
 }
