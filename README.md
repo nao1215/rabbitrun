@@ -209,6 +209,13 @@ Clear the game with the secret character, and the next title screen tells you th
 </details>
 
 <details>
+<summary>No-miss clear</summary>
+
+Run all sixteen courses in one go without a single miss, and the ending shows a no-miss illustration of your character in place of the usual one. The regular and the extra stages each have their own, and the gallery keeps them after that side's illustrations.
+
+</details>
+
+<details>
 <summary>The last reward</summary>
 
 Clear the extra stages with every character, and the title screen gets an illustration of its own.

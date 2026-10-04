@@ -62,14 +62,18 @@ func run(args []string, w io.Writer) error {
 type count struct {
 	face      string // the face image of her row (doc/img/faces/<face>.png)
 	portraits int    // the standing portraits the gallery lists
-	regular   int    // the illustrations of the regular stages
-	secret    int    // the extra illustrations and the two endings (the α)
+	regular   int    // the illustrations of the regular stages and the regular no-miss picture
+	secret    int    // the extra illustrations, the extra no-miss picture and the two endings (the α)
 }
 
-// countOf counts the pictures of c that have an image, as the gallery lists them: the
-// expressions are the portraits; the first character.MainCGCount illustrations are the
-// regular ones, and the extra ones plus the two endings are the secret part. The secret
-// character's row keeps her silhouette face.
+// countOf counts the pictures of c that have an image, as the README's "R + α (S)" puts
+// them. The expressions are the portraits. R is what the gallery lists from the start: the
+// first character.MainCGCount illustrations and the no-miss picture of the regular stages
+// (images/nomiss), listed after them. S is the secret part: the extra illustrations and
+// the no-miss picture of the extra stages (images/nomiss_extra), which the gallery lists
+// only once the hidden command is found, and the two endings, which only the ending
+// shows. A no-miss picture not drawn yet counts nowhere. The secret character's row keeps
+// her silhouette face.
 func countOf(c *character.Character) count {
 	n := count{face: c.ID}
 	if c.Secret {
@@ -91,12 +95,17 @@ func countOf(c *character.Character) count {
 			n.secret++
 		}
 	}
-	for _, e := range []*character.ImageEntry{c.Ending, c.EndingExtra} {
-		if e != nil && e.HasImage() {
-			n.secret++
-		}
-	}
+	n.regular += drawn(c.NoMiss)
+	n.secret += drawn(c.Ending) + drawn(c.EndingExtra) + drawn(c.NoMissExtra)
 	return n
+}
+
+// drawn is 1 when e is a picture with an image, else 0.
+func drawn(e *character.ImageEntry) int {
+	if e != nil && e.HasImage() {
+		return 1
+	}
+	return 0
 }
 
 // rowRe matches a row of the character table: the face cell, the portraits and the

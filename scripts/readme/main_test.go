@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"testing/fstest"
 
 	"github.com/nao1215/rabbitrun/internal/character"
 	"github.com/nao1215/rabbitrun/internal/save"
@@ -61,15 +62,61 @@ func TestCountOfCountsWhatHasAPicture(t *testing.T) {
 		if n.portraits < 1 || n.portraits > len(c.Expressions) {
 			t.Errorf("%s: %d portraits of %d expressions", c.ID, n.portraits, len(c.Expressions))
 		}
-		if n.regular > character.MainCGCount {
-			t.Errorf("%s: %d regular illustrations, more than %d", c.ID, n.regular, character.MainCGCount)
+		if limit := character.MainCGCount + 1; n.regular > limit {
+			t.Errorf("%s: %d regular illustrations, more than %d", c.ID, n.regular, limit)
 		}
-		if limit := len(c.ExtraCGs()) + 2; n.secret > limit {
+		if limit := len(c.ExtraCGs()) + 3; n.secret > limit {
 			t.Errorf("%s: %d secret pictures, more than %d", c.ID, n.secret, limit)
 		}
 		if c.Secret != (n.face == "secret") {
 			t.Errorf("%s: row face %q", c.ID, n.face)
 		}
+	}
+}
+
+// TestCountOfNoMissPictures counts a character made up in memory: the regular no-miss
+// picture is counted with the regular illustrations (R), the extra one with the secret
+// part (S) beside the endings, and without the files the counts are what they were.
+func TestCountOfNoMissPictures(t *testing.T) {
+	t.Parallel()
+	manifest := `{"id":"t","order":1,"expressions":[{"id":"normal","state":"normal"}],` +
+		`"cgs":[{"id":"cg1","score":1},{"id":"cg2","score":2}]}`
+	pic := &fstest.MapFile{Data: []byte("picture")} // only its presence is counted
+	base := fstest.MapFS{
+		"characters/t/game.json":         {Data: []byte(manifest)},
+		"characters/t/images/normal.png": pic,
+		"characters/t/images/cg1.jpg":    pic,
+		"characters/t/images/ending.jpg": pic,
+	}
+	cases := []struct {
+		name            string
+		files           []string
+		regular, secret int
+	}{
+		{"no no-miss picture", nil, 1, 1},
+		{"the regular one", []string{"nomiss.jpg"}, 2, 1},
+		{"the extra one", []string{"nomiss_extra.jpg"}, 1, 2},
+		{"both", []string{"nomiss.jpg", "nomiss_extra.jpg"}, 2, 2},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			fsys := fstest.MapFS{}
+			for k, v := range base {
+				fsys[k] = v
+			}
+			for _, f := range tc.files {
+				fsys["characters/t/images/"+f] = pic
+			}
+			chars, err := character.Read(fsys)
+			if err != nil || len(chars) != 1 {
+				t.Fatalf("read %d characters: %v", len(chars), err)
+			}
+			n := countOf(chars[0])
+			if n.portraits != 1 || n.regular != tc.regular || n.secret != tc.secret {
+				t.Errorf("counts %+v, want 1 portrait, %d + α (%d)", n, tc.regular, tc.secret)
+			}
+		})
 	}
 }
 
