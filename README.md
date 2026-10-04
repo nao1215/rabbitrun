@@ -13,9 +13,9 @@
 
 ![RABBIT RUN](./doc/img/banner.png)
 
-Rabbit Run is a short road runner: a bunny hops up a road of gummy blocks. It is a project for learning how to make a game with AI. The program, the characters and illustrations, the blocks and items, the backgrounds and the music arrangements were all made with AI. It is written in Go with [Ebitengine](https://ebitengine.org/) and runs on Linux, macOS and Windows.
+Rabbit Run is a cross-platform runner game with anime girls. You steer a bunny up a road of gummy blocks while your character cheers you on beside it. It is a project for learning how to make a game with AI: the program, the characters and illustrations, the blocks and items, the backgrounds and the music arrangements were all made with AI. It is written in Go with [Ebitengine](https://ebitengine.org/) and runs on Linux, macOS and Windows.
 
-<p align="center"><img src="./doc/img/demo.gif" width="360" alt="the bunny hopping up a bonus course full of macarons"></p>
+<p align="center"><img src="./doc/img/demo.gif" width="360" alt="the bunny hopping up the road"></p>
 
 | Title | Character select | Play | Gallery |
 | :---: | :---: | :---: | :---: |
@@ -23,19 +23,7 @@ Rabbit Run is a short road runner: a bunny hops up a road of gummy blocks. It is
 
 ## About this game
 
-### The road
-
-Slide the bunny left and right, pick up macarons and keep off the walls. The road scrolls toward her and speeds up course by course. A run is 4 stages of 4 courses, about three minutes.
-
-- Each course has a theme: winding roads, swings, slaloms, gates, pillars, lanes, checkers and more.
-- Each character has her own roads. They are the same every time, so you can learn them.
-- Hit a wall, from the front or the side, and it is a miss. A life sends you back ten rows to retry. With no lives left, or if you give up, the game is over.
-- Hold up to speed the road up by as much as 30%. It stays until a miss, and the music speeds up with it.
-- From the second stage on, one course per stage is a bonus course with candy-colored blocks: a wider road, twice the macarons, and a stretch covered in them.
-
-| A bonus course | A vault | A miss |
-| :---: | :---: | :---: |
-| <img src="./doc/img/road_bonus.png" width="220" alt="a bonus course covered in macarons"> | <img src="./doc/img/road_vault.png" width="220" alt="a vault with a 1UP and a hammer inside"> | <img src="./doc/img/road_miss.png" width="220" alt="the miss screen with retry and give up"> |
+Move the bunny with the left and right keys, hold up to speed up, and press Space to swing a hammer that smashes the walls. Each character has her own stages, and a run takes about three minutes.
 
 ### Items
 
