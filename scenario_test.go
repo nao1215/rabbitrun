@@ -74,12 +74,18 @@ func steps(parts ...[]scriptFrame) []scriptFrame {
 // first, as the progress of earlier games).
 func newScenario(t *testing.T, prepare func()) *Game {
 	t.Helper()
-	useTempConfig(t)
-	audioMuted = true
 	chars, err := readCharacters(assetFS)
 	if err != nil {
 		t.Fatal(err)
 	}
+	return newScenarioWith(t, chars, prepare)
+}
+
+// newScenarioWith is newScenario on the characters chars.
+func newScenarioWith(t *testing.T, chars []*Character, prepare func()) *Game {
+	t.Helper()
+	useTempConfig(t)
+	audioMuted = true
 	old := characters
 	characters = chars
 	t.Cleanup(func() { characters = old })
