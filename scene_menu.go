@@ -100,7 +100,7 @@ func (s *TitleScene) Update(g *Game) {
 		}
 		return
 	}
-	if s.command.feed(ebiten.AppendInputChars(nil)) {
+	if s.command.feed(g.in.Chars()) {
 		s.group = toggleExtra()
 		s.sel = 0 // the letters typed also moved the menu
 		playSE(seUnlock)
