@@ -28,7 +28,9 @@ func TestPixelsTitleShowsItsReward(t *testing.T) {
 		t.Fatal(err)
 	}
 	old := assets.FS()
-	assets.Use(overlayFS{old, fstest.MapFS{"ui/" + titleCompleteArt + ".png": {Data: buf.Bytes()}}})
+	// under the .jpg name, which is looked up before .png and is the name of the real picture
+	// (image.Decode reads the PNG data by its content, not by the name)
+	assets.Use(overlayFS{old, fstest.MapFS{"ui/" + titleCompleteArt + ".jpg": {Data: buf.Bytes()}}})
 	assets.ReleaseUI(titleCompleteArt)
 	t.Cleanup(func() {
 		assets.Use(old)
