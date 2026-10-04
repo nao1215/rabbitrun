@@ -30,6 +30,16 @@ func (s *playScene) updateComeback() {
 	}
 }
 
+// getReady shows her ready pose while READY counts down at the start of a run (the road
+// waits). After a retry she gets back up instead (updateComeback).
+func (s *playScene) getReady() {
+	if s.comeback > 0 || s.reactExpr == character.ExprComeback && s.reactTimer > 0 {
+		return
+	}
+	s.reactTimer = 0 // the hammer show's cheer is over: READY wins
+	s.react(character.ExprReady, readyFr, rankCombo)
+}
+
 // Reaction strengths: a weaker reaction never interrupts a stronger one that is still showing.
 const (
 	rankHint    = iota // a passing look: level up, a wall brushing past, the rare sweet ahead
@@ -189,9 +199,21 @@ func (s *playScene) setPose(expr, id string, pop bool) {
 	}
 }
 
+// oncePerRun are the situations shown only once a run (the hammer show, READY): a pose of
+// theirs not shown yet comes before the others, or a few of them would wait many runs to
+// be seen (and opened in the gallery).
+var oncePerRun = map[string]bool{character.ExprBlocked: true, character.ExprReady: true}
+
 // pickVariant picks a random pose for state, avoiding the current pose when possible.
 func (s *playScene) pickVariant(state string) string {
 	vs := s.char.Variants(state)
+	if oncePerRun[state] {
+		for _, v := range vs {
+			if !s.prog.SeenExpr[v.ID] && v.ID != s.exprID {
+				return v.ID
+			}
+		}
+	}
 	for range 4 {
 		id := vs[rand.IntN(len(vs))].ID //nolint:gosec // G404: game randomness, not security sensitive
 		if id != s.exprID {

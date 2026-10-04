@@ -227,10 +227,14 @@ func (s *playScene) Update(g *Game) {
 		switch s.ready {
 		case readyFr:
 			sound.Play(sound.Ready)
+			s.getReady()
 		case goFrames:
 			sound.Play(sound.Go)
 		}
 		s.updateComeback()
+		if s.reactExpr == character.ExprReady {
+			s.updateExpression()
+		}
 		s.ready--
 		if s.ready == 0 {
 			sound.StartBGM(sound.GameSong)

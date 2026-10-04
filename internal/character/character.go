@@ -32,7 +32,7 @@ const (
 	ExprGameOver = "gameover" // game over
 
 	// Reactions to the road and to events (see the play screen in package game: readRoad and handleEvents).
-	// blocked and ready are not reacted to in play; their portraits show in the gallery.
+	// blocked shows in the hammer show that opens a run, ready while READY counts down.
 	ExprOops    = "oops"    // an extra life on the road got away
 	ExprBlocked = "blocked" // the road ahead is shut by a gate or a wall across
 	ExprReady   = "ready"   // the countdown before the road moves
