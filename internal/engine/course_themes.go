@@ -43,7 +43,7 @@ const (
 // A run opens with the warm-up and ends on the mixed road; the courses get tight from
 // road.Game.HardFrom on (every course on the extra stages, see NewRun).
 var courseThemes = map[string][2][GameCourses]road.Theme{
-	"cool": {
+	coolID: {
 		{tWarm, tGate, tSlal, tPill, tSwing, tHour, tStep, tSwing, tSlal, tSnake, tPill, tRain, tCheck, tEdge, tGate, tMix},
 		{tWarm, tSlal, tStep, tCorr, tGate, tEdge, tDiam, tSwing, tPill, tGate, tSwing, tChic, tStep, tRain, tPill, tMix},
 	},
@@ -67,14 +67,17 @@ var courseThemes = map[string][2][GameCourses]road.Theme{
 
 // charSpeed is how much faster than the others each character's road runs: the restless
 // gyaru and the secret bunny a little faster, the soft cute road at the usual speed.
-var charSpeed = map[string]float64{"cool": 1.02, "cute": 1, "gyal": 1.06, "street": 1, "bunny": 1.08}
+var charSpeed = map[string]float64{coolID: 1.02, "cute": 1, "gyal": 1.06, "street": 1, "bunny": 1.08}
+
+// coolID is the cool girl's character id.
+const coolID = "cool"
 
 // charHammers is how many hammers a character starts her run with when it is not
 // road.StartBombs. The cool girl's roads (gates, stepping gates, slaloms and a checkerboard,
 // all testing the aim) are the hardest of the four regular characters, so she starts with
 // one hammer more, on both sides: a spare for the first stages instead of a pickup placed
 // on her road, which would have changed the roads every game has learned.
-var charHammers = map[string]int{"cool": road.StartBombs + 1}
+var charHammers = map[string]int{coolID: road.StartBombs + 1}
 
 // frontHardFrom is the course from which the regular side is as tight as the extra stages
 // (the second half of a run). The extra stages are tight from the first course, and faster.
