@@ -72,12 +72,12 @@ var charSpeed = map[string]float64{coolID: 1.02, "cute": 1, "gyal": 1.06, "stree
 // coolID is the cool girl's character id.
 const coolID = "cool"
 
-// charHammers is how many hammers a character starts her run with when it is not
-// road.StartBombs. The cool girl's roads (gates, stepping gates, slaloms and a checkerboard,
-// all testing the aim) are the hardest of the four regular characters, so she starts with
-// one hammer more, on both sides: a spare for the first stages instead of a pickup placed
-// on her road, which would have changed the roads every game has learned.
-var charHammers = map[string]int{coolID: road.StartBombs + 1}
+// extraHammerRow is the row of the first stage on which a character finds one more
+// hammer on her road. The cool girl's roads (gates, stepping gates, slaloms and a
+// checkerboard, all testing the aim) are the hardest of the four regular characters, so a
+// spare hammer lies on her way early, just after the opening trail of sweets. It is placed
+// on the road rather than given at the start (the user's choice).
+var extraHammerRow = map[string]int{coolID: 40}
 
 // frontHardFrom is the course from which the regular side is as tight as the extra stages
 // (the second half of a run). The extra stages are tight from the first course, and faster.
@@ -102,9 +102,7 @@ func NewRun(id string, extra bool) *Engine {
 		p.Speed *= f
 	}
 	e := newEngineWith(roadSeedFor(id), GameCourses, p)
-	if n, ok := charHammers[id]; ok {
-		e.G.Bombs = min(n, road.MaxBombs)
-	}
+	e.G.ExtraHammerRow = extraHammerRow[id]
 	e.G.Themes = themesFor(id, extra)
 	e.G.Hard = extra
 	if !extra {

@@ -28,4 +28,4 @@ All notable changes to this project are documented in this file. The format is b
 - `--debug` no longer writes the save data: a run with it saved the secret character as announced, so when the four regular characters later cleared for real the title never brought her in. Saves already marked that way by `--debug` show her arrival once she is earned.
 - The bunny no longer drops back from a wall she slides into from the side: the road kept scrolling for the frame of the miss and could jump back a row.
 - The checkerboard courses (the cool girl's, the gyaru's and the bunny girl's) leave out a block now and then, so there is a spot to stand still in instead of a step aside for every row of blocks, and each lays a hammer as its checker rows begin and an extra life halfway through.
-- The cool girl starts her runs with two hammers instead of one: her roads are the hardest of the four regular characters.
+- The cool girl finds one more hammer on her road early in the first stage: her roads are the hardest of the four regular characters.

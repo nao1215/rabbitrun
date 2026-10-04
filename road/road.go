@@ -150,6 +150,9 @@ type Game struct {
 	// helpLaid has a bit (1 << the sweet) for each help of checkerHelp laid on the course
 	// being built
 	helpLaid int
+	// ExtraHammerRow, when not 0, lays one more hammer on the first stage, on this row of
+	// the stage (a character whose roads are harder gets it on her way).
+	ExtraHammerRow int
 }
 
 // Tuning.
@@ -753,6 +756,8 @@ func (g *Game) addThings(row Row, left, right int) Row {
 		thing = g.checkerHelp()
 		g.helpLaid |= 1 << thing
 	case g.stageRow == g.hammerRowOf(g.Stage):
+		thing = SweetBomb
+	case g.Stage == 1 && g.ExtraHammerRow > 0 && g.stageRow == g.ExtraHammerRow:
 		thing = SweetBomb
 	case g.rng.Float64() < p.SweetsRate*bonusSweets(g.Bonus()):
 		switch r := g.rng.Float64(); {

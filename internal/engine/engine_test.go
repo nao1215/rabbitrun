@@ -292,19 +292,39 @@ func TestUnknownCharacterRunsTheMixedRoad(t *testing.T) {
 	}
 }
 
-// TestCoolStartsWithASpareHammer checks the hammers each run starts with: the cool girl,
-// whose roads are the hardest of the regular four, one more than road.StartBombs on both
-// sides, and every other character road.StartBombs.
-func TestCoolStartsWithASpareHammer(t *testing.T) {
+// TestCoolFindsASpareHammer checks that every run starts with road.StartBombs hammers and
+// that the cool girl, whose roads are the hardest of the regular four, finds one more
+// hammer on her first stage than her road would otherwise have.
+func TestCoolFindsASpareHammer(t *testing.T) {
 	t.Parallel()
-	for _, id := range append(runIDs(), "nobody") {
-		want := road.StartBombs
-		if id == "cool" {
-			want = road.StartBombs + 1
+	hammers := func(e *Engine) int {
+		n := 0
+		for e.G.Stage == 1 && !e.G.AllClear {
+			e.G.Step()
+			for _, c := range e.G.Ahead {
+				if c.Sweet == road.SweetBomb {
+					n++
+				}
+			}
+			e.G.Safe = 1 // only the road is wanted, not where she stands
 		}
+		return n
+	}
+	for _, id := range append(runIDs(), "nobody") {
 		for _, extra := range []bool{false, true} {
-			if got := NewRun(id, extra).G.Bombs; got != want {
-				t.Errorf("%s (extra %v) starts with %d hammers, want %d", id, extra, got, want)
+			e := NewRun(id, extra)
+			if e.G.Bombs != road.StartBombs {
+				t.Errorf("%s (extra %v) starts with %d hammers, want %d", id, extra, e.G.Bombs, road.StartBombs)
+			}
+			plain := NewRun(id, extra)
+			plain.G.ExtraHammerRow = 0
+			got, base := hammers(e), hammers(plain)
+			want := base
+			if id == "cool" {
+				want = base + 1
+			}
+			if got != want {
+				t.Errorf("%s (extra %v) has %d hammers on the first stage, want %d", id, extra, got, want)
 			}
 		}
 	}
