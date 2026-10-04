@@ -22,6 +22,9 @@ Useful flags while developing:
 - `./rabbitrun --debug` unlocks every character and picture for one run.
 - `./rabbitrun --capture DIR` walks through every screen, saves a screenshot of each and exits.
 - `./rabbitrun --bgm-wav DIR` renders each background-music arrangement to WAV and exits.
+- `./rabbitrun --record-demo FILE` lets the game play by itself and records it with ffmpeg (`--record-char`, `--record-stage` and `--record-seconds` pick what is recorded).
+
+The screenshots and the demo GIF in the README come from `--capture` and `--record-demo`.
 
 ### 3. Keep the quality bar high
 

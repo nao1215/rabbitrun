@@ -15,6 +15,8 @@
 
 Rabbit Run is a short road runner: a bunny hops up a road of gummy blocks. It is a project for learning how to make a game with AI. The program, the characters and illustrations, the blocks and items, the backgrounds and the music arrangements were all made with AI. It is written in Go with [Ebitengine](https://ebitengine.org/) and runs on Linux, macOS and Windows.
 
+<p align="center"><img src="./doc/img/demo.gif" width="360" alt="the bunny hopping up a bonus course full of macarons"></p>
+
 | Title | Character select | Play | Gallery |
 | :---: | :---: | :---: | :---: |
 | ![title](./doc/img/title.png) | ![select](./doc/img/select.png) | ![play](./doc/img/play.png) | ![gallery](./doc/img/gallery.png) |
@@ -30,6 +32,10 @@ Slide the bunny left and right, pick up macarons and keep off the walls. The roa
 - Hit a wall, from the front or the side, and it is a miss. A life sends you back ten rows to retry. With no lives left, or if you give up, the game is over.
 - Hold up to speed the road up by as much as 30%. It stays until a miss, and the music speeds up with it.
 - From the second stage on, one course per stage is a bonus course with candy-colored blocks: a wider road, twice the macarons, and a stretch covered in them.
+
+| A bonus course | A vault | A miss |
+| :---: | :---: | :---: |
+| <img src="./doc/img/road_bonus.png" width="220" alt="a bonus course covered in macarons"> | <img src="./doc/img/road_vault.png" width="220" alt="a vault with a 1UP and a hammer inside"> | <img src="./doc/img/road_miss.png" width="220" alt="the miss screen with retry and give up"> |
 
 ### Items
 
