@@ -100,7 +100,7 @@ type pictureKind int
 
 const (
 	portraits     pictureKind = iota // her poses on the play screen (and the select image)
-	illustrations                    // the illustrations behind the road and the ending's picture
+	illustrations                    // the illustrations behind the road and the ending's picture (or the no-miss one)
 )
 
 // entries are the pictures of kind of every character.
@@ -113,7 +113,7 @@ func (k pictureKind) entries() []*character.ImageEntry {
 		case portraits:
 			list, single = c.Expressions, []*character.ImageEntry{c.Select}
 		case illustrations:
-			list, single = c.CGs, []*character.ImageEntry{c.Ending, c.EndingExtra}
+			list, single = c.CGs, []*character.ImageEntry{c.Ending, c.EndingExtra, c.NoMiss, c.NoMissExtra}
 		}
 		for i := range list {
 			out = append(out, &list[i])

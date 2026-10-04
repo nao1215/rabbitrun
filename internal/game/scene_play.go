@@ -130,6 +130,11 @@ type playScene struct {
 	allClear  bool
 	endLayer  *ebiten.Image // the ending's portrait, when there is no illustration
 	committed bool          // whether this run was recorded in the progress (commitRun)
+	// misses counts the walls run into in this run (a miss with RETRY counts too), and
+	// courses the courses cleared in it: a run that clears all of them without a miss is a
+	// no-miss clear (noMissRun). A new run (from the select screen, RESET, or RETRY after a
+	// game over) is a new scene and starts both at zero.
+	misses, courses int
 	// artFor is the course (negative: the course a retry goes back to) whose next
 	// illustration prefetchArt has started decoding; prefetched are the illustrations it
 	// started, freed with the scene.
@@ -364,12 +369,14 @@ func (s *playScene) handleEvents() {
 		case road.EventNearMiss:
 			s.react(character.ExprNervous, 50, rankHint)
 		case road.EventCrash:
+			s.misses++
 			sound.Play(sound.GameOver)
 			if !e.Over() {
 				s.react(character.ExprCrying, missFrames-5, rankPerfect) // a miss: she cries until the restart
 			}
 		case road.EventCourse:
 			courses++
+			s.courses++
 			s.courseClear(e.G.Level - 1)
 			if e.G.Bonus() {
 				s.popups = append(s.popups, popup{text: "BONUS!", timer: 120})

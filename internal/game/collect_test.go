@@ -143,6 +143,7 @@ func TestEveryIllustrationIsEarnedThroughPlay(t *testing.T) { //nolint:parallelt
 		for n := 1; n < engine.GameCourses; n++ {
 			s.courseClear(n)
 		}
+		s.courses = engine.GameCourses // every course of the run, without a miss
 		s.allClearNow()
 		s.release()
 	}
@@ -170,15 +171,27 @@ func TestEveryIllustrationIsEarnedThroughPlay(t *testing.T) { //nolint:parallelt
 			t.Errorf("%s is locked in the gallery", it.e.ID)
 		}
 	}
-	drawn := 0
-	for i := range hero.CGs {
-		if hero.CGs[i].HasImage() {
-			drawn++
-		}
-	}
+	drawn := drawnIllustrations(hero)
 	if listed != drawn {
 		t.Errorf("the gallery lists %d illustrations, want the %d drawn", listed, drawn)
 	}
+}
+
+// drawnIllustrations counts the illustrations of c that are drawn: the ones a course
+// unlocks and her no-miss pictures.
+func drawnIllustrations(c *character.Character) int {
+	n := 0
+	for i := range c.CGs {
+		if c.CGs[i].HasImage() {
+			n++
+		}
+	}
+	for _, e := range []*character.ImageEntry{c.NoMiss, c.NoMissExtra} {
+		if e != nil && e.HasImage() {
+			n++
+		}
+	}
+	return n
 }
 
 // TestGalleryDebugListsTheExtras: --debug opens everything for its run, so the gallery
@@ -191,12 +204,7 @@ func TestGalleryDebugListsTheExtras(t *testing.T) { //nolint:paralleltest // cha
 		t.Fatalf("--debug lists %d illustrations of %d", n, len(c.CGs))
 	}
 	hero := characters[defaultCharIndex()]
-	drawn := 0
-	for i := range hero.CGs {
-		if hero.CGs[i].HasImage() {
-			drawn++
-		}
-	}
+	drawn := drawnIllustrations(hero)
 	gs := galleryOf(t, g, hero.ID)
 	listed := 0
 	for i, it := range gs.items() {

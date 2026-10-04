@@ -71,8 +71,14 @@ type Character struct {
 	Cutin       *ImageEntry  `json:"-"`      // the big cut-in when a hammer is swung (images/cutin.png)
 	// Ending and EndingExtra are the pictures of the all clear, of the regular and of the
 	// extra stages (images/ending, images/ending_extra): the shape of the window, to fill it.
-	Ending      *ImageEntry  `json:"-"`
-	EndingExtra *ImageEntry  `json:"-"`
+	Ending      *ImageEntry `json:"-"`
+	EndingExtra *ImageEntry `json:"-"`
+	// NoMiss and NoMissExtra are the rewards of a no-miss clear, of the regular and of the
+	// extra stages (images/nomiss, images/nomiss_extra): the same shape as the endings,
+	// shown by the ending in their place and listed in the gallery. They are nil for a
+	// character whose picture is not drawn (she simply has no such reward).
+	NoMiss      *ImageEntry  `json:"-"`
+	NoMissExtra *ImageEntry  `json:"-"`
 	CGs         []ImageEntry `json:"cgs"` //nolint:tagliatelle // key used by the existing game.json files
 }
 
@@ -133,6 +139,14 @@ func (c *Character) MainCGs() []ImageEntry { return c.CGs[:min(MainCGCount, len(
 // ExtraCGs are the illustrations of the extra stages (hidden until the command is entered).
 func (c *Character) ExtraCGs() []ImageEntry { return c.CGs[min(MainCGCount, len(c.CGs)):] }
 
+// NoMissID and NoMissExtraID are the IDs of the no-miss pictures (their file names under
+// images/), and the keys under which a no-miss clear is saved in the unlocked
+// illustrations (save.CharProgress.UnlockedCG).
+const (
+	NoMissID      = "nomiss"
+	NoMissExtraID = "nomiss_extra"
+)
+
 // charactersDir is where the characters are in the assets directory.
 const charactersDir = "characters"
 
@@ -165,6 +179,8 @@ func Read(fsys fs.FS) ([]*Character, error) {
 		c.Cutin = &ImageEntry{ID: "cutin", State: ExprExcited}
 		c.Ending = &ImageEntry{ID: "ending", State: ExprPerfect}
 		c.EndingExtra = &ImageEntry{ID: "ending_extra", State: ExprPerfect}
+		c.NoMiss = optionalEntry(fsys, base, NoMissID)
+		c.NoMissExtra = optionalEntry(fsys, base, NoMissExtraID)
 		for _, e := range c.entries() {
 			e.fsys, e.base = fsys, base // images load on use (Img)
 		}
@@ -175,13 +191,22 @@ func Read(fsys fs.FS) ([]*Character, error) {
 	return chars, nil
 }
 
+// optionalEntry is the picture images/<id> of the character in base, or nil when it is
+// not drawn: a reward that only some characters have.
+func optionalEntry(fsys fs.FS, base, id string) *ImageEntry {
+	if !assets.HasImage(fsys, path.Join(base, "images", id)) {
+		return nil
+	}
+	return &ImageEntry{ID: id, State: ExprPerfect}
+}
+
 // entries are every picture of c.
 func (c *Character) entries() []*ImageEntry {
-	out := make([]*ImageEntry, 0, len(c.Expressions)+len(c.CGs)+5)
+	out := make([]*ImageEntry, 0, len(c.Expressions)+len(c.CGs)+7)
 	for i := range c.Expressions {
 		out = append(out, &c.Expressions[i])
 	}
-	for _, e := range []*ImageEntry{c.Group, c.Select, c.Cutin, c.Ending, c.EndingExtra} {
+	for _, e := range []*ImageEntry{c.Group, c.Select, c.Cutin, c.Ending, c.EndingExtra, c.NoMiss, c.NoMissExtra} {
 		if e != nil {
 			out = append(out, e)
 		}

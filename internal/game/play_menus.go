@@ -205,11 +205,29 @@ func (s *playScene) drawAllClear(screen *ebiten.Image) {
 	// just the congratulation in a thin band at the top and the way back to the title at
 	// the bottom, so the picture (her face is near the top) stays in view
 	bands := float32(math.Min(1, float64(s.overFrame-endWordsAt)/endBandFrames))
-	vector.FillRect(screen, 0, 0, ScreenW, 66, color.NRGBA{0xff, 0xff, 0xff, uint8(0x90 * bands)}, false)
+	top := float32(endBandH)
+	if s.noMissRun() {
+		top = endBandNoMissH // a second, smaller line: NO MISS!
+	}
+	vector.FillRect(screen, 0, 0, ScreenW, top, color.NRGBA{0xff, 0xff, 0xff, uint8(0x90 * bands)}, false)
 	vector.FillRect(screen, 0, ScreenH-74, ScreenW, 74, color.NRGBA{0xff, 0xff, 0xff, uint8(0x90 * bands)}, false)
 	gfx.DrawTextOutline(screen, "CONGRATULATIONS!", ScreenW/2, 10, 42, gfx.CandyPink)
+	if s.noMissRun() {
+		// told even when her no-miss picture is not drawn yet (the usual ending shows): the
+		// clear is saved, and the picture opens in the gallery once it is drawn
+		gfx.DrawTextOutline(screen, endNoMissText, ScreenW/2, 60, 30, gfx.CandyPink)
+	}
 	drawMenu(screen, endItems, 0, ScreenH-62, 32)
 }
+
+// The ending's top band: endBandH tall for the congratulation, endBandNoMissH after a
+// no-miss clear, which adds endNoMissText under it. Both stay thin, so her face (near the
+// top of the picture) shows.
+const (
+	endBandH       = 66
+	endBandNoMissH = 100
+	endNoMissText  = "NO MISS!"
+)
 
 // endItems is the ending's one button.
 var endItems = []string{itemTitle}

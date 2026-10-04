@@ -87,6 +87,10 @@ func (s *playScene) allClearNow() {
 	} else {
 		s.prog.Cleared = true
 	}
+	if s.noMissRun() {
+		// saved even when her picture is not drawn yet: it opens in the gallery once it is
+		s.prog.UnlockedCG[noMissID()] = true
+	}
 	store.Mark()
 	prefetchTitleComplete() // the last clear: decoded while the ending shows
 }
@@ -132,6 +136,9 @@ func (s *playScene) prefetchArt() {
 	s.prefetchCG(s.stageCGAfter(g.Level)) // the course being run is cleared as course g.Level
 	if g.Level >= engine.GameCourses {
 		s.prefetchCG(s.ending())
+		if s.misses == 0 {
+			s.prefetchCG(s.noMissArt()) // a no-miss clear is still on: its picture may be next
+		}
 	}
 }
 
@@ -166,19 +173,55 @@ func (s *playScene) releaseCG(e *character.ImageEntry) {
 	}
 }
 
-// ending is the picture of the all clear: of the extra stages when they are played.
+// ending is the picture of the all clear: of the extra stages when they are played, and
+// the no-miss picture in its place after a no-miss clear (when she has one drawn).
 func (s *playScene) ending() *character.ImageEntry {
+	if s.noMissShown() {
+		return s.noMissArt()
+	}
 	if extraMode() {
 		return s.char.EndingExtra
 	}
 	return s.char.Ending
 }
 
+// noMissShown reports whether the ending shows the no-miss picture: the run is over as a
+// no-miss clear and her picture of it is drawn (otherwise the usual ending shows).
+func (s *playScene) noMissShown() bool {
+	e := s.noMissArt()
+	return s.allClear && s.noMissRun() && e != nil && e.HasImage()
+}
+
+// noMissRun reports whether this run is a no-miss clear so far: every course of the game
+// cleared in it and no wall run into. A run started part of the way in (the screenshots
+// and the demo recording start on a later course) has not cleared them all.
+func (s *playScene) noMissRun() bool {
+	return s.misses == 0 && s.courses >= engine.GameCourses
+}
+
+// noMissArt is the character's no-miss picture of the stages played (nil when she has
+// none drawn).
+func (s *playScene) noMissArt() *character.ImageEntry {
+	if extraMode() {
+		return s.char.NoMissExtra
+	}
+	return s.char.NoMiss
+}
+
+// noMissID is the key a no-miss clear of the stages played is saved under (with the
+// unlocked illustrations).
+func noMissID() string {
+	if extraMode() {
+		return character.NoMissExtraID
+	}
+	return character.NoMissID
+}
+
 // release frees the scene's pictures on the GPU when it is left (Game.SetScene): the
 // illustrations behind the road and those decoded ahead, the ending and the layers.
 // Otherwise every run left them behind.
 func (s *playScene) release() {
-	for _, e := range append(s.prefetched, s.stageCG, s.prevCG, s.ending()) {
+	for _, e := range append(s.prefetched, s.stageCG, s.prevCG, s.ending(), s.noMissArt()) {
 		if e != nil {
 			e.ReleaseFull()
 		}

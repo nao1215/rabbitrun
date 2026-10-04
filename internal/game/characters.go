@@ -50,10 +50,41 @@ func playCGs(c *character.Character) []character.ImageEntry {
 // hidden command has been found, so a full gallery looks complete. --debug opens
 // everything for its run, the extras too.
 func galleryCGs(c *character.Character) []character.ImageEntry {
-	if store.Data.ExtraFound || debugMode {
+	if extrasListed() {
 		return c.CGs
 	}
 	return c.MainCGs()
+}
+
+// extrasListed reports whether the gallery lists the extra illustrations: once the hidden
+// command has been found, or under --debug.
+func extrasListed() bool { return store.Data.ExtraFound || debugMode }
+
+// galleryIllustrations are the illustrations the gallery lists, in its order: the regular
+// ones and her no-miss picture of the regular stages, then (once the hidden command has
+// been found, as galleryCGs) the extra ones and her no-miss picture of the extra stages.
+// A no-miss picture is listed only when she has one drawn. The endings are not listed:
+// every clear shows them again, while a no-miss picture is a reward kept for looking at.
+func galleryIllustrations(c *character.Character) []*character.ImageEntry {
+	out := make([]*character.ImageEntry, 0, len(c.CGs)+2)
+	main := c.MainCGs()
+	for i := range main {
+		out = append(out, &main[i])
+	}
+	if c.NoMiss != nil {
+		out = append(out, c.NoMiss)
+	}
+	if !extrasListed() {
+		return out // the extras are not known yet
+	}
+	extra := c.ExtraCGs()
+	for i := range extra {
+		out = append(out, &extra[i])
+	}
+	if c.NoMissExtra != nil {
+		out = append(out, c.NoMissExtra)
+	}
+	return out
 }
 
 // extraMode reports whether the extra stages are being played.

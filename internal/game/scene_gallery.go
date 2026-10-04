@@ -95,7 +95,7 @@ func (s *galleryScene) listFor() {
 		return
 	}
 	c := s.char()
-	cgs := galleryCGs(c)
+	cgs := galleryIllustrations(c)
 	s.list = make([]galleryItem, 0, len(c.Expressions)+len(cgs))
 	// only entries with a picture: an unlocked illustration not drawn yet showed as a
 	// locked tile among the unlocked ones
@@ -104,9 +104,9 @@ func (s *galleryScene) listFor() {
 			s.list = append(s.list, galleryItem{e: &c.Expressions[i]})
 		}
 	}
-	for i := range cgs {
-		if cgs[i].HasImage() {
-			s.list = append(s.list, galleryItem{e: &cgs[i], cg: true})
+	for _, e := range cgs {
+		if e.HasImage() {
+			s.list = append(s.list, galleryItem{e: e, cg: true})
 		}
 	}
 	s.open = make([]bool, len(s.list))
