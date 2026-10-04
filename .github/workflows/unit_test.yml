@@ -53,6 +53,12 @@ jobs:
         if: runner.os != 'Linux'
         run: go test -race ./...
 
+      # The pixel tests read back what the screens draw, which needs the game loop and
+      # so a window: they run in the X server, with the pixels build tag.
+      - name: Run the pixel tests (Linux, headless X server)
+        if: runner.os == 'Linux'
+        run: xvfb-run --auto-servernum make test-pixels
+
   # Latest Go: a separate, explicitly named job so a failure says whether the
   # game broke on a supported version or on the toolchain that is about to
   # become one. check-latest forces the newest released patch.

@@ -1,6 +1,9 @@
 version: "2"
 run:
   go: "1.26"
+  # the pixel tests (internal/game/pixels_test.go) are built only with this tag
+  build-tags:
+    - pixels
 linters:
   default: none
   enable:

@@ -13,7 +13,9 @@ import (
 
 // The drawing tests run every screen into an offscreen image. Without RunGame the pixels
 // cannot be read back (ReadPixels panics before the game loop starts), so they check the
-// state the screens were driven into and that drawing each of them goes through.
+// state the screens were driven into and that drawing each of them goes through. What
+// the screens draw is read back by the pixel tests (pixels_test.go), which run in the
+// game loop.
 
 // drawEvery is how often (in frames) the drawing tests draw the screen. Drawing is the
 // slow part under the race detector; every few frames still passes through each stage

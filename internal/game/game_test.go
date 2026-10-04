@@ -24,7 +24,7 @@ func TestMain(m *testing.M) {
 	}
 	// the assets directory from disk, as the game reads the embedded one
 	assets.Use(os.DirFS("../../assets"))
-	code := m.Run()
+	code := runTests(m) // in the game loop with the pixels build tag (pixels_test.go)
 	if err := os.RemoveAll(dir); err != nil {
 		panic(err)
 	}
