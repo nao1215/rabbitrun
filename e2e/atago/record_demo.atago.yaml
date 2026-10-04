@@ -138,3 +138,58 @@ scenarios:
           exit_code: 0
           stdout:
             contains: ["codec_name=h264", "width=720", "height=900", "nb_frames=60"]
+
+  # A stand-in ffmpeg that fails: the recording is a failure of the job, so the game
+  # exits 1 and says why. ffmpeg's error was only logged and the game exited 0 with no
+  # video. The stand-ins are shell scripts, so these do not run on Windows.
+  - name: ffmpeg exiting 7 ends the recording with status 1
+    only:
+      env: RABBITRUN_E2E_DISPLAY
+    skip:
+      os: windows
+    env:
+      PATH: "${workdir}/bin:${env:PATH}"
+      MESA_SHADER_CACHE_DISABLE: "true"
+    steps:
+      - fixture:
+          file: bin/ffmpeg
+          content: "#!/bin/sh\ncat >/dev/null\nexit 7\n"
+          mode: "0755"
+      - run:
+          command: rabbitrun --record-demo demo.mp4 --record-seconds 1
+          sandbox_home: true
+          timeout: 300s
+      - assert:
+          exit_code: 1
+          stderr:
+            contains: "cannot record demo.mp4: ffmpeg: exit status 7"
+          changes:
+            created: []
+            modified: []
+            deleted: []
+
+  - name: ffmpeg closing its input ends the recording with status 1
+    only:
+      env: RABBITRUN_E2E_DISPLAY
+    skip:
+      os: windows
+    env:
+      PATH: "${workdir}/bin:${env:PATH}"
+      MESA_SHADER_CACHE_DISABLE: "true"
+    steps:
+      - fixture:
+          file: bin/ffmpeg
+          content: "#!/bin/sh\nexec 0<&-\nsleep 1\n"
+          mode: "0755"
+      - run:
+          command: rabbitrun --record-demo demo.mp4 --record-seconds 1
+          sandbox_home: true
+          timeout: 300s
+      - assert:
+          exit_code: 1
+          stderr:
+            contains: "cannot record demo.mp4: cannot send a frame to ffmpeg"
+          changes:
+            created: []
+            modified: []
+            deleted: []

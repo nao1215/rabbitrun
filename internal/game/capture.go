@@ -40,16 +40,21 @@ func (r *recorder) start(g *Game) error {
 	// Draw as fast as possible: a hidden window would otherwise be held to a few frames a second.
 	ebiten.SetVsyncEnabled(false)
 	ebiten.SetTPS(ebiten.SyncWithFPS)
-	r.cmd = exec.CommandContext(context.Background(), "ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgba", //nolint:gosec // G204: fixed arguments and the path the user passed
+	cmd := exec.CommandContext(context.Background(), "ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgba", //nolint:gosec // G204: fixed arguments and the path the user passed
 		"-s", fmt.Sprintf("%dx%d", ScreenW, ScreenH), "-r", "30", "-i", "-",
 		"-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "23", r.path)
-	pipe, err := r.cmd.StdinPipe()
+	return r.open(cmd)
+}
+
+// open starts cmd, the encoder, with the frames piped to its standard input.
+func (r *recorder) open(cmd *exec.Cmd) error {
+	pipe, err := cmd.StdinPipe()
 	if err != nil {
 		return err
 	}
-	r.pipe = pipe
+	r.cmd, r.pipe = cmd, pipe
 	r.pix = make([]byte, 4*ScreenW*ScreenH)
-	return r.cmd.Start()
+	return cmd.Start()
 }
 
 // scene is the self-playing run the recording shows: its character, side and stage.
@@ -83,26 +88,43 @@ func (r *recorder) skipUpdate() bool {
 	return false
 }
 
-// afterDraw sends the frame to ffmpeg and reports whether the recording is over.
-func (r *recorder) afterDraw(screen *ebiten.Image) bool {
-	r.drawn = true
+// afterDraw sends the frame to ffmpeg and reports whether the recording is over, with
+// the error that ended it when it failed.
+func (r *recorder) afterDraw(screen *ebiten.Image) (bool, error) {
 	if r.frame%2 == 0 {
 		screen.ReadPixels(r.pix)
+	}
+	return r.sendFrame()
+}
+
+// sendFrame sends the frame read into pix to ffmpeg (every other frame) and, after the
+// last one, waits for ffmpeg to finish the video. A frame that cannot be sent (ffmpeg has
+// gone) or ffmpeg failing ends the recording with an error, so the game exits with status
+// 1: it was only logged, and the game exited 0 without a video.
+func (r *recorder) sendFrame() (bool, error) {
+	r.drawn = true
+	if r.frame%2 == 0 {
 		if _, err := r.pipe.Write(r.pix); err != nil {
-			log.Printf("cannot write a frame: %v", err)
-			return true
+			err = errors.Join(fmt.Errorf("cannot send a frame to ffmpeg: %w", err), r.finish())
+			return true, fmt.Errorf("cannot record %s: %w", r.path, err)
 		}
 	}
 	if r.frame < r.seconds*60 {
-		return false
+		return false, nil
 	}
-	if err := r.pipe.Close(); err != nil {
-		log.Print(err)
+	if err := r.finish(); err != nil {
+		return true, fmt.Errorf("cannot record %s: %w", r.path, err)
 	}
-	if err := r.cmd.Wait(); err != nil {
-		log.Printf("ffmpeg: %v", err)
+	return true, nil
+}
+
+// finish closes ffmpeg's input and waits for it to write the video.
+func (r *recorder) finish() error {
+	err := r.pipe.Close()
+	if werr := r.cmd.Wait(); werr != nil {
+		err = errors.Join(err, fmt.Errorf("ffmpeg: %w", werr))
 	}
-	return true
+	return err
 }
 
 type captureStep struct {
@@ -248,25 +270,34 @@ func (c *captureState) update(g *Game) {
 	c.frame++
 }
 
-func (c *captureState) afterDraw(screen *ebiten.Image) bool {
+// afterDraw saves the screen when the step has waited long enough, and reports whether
+// the capture is over, with the error that ended it when a screenshot could not be saved.
+func (c *captureState) afterDraw(screen *ebiten.Image) (bool, error) {
 	if c.step >= len(captureSteps) {
-		return true
+		return true, nil
 	}
-	st := captureSteps[c.step]
-	if c.frame < st.wait {
-		return false
+	if c.frame < captureSteps[c.step].wait {
+		return false, nil
 	}
 	img := image.NewRGBA(image.Rect(0, 0, ScreenW, ScreenH))
 	screen.ReadPixels(img.Pix)
-	p := filepath.Join(c.dir, st.name+".png")
+	return c.save(img)
+}
+
+// save saves img as the screenshot of the step and moves on to the next step. A
+// screenshot that cannot be saved ends the capture with an error, so the game exits with
+// status 1: it was only logged, and the capture went on and exited 0 with screens missing.
+func (c *captureState) save(img image.Image) (bool, error) {
+	p := filepath.Join(c.dir, captureSteps[c.step].name+".png")
 	if err := writePNG(p, img); err != nil {
-		log.Printf("cannot save %s: %v", p, err)
-	} else if _, err := fmt.Println(p); err != nil {
+		return true, fmt.Errorf("cannot save %s: %w", p, err)
+	}
+	if _, err := fmt.Println(p); err != nil {
 		log.Print(err)
 	}
 	c.step++
 	c.frame = 0
-	return c.step >= len(captureSteps)
+	return c.step >= len(captureSteps), nil
 }
 
 // writePNG encodes img as a PNG file at p.

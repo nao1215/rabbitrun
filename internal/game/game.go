@@ -34,6 +34,9 @@ type Game struct {
 	bg    *background
 	cap   *captureState
 	rec   *recorder
+	// err is why a capture or a recording ended early; Update returns it so the game exits
+	// with it (status 1).
+	err error
 }
 
 // Options are what the command line asks of a run of the game.
@@ -130,8 +133,16 @@ func forgetUnearnedAnnouncements() {
 	}
 }
 
-// Close writes whatever changed last in the save data (the window was closed).
-func (g *Game) Close() { store.Flush() }
+// Close writes whatever changed last in the save data (the window was closed). A run in
+// play is recorded first, as quitting it through the pause menu does: closing the window
+// lost how far it got and how long it lasted. A run already recorded (at its game over or
+// ending, or by an earlier Close) is not counted again.
+func (g *Game) Close() {
+	if s, ok := g.scene.(*playScene); ok {
+		s.commitRun()
+	}
+	store.Flush()
+}
 
 // SetScene switches to the scene s. The scene left frees what it holds on the GPU, if it
 // has a release method.
@@ -145,6 +156,9 @@ func (g *Game) SetScene(s Scene) {
 
 // Update runs a frame of the game.
 func (g *Game) Update() error {
+	if g.err != nil {
+		return g.err
+	}
 	if g.rec != nil && g.rec.skipUpdate() {
 		return nil
 	}
@@ -170,11 +184,22 @@ func (g *Game) Update() error {
 func (g *Game) Draw(screen *ebiten.Image) {
 	g.bg.draw(screen)
 	g.scene.Draw(screen)
-	if g.cap != nil && g.cap.afterDraw(screen) {
+	if g.cap != nil {
+		g.end(g.cap.afterDraw(screen))
+	}
+	if g.rec != nil {
+		g.end(g.rec.afterDraw(screen))
+	}
+}
+
+// end ends the game after the capture or the recording is over (done); err is why it
+// failed, if it did, and the next Update returns it.
+func (g *Game) end(done bool, err error) {
+	if done {
 		quitRequested = true
 	}
-	if g.rec != nil && g.rec.afterDraw(screen) {
-		quitRequested = true
+	if err != nil && g.err == nil {
+		g.err = err
 	}
 }
 

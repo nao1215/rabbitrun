@@ -1,4 +1,4 @@
-.PHONY: build run test test-long e2e vet fmt lint vuln licenses tools clean help
+.PHONY: build run test test-long test-pixels e2e vet fmt lint vuln licenses tools clean help
 
 APP         = rabbitrun
 VERSION     = $(shell git describe --tags --abbrev=0 2>/dev/null || echo dev)
@@ -22,6 +22,9 @@ test: ## Run unit tests with coverage (writes cover.out / cover.html)
 
 test-long: ## Run the tests that play or search every whole run (skipped by plain go test)
 	RABBITRUN_LONG_TESTS=1 $(GO) test -count=1 -run 'EveryRunCanBePassed|CarefulPlayerClears' ./internal/engine/
+
+test-pixels: ## Read back what the screens draw (opens a window; on Linux without a desktop run it under xvfb-run)
+	$(GO) test -race -tags pixels -run Pixels ./internal/game/
 
 e2e: ## Run the atago end-to-end tests (requires atago; set RABBITRUN_E2E_DISPLAY=1 to include the specs that open a window)
 	$(GO) run ./e2e/runner

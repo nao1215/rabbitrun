@@ -10,6 +10,9 @@ import (
 // TestMain points the save data at a scratch directory for the whole package, so no
 // test ever writes the player's real save.
 func TestMain(m *testing.M) {
+	if mode := os.Getenv(fakeFFmpegEnv); mode != "" {
+		fakeFFmpeg(mode) // the test binary started as the encoder of a recording test
+	}
 	dir, err := os.MkdirTemp("", "rabbitrun-test")
 	if err != nil {
 		panic(err)
@@ -21,7 +24,7 @@ func TestMain(m *testing.M) {
 	}
 	// the assets directory from disk, as the game reads the embedded one
 	assets.Use(os.DirFS("../../assets"))
-	code := m.Run()
+	code := runTests(m) // in the game loop with the pixels build tag (pixels_test.go)
 	if err := os.RemoveAll(dir); err != nil {
 		panic(err)
 	}

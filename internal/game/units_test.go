@@ -136,7 +136,7 @@ func TestCaptureStateSetsUpEachStepOnce(t *testing.T) { //nolint:paralleltest //
 	if calls != 1 || c.frame != 3 {
 		t.Errorf("past the last step: set up %d times, frame %d", calls, c.frame)
 	}
-	if !c.afterDraw(nil) {
+	if done, err := c.afterDraw(nil); !done || err != nil {
 		t.Error("past the last step the capture is not over")
 	}
 }

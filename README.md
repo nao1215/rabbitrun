@@ -162,7 +162,7 @@ gh attestation verify rabbitrun_0.1.0_linux_amd64.tar.gz --repo nao1215/rabbitru
 | `--record-seconds N` | The length of the demo recording in seconds (60 by default). |
 | `--record-extra` | Record the demo on the extra stages. |
 
-A mistake in the options, such as an unknown option, a stray argument or two of `--capture`, `--bgm-wav`, `--reset-save` and `--record-demo` at once, exits with status 2 before the game opens. A failure while doing the job, such as a directory that cannot be written, exits with status 1.
+A mistake in the options, such as an unknown option, a stray argument or two of `--capture`, `--bgm-wav`, `--reset-save` and `--record-demo` at once, exits with status 2 before the game opens. A failure while doing the job, such as a directory that cannot be written, a screenshot that cannot be saved or ffmpeg failing during `--record-demo`, exits with status 1.
 
 ## Contributing
 

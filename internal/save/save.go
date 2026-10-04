@@ -113,6 +113,9 @@ type Store struct {
 	ReadOnly bool
 	// dirty is set when the save data has changed and not been written yet.
 	dirty bool
+	// failing is set while writing fails, so a failure that lasts is logged once and not
+	// on every frame Flush tries again.
+	failing bool
 }
 
 // NewStore returns a store holding empty save data.
@@ -141,37 +144,54 @@ func (s *Store) Load() {
 func (s *Store) Mark() { s.dirty = true }
 
 // Flush writes the save data if it changed. The game calls it after every frame, and again
-// on a scene change and when the game exits, so nothing is lost.
+// on a scene change and when the game exits, so nothing is lost. A write that fails keeps
+// the change pending (the old save file stays whole), so the next Flush tries again: it
+// was dropped, and the save stayed behind until something else changed.
 func (s *Store) Flush() {
 	if !s.dirty {
 		return
 	}
-	s.dirty = false
 	if s.ReadOnly {
+		s.dirty = false
 		return
 	}
-	s.Write()
+	if err := s.write(); err != nil {
+		if !s.failing {
+			log.Printf("failed to save (trying again): %v", err)
+		}
+		s.failing = true
+		return
+	}
+	if s.failing {
+		log.Print("saved")
+	}
+	s.dirty, s.failing = false, false
 }
 
-// Write writes the save data at once. It goes through a temporary file renamed over the
-// old one, so a crash while writing leaves the old save whole.
+// Write writes the save data at once, logging a failure.
 func (s *Store) Write() {
+	if err := s.write(); err != nil {
+		log.Printf("failed to save: %v", err)
+	}
+}
+
+// write writes the save data. It goes through a temporary file renamed over the old one,
+// so a crash or a failure while writing leaves the old save whole.
+func (s *Store) write() error {
 	raw, err := json.MarshalIndent(s.Data, "", "  ")
 	if err != nil {
-		log.Printf("failed to save: %v", err)
-		return
+		return err
 	}
 	p := Path()
 	if err := os.MkdirAll(filepath.Dir(p), 0o750); err != nil {
-		log.Printf("failed to save: %v", err)
-		return
+		return err
 	}
 	tmp := p + ".tmp"
 	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
-		log.Printf("failed to save: %v", err)
-		return
+		return err
 	}
 	if err := os.Rename(tmp, p); err != nil {
-		log.Printf("failed to save: %v", err)
+		return errors.Join(err, os.Remove(tmp))
 	}
+	return nil
 }
