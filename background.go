@@ -5,6 +5,9 @@ import (
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/vector"
+
+	"github.com/nao1215/rabbitrun/internal/gfx"
 )
 
 // The background: a flat solid color chosen by scene and expression, faded in slowly,
@@ -52,7 +55,7 @@ func (b *background) color() color.NRGBA {
 func (b *background) draw(screen *ebiten.Image) {
 	screen.Fill(b.color())
 	if img := uiImage(b.image); img != nil {
-		drawImageCover(screen, img, 0, 0, ScreenW, ScreenH, 1)
+		gfx.DrawImageCover(screen, img, 0, 0, ScreenW, ScreenH, 1)
 	}
 }
 
@@ -124,4 +127,27 @@ func prefetchUI(names ...string) {
 		uiPending[name] = ch
 		go func() { ch <- decodeUI(name) }()
 	}
+}
+
+// shadowColor returns a flat shadow color derived by darkening the background.
+func shadowColor() color.NRGBA {
+	c := bg.color()
+	return color.NRGBA{uint8(float64(c.R) * 0.78), uint8(float64(c.G) * 0.72), uint8(float64(c.B) * 0.76), 0xff}
+}
+
+// drawPanel draws a white rounded panel with a flat shadow offset to the lower right.
+func drawPanel(dst *ebiten.Image, x, y, w, h float32) {
+	gfx.FillRoundRect(dst, x+6, y+8, w, h, 18, shadowColor())
+	gfx.FillRoundRect(dst, x, y, w, h, 18, gfx.PanelFill)
+}
+
+// dimScreen dims the screen under a menu with the background color at alpha a.
+func dimScreen(dst *ebiten.Image, a uint8) {
+	c := bg.color()
+	vector.FillRect(dst, 0, 0, ScreenW, ScreenH, color.NRGBA{c.R, c.G, c.B, a}, false)
+}
+
+// drawMenu draws a vertical menu. The selected item is pink and a little larger.
+func drawMenu(dst *ebiten.Image, items []string, sel int, y, size float64) {
+	gfx.DrawMenuAt(dst, items, sel, ScreenW/2, y, size)
 }

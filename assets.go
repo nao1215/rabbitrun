@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"embed"
 	"encoding/json"
 	"errors"
@@ -17,9 +16,10 @@ import (
 	"sync"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"golang.org/x/image/draw"
+
+	"github.com/nao1215/rabbitrun/internal/gfx"
 )
 
 // assetFS holds the game data. Only the public manifest (game.json) and the
@@ -375,30 +375,20 @@ func (c *Character) Expression(id string) *ImageEntry {
 	return &c.Expressions[0]
 }
 
-var (
-	characters []*Character
-	fontSource *text.GoTextFaceSource // M+ 1p, which also covers Japanese
-	popSource  *text.GoTextFaceSource // Lilita One, a pop typeface for Latin text (OFL, assets/fonts/)
-)
+// characters are the playable characters, in the order of the select screen.
+var characters []*Character
 
 func loadAssets() {
-	var err error
 	mplus, err := assetFS.ReadFile("assets/fonts/mplus-1p-regular.ttf")
 	if err != nil {
 		log.Fatal(err)
 	}
-	fontSource, err = text.NewGoTextFaceSource(bytes.NewReader(mplus))
+	pop, err := assetFS.ReadFile("assets/fonts/LilitaOne-Regular.ttf")
 	if err != nil {
-		log.Fatal(err)
-	}
-	if raw, err := assetFS.ReadFile("assets/fonts/LilitaOne-Regular.ttf"); err == nil {
-		if src, err := text.NewGoTextFaceSource(bytes.NewReader(raw)); err == nil {
-			popSource = src
-		} else {
-			log.Printf("cannot load the pop font, using the default font: %v", err)
-		}
-	} else {
 		log.Printf("cannot read the pop font, using the default font: %v", err)
+	}
+	if err := gfx.LoadFonts(mplus, pop); err != nil {
+		log.Fatal(err)
 	}
 	characters, err = readCharacters(assetFS)
 	if err != nil {
@@ -572,8 +562,8 @@ func placeholderImage(label string) *ebiten.Image {
 	img := ebiten.NewImage(896, 1120)
 	sil := color.NRGBA{0xe0, 0xa8, 0xb8, 0xd0}
 	vector.FillCircle(img, 448, 300, 130, sil, true)
-	fillRoundRect(img, 268, 450, 360, 670, 120, sil)
-	drawText(img, label, 448, 700, 56, color.White)
+	gfx.FillRoundRect(img, 268, 450, 360, 670, 120, sil)
+	gfx.DrawText(img, label, 448, 700, 56, color.White)
 	return img
 }
 

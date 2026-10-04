@@ -8,6 +8,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 
+	"github.com/nao1215/rabbitrun/internal/gfx"
 	"github.com/nao1215/rabbitrun/road"
 )
 
@@ -19,21 +20,21 @@ func (s *PlayScene) drawBoard(screen *ebiten.Image) {
 	bx, by := boardX, boardY
 	w, h := float32(cell*BoardW), float32(cell*VisibleRows)
 	// The road's frame: a white border with a flat shadow
-	fillRoundRect(screen, float32(bx), float32(by)+2, w+16, h+16, 18, shadowColor())
-	fillRoundRect(screen, float32(bx)-8, float32(by)-8, w+16, h+16, 18, panelFill)
+	gfx.FillRoundRect(screen, float32(bx), float32(by)+2, w+16, h+16, 18, shadowColor())
+	gfx.FillRoundRect(screen, float32(bx)-8, float32(by)-8, w+16, h+16, 18, gfx.PanelFill)
 	// The base picture under the road (assets/ui/board), covering the frame
 	if img := uiImage("board"); img != nil {
-		drawImageCover(screen, img, bx, by, float64(w), float64(h), 1)
+		gfx.DrawImageCover(screen, img, bx, by, float64(w), float64(h), 1)
 	}
 	// After the first course, the latest illustration fills the frame behind the road.
 	a := float32(0)
 	if s.prevCG != nil {
 		a = 1
-		drawImageCoverTop(screen, s.prevCG.Full(), bx, by, float64(w), float64(h), 1)
+		gfx.DrawImageCoverTop(screen, s.prevCG.Full(), bx, by, float64(w), float64(h), 1)
 	}
 	if s.stageCG != nil {
 		a = max(a, float32(s.stageFade))
-		drawImageCoverTop(screen, s.stageCG.Full(), bx, by, float64(w), float64(h), float32(s.stageFade))
+		gfx.DrawImageCoverTop(screen, s.stageCG.Full(), bx, by, float64(w), float64(h), float32(s.stageFade))
 	}
 	// Wash with white so the walls stay readable: the plain board a little more, an
 	// illustration lightly (cgVeil), all the time, so the picture still shows clearly
@@ -249,21 +250,21 @@ func drawSweet(dst *ebiten.Image, kind, wall int8, sd *ebiten.Image, cx, cy, cel
 		// not seem to run into the walls beside it
 		if sd != nil {
 			size := cell * 0.78
-			drawImageFit(dst, sd, cx-size/2, cy-size/2+bob-cell*0.1, size, size, 1)
+			gfx.DrawImageFit(dst, sd, cx-size/2, cy-size/2+bob-cell*0.1, size, size, 1)
 		}
-		drawTextOutline(dst, "1UP", cx, cy+cell*0.14+bob, cell*0.36, candyPink)
+		gfx.DrawTextOutline(dst, "1UP", cx, cy+cell*0.14+bob, cell*0.36, gfx.CandyPink)
 		return
 	}
 	if kind == road.SweetBomb {
 		if img := hammerImage(); img != nil {
-			drawImageFit(dst, img, cx-cell*0.55, cy-cell*0.55+bob, cell*1.1, cell*1.1, 1)
+			gfx.DrawImageFit(dst, img, cx-cell*0.55, cy-cell*0.55+bob, cell*1.1, cell*1.1, 1)
 		}
 		return
 	}
 	// Every sweet is a macaron of the same size in one of three colors.
 	img := macaronFor(int(cx/cell), wall)
 	size := cell * 0.8
-	drawImageFit(dst, img, cx-size/2, cy-size/2+bob, size, size, 1)
+	gfx.DrawImageFit(dst, img, cx-size/2, cy-size/2+bob, size, size, 1)
 }
 
 // The colors of the macarons on the road (assets/ui/macaron_<color>.png).

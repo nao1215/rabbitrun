@@ -10,6 +10,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/colorm"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 
+	"github.com/nao1215/rabbitrun/internal/gfx"
 	"github.com/nao1215/rabbitrun/internal/input"
 	"github.com/nao1215/rabbitrun/internal/sound"
 	"github.com/nao1215/rabbitrun/road"
@@ -228,10 +229,10 @@ func (s *GalleryScene) Draw(screen *ebiten.Image) {
 		dimScreen(screen, 0xf0)
 		it := items[s.sel]
 		if it.cg {
-			drawImageFit(screen, it.e.Full(), 0, 0, ScreenW, ScreenH, 1) // whole, with bands at the sides
+			gfx.DrawImageFit(screen, it.e.Full(), 0, 0, ScreenW, ScreenH, 1) // whole, with bands at the sides
 		} else {
 			if bgImg := uiImage("frame_" + family(it.e.State)); bgImg != nil {
-				drawImageCover(screen, bgImg, 0, 0, ScreenW, ScreenH, 0.9)
+				gfx.DrawImageCover(screen, bgImg, 0, 0, ScreenW, ScreenH, 0.9)
 			}
 			// the same size and place as in the play screen's frame: every standing pose
 			// equally tall, a crouching one not tiny, nothing cut off
@@ -269,7 +270,7 @@ func (s *GalleryScene) Draw(screen *ebiten.Image) {
 		op.GeoM.Translate(x, y)
 		screen.DrawImage(tile, op)
 		if i == s.sel {
-			strokeRoundRect(screen, float32(x)-4, float32(y)-4, tileW+8, tileH+8, 18, 4, candyPink)
+			gfx.StrokeRoundRect(screen, float32(x)-4, float32(y)-4, tileW+8, tileH+8, 18, 4, gfx.CandyPink)
 		}
 	}
 
@@ -343,10 +344,10 @@ func makeTile(paint func(l *ebiten.Image)) *ebiten.Image {
 		paint(l)
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(4, 4)
-		t.DrawImage(roundedMask(l, 14), op)
+		t.DrawImage(gfx.RoundedMask(l, 14), op)
 		l.Deallocate()
 	}
-	strokeRoundRect(t, 3, 3, tileW-6, tileH-6, 15, 3, panelFill)
+	gfx.StrokeRoundRect(t, 3, 3, tileW-6, tileH-6, 15, 3, gfx.PanelFill)
 	return t
 }
 
@@ -364,7 +365,7 @@ func drawTilePicture(l *ebiten.Image, it galleryItem, pic image.Image) {
 			img = placeholderImage(e.ID) // made only when it is needed: it is a large image
 		}
 		// an illustration fills its tile (fitted, it left bands at the top and bottom)
-		drawImageCoverTop(l, img, 0, 0, lw, lh, 1)
+		gfx.DrawImageCoverTop(l, img, 0, 0, lw, lh, 1)
 		img.Deallocate()
 		return
 	}
@@ -382,7 +383,7 @@ func drawTileBackdrop(l *ebiten.Image, it galleryItem) {
 		return
 	}
 	if bgImg := uiImage("frame_" + family(it.e.State)); bgImg != nil {
-		drawImageCover(l, bgImg, 0, 0, float64(l.Bounds().Dx()), float64(l.Bounds().Dy()), 1)
+		gfx.DrawImageCover(l, bgImg, 0, 0, float64(l.Bounds().Dx()), float64(l.Bounds().Dy()), 1)
 	}
 }
 
@@ -461,24 +462,24 @@ func drawFaceStrip(screen *ebiten.Image, sel int, pull []float64, top, size floa
 		pull[i] += (t - pull[i]) * 0.2
 		x := ScreenW/2 + (float64(i)-float64(n-1)/2)*(w+24*size) - w/2
 		y := top + 8*size*(1-pull[i])
-		fillRoundRect(screen, float32(x)+4, float32(y)+6, float32(w), float32(h), 12, shadowColor())
-		fillRoundRect(screen, float32(x), float32(y), float32(w), float32(h), 12, panelFill)
+		gfx.FillRoundRect(screen, float32(x)+4, float32(y)+6, float32(w), float32(h), 12, shadowColor())
+		gfx.FillRoundRect(screen, float32(x), float32(y), float32(w), float32(h), 12, gfx.PanelFill)
 		alpha := float32(0.55 + 0.45*pull[i])
 		face := faceOf(c.selectEntry())
 		switch {
 		case c.locked():
 			// A locked character shows only the black silhouette of her face.
-			fillRoundRect(screen, float32(x)+4, float32(y)+4, float32(w)-8, float32(h)-8, 10, lockedCardFill)
+			gfx.FillRoundRect(screen, float32(x)+4, float32(y)+4, float32(w)-8, float32(h)-8, 10, lockedCardFill)
 			if face != nil {
 				drawSilhouette(screen, face, x+4, y+4, w-8, h-8, true)
 			}
 		case face != nil:
-			drawImageCover(screen, face, x+4, y+4, w-8, h-8, alpha)
+			gfx.DrawImageCover(screen, face, x+4, y+4, w-8, h-8, alpha)
 		default:
-			drawImageFit(screen, c.SelectImage(), x+4, y+4, w-8, h-8, alpha)
+			gfx.DrawImageFit(screen, c.SelectImage(), x+4, y+4, w-8, h-8, alpha)
 		}
 		if i == sel {
-			strokeRoundRect(screen, float32(x)-3, float32(y)-3, float32(w)+6, float32(h)+6, 14, 4, candyPink)
+			gfx.StrokeRoundRect(screen, float32(x)-3, float32(y)-3, float32(w)+6, float32(h)+6, 14, 4, gfx.CandyPink)
 		}
 	}
 	return pull
@@ -505,7 +506,7 @@ func galleryBackground() *ebiten.Image {
 	}
 	galleryBG = ebiten.NewImage(ScreenW, ScreenH)
 	if art := uiImage("gallery"); art != nil {
-		drawImageCover(galleryBG, art, 0, 0, ScreenW, ScreenH, 1)
+		gfx.DrawImageCover(galleryBG, art, 0, 0, ScreenW, ScreenH, 1)
 	}
 	vector.FillRect(galleryBG, 0, 0, ScreenW, ScreenH, color.NRGBA{0xff, 0xff, 0xff, 0x60}, false)
 	return galleryBG

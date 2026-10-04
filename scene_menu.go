@@ -8,6 +8,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 
+	"github.com/nao1215/rabbitrun/internal/gfx"
 	"github.com/nao1215/rabbitrun/internal/input"
 	"github.com/nao1215/rabbitrun/internal/sound"
 )
@@ -147,7 +148,7 @@ func (s *TitleScene) Draw(screen *ebiten.Image) {
 		// The group picture: a small logo at the top and the menu at the bottom, so the
 		// text never covers the characters' faces.
 		if titleComplete() {
-			drawImageCover(screen, uiImage("title_complete"), 0, 0, ScreenW, ScreenH, 1)
+			gfx.DrawImageCover(screen, uiImage("title_complete"), 0, 0, ScreenW, ScreenH, 1)
 		} else {
 			screen.DrawImage(buildGroupPicture(groupMembers()), nil)
 		}
@@ -185,12 +186,12 @@ func (s *TitleScene) drawReveal(screen *ebiten.Image) {
 		return
 	}
 	a := float32(math.Min(1, float64(s.revealFrame-revealWordsAt)/20))
-	outline := darkOutline
-	drawTextOutlineColor(screen, "A NEW CHARACTER", ScreenW/2, 40, 50, candyPink, outline, a)
-	drawTextOutlineColor(screen, "HAS COME!", ScreenW/2, 100, 50, candyPink, outline, a)
+	outline := gfx.DarkOutline
+	gfx.DrawTextOutlineColor(screen, "A NEW CHARACTER", ScreenW/2, 40, 50, gfx.CandyPink, outline, a)
+	gfx.DrawTextOutlineColor(screen, "HAS COME!", ScreenW/2, 100, 50, gfx.CandyPink, outline, a)
 	if s.revealFrame > revealWordsAt+20 && (s.revealFrame/30)%2 == 0 {
 		// under the words: at the bottom it fell on her feet once she was drawn larger
-		drawTextOutlineColor(screen, "PRESS ENTER", ScreenW/2, 158, 30, color.White, outline, 1)
+		gfx.DrawTextOutlineColor(screen, "PRESS ENTER", ScreenW/2, 158, 30, color.White, outline, 1)
 	}
 }
 
@@ -216,13 +217,13 @@ func wordDue() bool {
 func (s *TitleScene) drawWord(screen *ebiten.Image) {
 	a := float32(math.Min(1, float64(s.wordFrame)/20))
 	vector.FillRect(screen, 0, 0, ScreenW, ScreenH, color.NRGBA{0x20, 0x16, 0x2a, uint8(0xb0 * a)}, false)
-	outline := darkOutline
-	drawTextOutlineColor(screen, "THE SECRET WORD", ScreenW/2, 250, 46, color.White, outline, a)
-	drawTextOutlineColor(screen, `"`+secretWord+`"`, ScreenW/2, 350, 64, candyPink, outline, a)
-	drawTextOutlineColor(screen, "TYPE IT ON THE TITLE SCREEN", ScreenW/2, 470, 32, color.White, outline, a)
-	drawTextOutlineColor(screen, "(IN CAPITALS)", ScreenW/2, 520, 28, color.White, outline, a)
+	outline := gfx.DarkOutline
+	gfx.DrawTextOutlineColor(screen, "THE SECRET WORD", ScreenW/2, 250, 46, color.White, outline, a)
+	gfx.DrawTextOutlineColor(screen, `"`+secretWord+`"`, ScreenW/2, 350, 64, gfx.CandyPink, outline, a)
+	gfx.DrawTextOutlineColor(screen, "TYPE IT ON THE TITLE SCREEN", ScreenW/2, 470, 32, color.White, outline, a)
+	gfx.DrawTextOutlineColor(screen, "(IN CAPITALS)", ScreenW/2, 520, 28, color.White, outline, a)
 	if s.wordFrame > wordWait && (s.wordFrame/30)%2 == 0 {
-		drawTextOutlineColor(screen, "PRESS ENTER", ScreenW/2, 820, 34, color.White, outline, 1)
+		gfx.DrawTextOutlineColor(screen, "PRESS ENTER", ScreenW/2, 820, 34, color.White, outline, 1)
 	}
 }
 
@@ -367,25 +368,25 @@ func (s *CharSelectScene) card(c *Character) *ebiten.Image {
 	}
 	w, h := cardW*cardRes, cardH*cardRes
 	img := ebiten.NewImage(int(w), int(h))
-	fillRoundRect(img, 0, 0, float32(w), float32(h), cardCorner*cardRes, panelFill)
+	gfx.FillRoundRect(img, 0, 0, float32(w), float32(h), cardCorner*cardRes, gfx.PanelFill)
 	iw, ih := w-cardBorder*cardRes*2, h-cardBorder*cardRes*2
 	inner := ebiten.NewImage(int(iw), int(ih))
 	switch {
 	case locked:
 		// A pastel card with the character's soft silhouette.
-		fillRoundRect(inner, 0, 0, float32(iw), float32(ih), 0, lockedCardFill)
+		gfx.FillRoundRect(inner, 0, 0, float32(iw), float32(ih), 0, lockedCardFill)
 		if c.selectEntry().HasImage() {
 			drawSilhouette(inner, c.SelectImage(), 0, 0, iw, ih, false)
 		}
 	default:
 		if bgImg := uiImage("frame_normal"); bgImg != nil {
-			drawImageCover(inner, bgImg, 0, 0, iw, ih, 1)
+			gfx.DrawImageCover(inner, bgImg, 0, 0, iw, ih, 1)
 		}
-		drawImageFit(inner, c.SelectImage(), 0, 0, iw, ih, 1)
+		gfx.DrawImageFit(inner, c.SelectImage(), 0, 0, iw, ih, 1)
 	}
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(cardBorder*cardRes, cardBorder*cardRes)
-	img.DrawImage(roundedMask(inner, (cardCorner-6)*cardRes), op)
+	img.DrawImage(gfx.RoundedMask(inner, (cardCorner-6)*cardRes), op)
 	s.cards[key] = img
 	return img
 }

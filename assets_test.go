@@ -155,16 +155,6 @@ func TestCharacterLookupFallbacks(t *testing.T) {
 	}
 }
 
-func TestIsASCII(t *testing.T) {
-	t.Parallel()
-	cases := map[string]bool{"": true, "RABBIT RUN 1,234": true, "~": true, "\x7f": false, "スコア": false, "café": false}
-	for in, want := range cases {
-		if got := isASCII(in); got != want {
-			t.Errorf("isASCII(%q) = %v, want %v", in, got, want)
-		}
-	}
-}
-
 func TestVariantsFallBackToRelatedState(t *testing.T) {
 	t.Parallel()
 	c := &Character{Expressions: []ImageEntry{

@@ -6,6 +6,8 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
+
+	"github.com/nao1215/rabbitrun/internal/gfx"
 )
 
 // titleLogoLines are the two lines of the title logo: the letters, their size and
@@ -51,20 +53,20 @@ func drawTitleLogo(dst *ebiten.Image, cx, cy, scale float64) {
 // drawCandyText draws s centered at cx (top at y) in the pop font, in the candy color
 // of the given kind with a thick white outline and a soft shadow, like the title logo.
 func drawCandyText(dst *ebiten.Image, s string, cx, y, size float64, kind Kind) {
-	drawText(dst, s, cx+size*0.05, y+size*0.07, size, logoShadow)
+	gfx.DrawText(dst, s, cx+size*0.05, y+size*0.07, size, logoShadow)
 	ow := size / 11
 	for k := range 16 {
 		t := float64(k) / 16 * 2 * math.Pi
-		drawText(dst, s, cx+math.Cos(t)*ow, y+math.Sin(t)*ow, size, color.White)
+		gfx.DrawText(dst, s, cx+math.Cos(t)*ow, y+math.Sin(t)*ow, size, color.White)
 	}
-	drawText(dst, s, cx, y, size, kindColors[kind])
+	gfx.DrawText(dst, s, cx, y, size, kindColors[kind])
 }
 
 // letterWidths returns the width of each letter of str shaped at size (the logo words are
 // ASCII, one byte per letter) and the width of the whole word with spacing between the
 // letters.
 func letterWidths(str string, size, spacing float64) ([]float64, float64) {
-	f := face(size, str)
+	f := gfx.Face(size, str)
 	widths := make([]float64, 0, len(str))
 	total := 0.0
 	for i := range len(str) {

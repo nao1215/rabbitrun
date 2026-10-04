@@ -2,6 +2,8 @@ package main
 
 import (
 	"github.com/hajimehoshi/ebiten/v2"
+
+	"github.com/nao1215/rabbitrun/internal/gfx"
 )
 
 // groupTop is where the group picture's figures may start: below the one-line title.
@@ -30,9 +32,9 @@ func buildGroupPicture(members []*Character) *ebiten.Image {
 	}
 	img := ebiten.NewImage(ScreenW, ScreenH)
 	if bgImg := uiImage("group_bg"); bgImg != nil {
-		drawImageCover(img, bgImg, 0, 0, ScreenW, ScreenH, 1)
+		gfx.DrawImageCover(img, bgImg, 0, 0, ScreenW, ScreenH, 1)
 	} else if bgImg := uiImage("select"); bgImg != nil {
-		drawImageCover(img, bgImg, 0, 0, ScreenW, ScreenH, 1)
+		gfx.DrawImageCover(img, bgImg, 0, 0, ScreenW, ScreenH, 1)
 	}
 	n := len(members)
 	if n == 0 {
@@ -65,7 +67,7 @@ func buildGroupPicture(members []*Character) *ebiten.Image {
 		cx := slot*(float64(i)+0.675) + (float64(ScreenW)-slot*(float64(n)+0.35))/2
 		x := cx - float64(f.bodyX)*sc
 		y := float64(ScreenH) - float64(f.box.Max.Y)*sc - 6
-		drawImageScaled(img, pic, x, y, sc, 1)
+		gfx.DrawImageScaled(img, pic, x, y, sc, 1)
 	}
 	groupPicture[n] = img
 	return img

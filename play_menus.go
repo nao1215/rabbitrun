@@ -8,6 +8,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 
+	"github.com/nao1215/rabbitrun/internal/gfx"
 	"github.com/nao1215/rabbitrun/internal/input"
 	"github.com/nao1215/rabbitrun/internal/sound"
 )
@@ -134,29 +135,29 @@ func (s *PlayScene) drawMiss(screen *ebiten.Image) {
 	if s.missFrame < 10 {
 		return
 	}
-	drawTextOutline(screen, "MISS", boardMidX, boardY+cell*4, 64, candyPink)
+	gfx.DrawTextOutline(screen, "MISS", boardMidX, boardY+cell*4, 64, gfx.CandyPink)
 	// The lives: on RETRY the number ticks down by one, dropping out and the new count
 	// bouncing in.
 	if img := charFace(s.char); img != nil {
 		const size = 64.0
 		cx, cy := boardMidX, boardY+cell*7
-		drawImageFit(screen, img, cx-size*1.2, cy-size/2, size, size, 1)
+		gfx.DrawImageFit(screen, img, cx-size*1.2, cy-size/2, size, size, 1)
 		n := s.eng.G.Lives
 		if s.countdown > 0 {
 			t := 1 - float64(s.countdown)/countdownFrames // 0 -> 1
 			if t < 0.5 {
-				drawTextOutline(screen, "x"+strconv.Itoa(n), cx+size*0.4, cy-24+t*2*40, 48, candyPink)
+				gfx.DrawTextOutline(screen, "x"+strconv.Itoa(n), cx+size*0.4, cy-24+t*2*40, 48, gfx.CandyPink)
 			} else {
 				u := (t - 0.5) * 2
-				drawTextOutline(screen, "x"+strconv.Itoa(n-1), cx+size*0.4, cy-24-math.Sin(u*math.Pi)*16, 48, candyPink)
+				gfx.DrawTextOutline(screen, "x"+strconv.Itoa(n-1), cx+size*0.4, cy-24-math.Sin(u*math.Pi)*16, 48, gfx.CandyPink)
 			}
 		} else {
-			drawTextOutline(screen, "x"+strconv.Itoa(n), cx+size*0.4, cy-24, 48, candyPink)
+			gfx.DrawTextOutline(screen, "x"+strconv.Itoa(n), cx+size*0.4, cy-24, 48, gfx.CandyPink)
 		}
 	}
 	if s.missFrame >= missFrames && s.countdown == 0 {
-		drawTextOutline(screen, "RESTART AT "+s.eng.RestartProgress(), boardMidX, boardY+cell*8.9, 26, textMain)
-		drawMenuAt(screen, missItems, s.missSel, boardMidX, boardY+cell*10, 40)
+		gfx.DrawTextOutline(screen, "RESTART AT "+s.eng.RestartProgress(), boardMidX, boardY+cell*8.9, 26, gfx.TextMain)
+		gfx.DrawMenuAt(screen, missItems, s.missSel, boardMidX, boardY+cell*10, 40)
 	}
 }
 
@@ -182,9 +183,9 @@ func (s *PlayScene) drawAllClear(screen *ebiten.Image) {
 	dimScreen(screen, uint8(0xff*a))
 	if ending := s.ending(); ending != nil && ending.HasImage() {
 		// the ending's own picture, made the shape of the window: it fills it
-		drawImageCover(screen, ending.Full(), 0, 0, ScreenW, ScreenH, a)
+		gfx.DrawImageCover(screen, ending.Full(), 0, 0, ScreenW, ScreenH, a)
 	} else if s.stageCG != nil {
-		drawImageFit(screen, s.stageCG.Full(), 0, 0, ScreenW, ScreenH, a)
+		gfx.DrawImageFit(screen, s.stageCG.Full(), 0, 0, ScreenW, ScreenH, a)
 	} else if img := s.char.SelectImage(); img != nil {
 		// no illustration drawn yet: she waves between the words and the menu instead,
 		// all of her in view
@@ -206,7 +207,7 @@ func (s *PlayScene) drawAllClear(screen *ebiten.Image) {
 	bands := float32(math.Min(1, float64(s.overFrame-endWordsAt)/endBandFrames))
 	vector.FillRect(screen, 0, 0, ScreenW, 66, color.NRGBA{0xff, 0xff, 0xff, uint8(0x90 * bands)}, false)
 	vector.FillRect(screen, 0, ScreenH-74, ScreenW, 74, color.NRGBA{0xff, 0xff, 0xff, uint8(0x90 * bands)}, false)
-	drawTextOutline(screen, "CONGRATULATIONS!", ScreenW/2, 10, 42, candyPink)
+	gfx.DrawTextOutline(screen, "CONGRATULATIONS!", ScreenW/2, 10, 42, gfx.CandyPink)
 	drawMenu(screen, endItems, 0, ScreenH-62, 32)
 }
 
@@ -228,9 +229,9 @@ func (s *PlayScene) drawGameOver(screen *ebiten.Image) {
 		return
 	}
 	a := float32(math.Min(1, float64(s.overFrame-curtainStart-curtainFrames)/20))
-	drawTextOutlineColor(screen, "GAME OVER", ScreenW/2, 240, 64, color.White, darkOutline, a)
-	drawTextOutlineColor(screen, "STAGE "+s.eng.Progress(), ScreenW/2, 330, 44, candyPink, darkOutline, a)
-	drawMenuOn(screen, overItems, s.overSel, ScreenW/2, 460, 40, color.NRGBA{0xee, 0xe6, 0xf2, 0xff}, darkOutline)
+	gfx.DrawTextOutlineColor(screen, "GAME OVER", ScreenW/2, 240, 64, color.White, gfx.DarkOutline, a)
+	gfx.DrawTextOutlineColor(screen, "STAGE "+s.eng.Progress(), ScreenW/2, 330, 44, gfx.CandyPink, gfx.DarkOutline, a)
+	gfx.DrawMenuOn(screen, overItems, s.overSel, ScreenW/2, 460, 40, color.NRGBA{0xee, 0xe6, 0xf2, 0xff}, gfx.DarkOutline)
 }
 
 // The curtain of the full game over: it starts curtainStart frames in, takes

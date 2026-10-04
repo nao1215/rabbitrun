@@ -7,6 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 
+	"github.com/nao1215/rabbitrun/internal/gfx"
 	"github.com/nao1215/rabbitrun/internal/sound"
 	"github.com/nao1215/rabbitrun/road"
 )
@@ -79,9 +80,9 @@ func (s *PlayScene) drawCutin(screen *ebiten.Image) {
 		iw, ih := float64(img.Bounds().Dx()), float64(img.Bounds().Dy())
 		h := bandH * 1.55
 		sc := math.Min(h/ih, ScreenW*0.8/iw)
-		drawImageScaled(screen, img, x+ScreenW*0.55-iw*sc/2, bandY+bandH-ih*sc, sc, 1)
+		gfx.DrawImageScaled(screen, img, x+ScreenW*0.55-iw*sc/2, bandY+bandH-ih*sc, sc, 1)
 	}
-	drawTextOutline(screen, "SMASH!", x+ScreenW*0.2, bandY+bandH-90, 64, candyPink)
+	gfx.DrawTextOutline(screen, "SMASH!", x+ScreenW*0.2, bandY+bandH-90, 64, gfx.CandyPink)
 }
 
 // hammerImage is the picture of the hammer item: a pop squeaky toy hammer that smashes the walls

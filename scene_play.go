@@ -9,6 +9,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"github.com/nao1215/rabbitrun/internal/engine"
+	"github.com/nao1215/rabbitrun/internal/gfx"
 	"github.com/nao1215/rabbitrun/internal/input"
 	"github.com/nao1215/rabbitrun/internal/save"
 	"github.com/nao1215/rabbitrun/internal/sound"
@@ -364,9 +365,9 @@ func (s *PlayScene) drawLives(screen *ebiten.Image) {
 	item := func(img *ebiten.Image, label string) {
 		tw := 26.0 * float64(len([]rune(label)))
 		if img != nil {
-			drawImageFit(screen, img, right-tw-size, 4, size, size, 1)
+			gfx.DrawImageFit(screen, img, right-tw-size, 4, size, size, 1)
 		}
-		drawTextOutline(screen, label, right-tw/2, 8, 34, candyPink)
+		gfx.DrawTextOutline(screen, label, right-tw/2, 8, 34, gfx.CandyPink)
 		right -= tw + size + 14
 	}
 	g := s.eng.G
@@ -376,7 +377,7 @@ func (s *PlayScene) drawLives(screen *ebiten.Image) {
 	// the stage and course, left of the sweets
 	label := "STAGE " + s.eng.Progress()
 	tw := 21.0 * float64(len(label))
-	drawTextOutline(screen, label, right-tw/2, 10, 30, candyPink)
+	gfx.DrawTextOutline(screen, label, right-tw/2, 10, 30, gfx.CandyPink)
 }
 
 // updateMusic matches the music intensity to the situation, ramping up at high speed and in danger.
@@ -462,7 +463,7 @@ func (s *PlayScene) Draw(screen *ebiten.Image) {
 		if s.ready < goFrames {
 			msg = "GO"
 		}
-		drawTextOutline(screen, msg, boardTextX, boardY+cell*8, 48, candyPink)
+		gfx.DrawTextOutline(screen, msg, boardTextX, boardY+cell*8, 48, gfx.CandyPink)
 	}
 	if s.paused {
 		dimScreen(screen, 0xb0)
@@ -511,7 +512,7 @@ func (s *PlayScene) drawCharacter(screen *ebiten.Image) {
 	s.shownPic = img
 	drawLayer := func(expr string, pic *ebiten.Image, alpha float32, cur bool) {
 		if bgImg := uiImage("frame_" + family(expr)); bgImg != nil {
-			drawImageCover(l, bgImg, 0, 0, fw, fh, alpha)
+			gfx.DrawImageCover(l, bgImg, 0, 0, fw, fh, alpha)
 		}
 		if pic == nil {
 			return
@@ -529,11 +530,11 @@ func (s *PlayScene) drawCharacter(screen *ebiten.Image) {
 	}
 	drawLayer(s.expr, img, float32(s.exprFade), true)
 
-	fillRoundRect(screen, frameX+8, frameY+10, frameW, frameH, 22, shadowColor())
-	fillRoundRect(screen, frameX, frameY, frameW, frameH, 22, panelFill)
+	gfx.FillRoundRect(screen, frameX+8, frameY+10, frameW, frameH, 22, shadowColor())
+	gfx.FillRoundRect(screen, frameX, frameY, frameW, frameH, 22, gfx.PanelFill)
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(frameX+frameBorder, frameY+frameBorder)
-	screen.DrawImage(roundedMask(l, 14), op)
+	screen.DrawImage(gfx.RoundedMask(l, 14), op)
 }
 
 func (s *PlayScene) drawPopups(screen *ebiten.Image) {
@@ -541,8 +542,8 @@ func (s *PlayScene) drawPopups(screen *ebiten.Image) {
 	for i, p := range s.popups {
 		a := math.Min(1, float64(p.timer)/25)
 		y := boardY + cell*6 + float64(i)*50 - float64(70-p.timer)*0.3
-		drawText(screen, p.text, cx+2, y+2, 32, color.NRGBA{0xff, 0xff, 0xff, uint8(230 * a)})
-		drawText(screen, p.text, cx, y, 32, color.NRGBA{candyPink.R, candyPink.G, candyPink.B, uint8(255 * a)})
+		gfx.DrawText(screen, p.text, cx+2, y+2, 32, color.NRGBA{0xff, 0xff, 0xff, uint8(230 * a)})
+		gfx.DrawText(screen, p.text, cx, y, 32, color.NRGBA{gfx.CandyPink.R, gfx.CandyPink.G, gfx.CandyPink.B, uint8(255 * a)})
 	}
 }
 
