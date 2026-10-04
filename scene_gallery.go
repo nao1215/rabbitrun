@@ -428,10 +428,14 @@ func emptyTile() *ebiten.Image {
 	return blankTile
 }
 
-// drawSilhouette draws img covering the box as a soft silhouette (only its outline shows).
-func drawSilhouette(dst, img *ebiten.Image, x, y, w, h float64) {
+// drawSilhouette draws img centered in the box as a soft silhouette (only its outline
+// shows): covering the box, or (cover false) at the largest size that fits it.
+func drawSilhouette(dst, img *ebiten.Image, x, y, w, h float64, cover bool) {
 	iw, ih := float64(img.Bounds().Dx()), float64(img.Bounds().Dy())
-	s := math.Max(w/iw, h/ih)
+	s := math.Min(w/iw, h/ih)
+	if cover {
+		s = math.Max(w/iw, h/ih)
+	}
 	op := &ebiten.DrawImageOptions{Filter: ebiten.FilterLinear}
 	op.GeoM.Scale(s, s)
 	op.GeoM.Translate(x+(w-iw*s)/2, y+(h-ih*s)/2)
@@ -464,7 +468,7 @@ func drawFaceStrip(screen *ebiten.Image, sel int, pull []float64, top, size floa
 			// A locked character shows only the black silhouette of her face.
 			fillRoundRect(screen, float32(x)+4, float32(y)+4, float32(w)-8, float32(h)-8, 10, lockedCardFill)
 			if face != nil {
-				drawSilhouette(screen, face, x+4, y+4, w-8, h-8)
+				drawSilhouette(screen, face, x+4, y+4, w-8, h-8, true)
 			}
 		case face != nil:
 			drawImageCover(screen, face, x+4, y+4, w-8, h-8, alpha)

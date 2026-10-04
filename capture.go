@@ -401,7 +401,5 @@ func gameOverScene(g *Game) {
 
 // introScene starts a run with the hammer show at its start.
 func introScene(g *Game) {
-	s := newPlayScene(characters[defaultCharIndex()])
-	s.startHammerShow()
-	g.SetScene(s)
+	g.SetScene(newRunScene(characters[defaultCharIndex()]))
 }

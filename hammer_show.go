@@ -12,9 +12,7 @@ const showHold = 40 // frames the blocks stand before the hammer comes
 // startHammerShow begins a new run with the show: it fills the screen above the bunny with
 // blocks to break.
 func (s *PlayScene) startHammerShow() {
-	g := s.eng.G
-	s.hammerWalls[0] = g.Ahead
-	copy(s.hammerWalls[1:], g.Rows[:])
+	s.keepWalls()
 	for y := range road.PlayerRow { // the rows above her row; hers and those below stay open
 		for x := range road.W {
 			if c := &s.hammerWalls[y][x]; c.Wall == 0 && c.Sweet == road.SweetNone {
@@ -34,9 +32,7 @@ func (s *PlayScene) updateHammerShow() bool {
 	switch {
 	case s.showHold > 0:
 		if s.showHold--; s.showHold == 0 {
-			playSE(seHammer)
-			s.cutin = cutinFrames
-			s.react(ExprExcited, 120, rankBig)
+			s.swingHammer()
 		}
 	case s.cutin > 0 && s.crumble == 0 && s.showing:
 		if s.cutin--; s.cutin == 0 {

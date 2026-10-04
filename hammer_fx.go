@@ -17,13 +17,24 @@ const cutinFrames = 70
 
 // useHammer swings a hammer: the character cuts in big, and every wall on the screen bursts.
 func (s *PlayScene) useHammer() {
-	g := s.eng.G
-	s.hammerWalls[0] = g.Ahead
-	copy(s.hammerWalls[1:], g.Rows[:])
+	s.keepWalls()
 	if !s.eng.UseHammer() {
 		playSE(seDenied)
 		return
 	}
+	s.swingHammer()
+}
+
+// keepWalls keeps the walls on the screen (the row coming in at the top and the rows of
+// the road) as the hammer's walls, to be drawn breaking.
+func (s *PlayScene) keepWalls() {
+	g := s.eng.G
+	s.hammerWalls[0] = g.Ahead
+	copy(s.hammerWalls[1:], g.Rows[:])
+}
+
+// swingHammer starts the cut-in of a hammer: the explosion, and her big reaction.
+func (s *PlayScene) swingHammer() {
 	playSE(seHammer)
 	s.cutin = cutinFrames
 	s.react(ExprExcited, 120, rankBig)

@@ -77,6 +77,10 @@ func drawTextOutlineColor(dst *ebiten.Image, str string, x, y, size float64, fil
 	drawText(dst, str, x, y, size, fade(fill))
 }
 
+// darkOutline is the outline of light text on a dark screen (the game over, the reveal of
+// a new character and the secret word).
+var darkOutline = color.NRGBA{0x40, 0x30, 0x48, 0xff}
+
 // drawMenu draws a vertical menu. The selected item is pink and a little larger.
 func drawMenu(dst *ebiten.Image, items []string, sel int, y, size float64) {
 	drawMenuAt(dst, items, sel, ScreenW/2, y, size)

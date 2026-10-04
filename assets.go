@@ -340,12 +340,7 @@ func (c *Character) selectEntry() *ImageEntry {
 }
 
 // SelectImage returns the character select image, or the default expression if none.
-func (c *Character) SelectImage() *ebiten.Image {
-	if c.Select != nil && c.Select.HasImage() {
-		return c.Select.Img()
-	}
-	return c.Expression(ExprNormal).Img()
-}
+func (c *Character) SelectImage() *ebiten.Image { return c.selectEntry().Img() }
 
 // Variants returns the portraits (pose variants) for state that have an image.
 // If there are none, it falls back to the default portrait.
