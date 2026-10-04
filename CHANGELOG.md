@@ -26,5 +26,6 @@ All notable changes to this project are documented in this file. The format is b
 
 ### Fixed
 - `--debug` no longer writes the save data: a run with it saved the secret character as announced, so when the four regular characters later cleared for real the title never brought her in. Saves already marked that way by `--debug` show her arrival once she is earned.
+- The bunny no longer drops back from a wall she slides into from the side: the road kept scrolling for the frame of the miss and could jump back a row.
 - The cool girl's checkerboard (stage 4) leaves out a block now and then, so there is a spot to stand still in instead of a step aside for every row of blocks.
 - The cool girl starts her runs with two hammers instead of one: her roads are the hardest of the four regular characters.

@@ -147,9 +147,12 @@ func (e *Engine) RestartProgress() string {
 }
 
 // Tick advances one frame: the road scrolls by RowsPerSec/60 rows. Holding up (accel)
-// speeds the road up until a retry (Boost).
+// speeds the road up until a retry (Boost). After a miss the road stays where it stopped
+// until Restart: a frame that slid her into a wall from the side still ticked, and the
+// road crept on (the step it reached was not taken, so the drawn road jumped back up a
+// row) and she was drawn lower than the wall she ran into.
 func (e *Engine) Tick(accel bool) {
-	if e.G.Over {
+	if e.G.Over || e.G.Missed {
 		return
 	}
 	e.PlayFrames++

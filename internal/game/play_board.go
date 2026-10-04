@@ -129,8 +129,16 @@ func (s *playScene) drawBoard(screen *ebiten.Image) {
 	// She stands just below her row: a row that hits her comes in with its bottom edge
 	// on the tips of her ears (a wall running into her stops the road as it touches her)
 	// and slides down over her while it is hers.
-	drawBunny(screen, bx+g.X*cell, by+(float64(road.PlayerRow)+0.75)*cell+bunnyHeight,
-		float64(g.Distance)+s.eng.Scroll(), s.lean, alpha)
+	cx, footY, hop := s.bunnyPose(bx, by)
+	drawBunny(screen, cx, footY, hop, s.lean, alpha)
+}
+
+// bunnyPose is where Draw puts the bunny on a road whose frame starts at (bx, by): her
+// middle and her feet on the screen, and how far she has hopped (in rows, the phase of her
+// hop). Her feet stay put on the screen while the road scrolls by (Engine.Scroll).
+func (s *playScene) bunnyPose(bx, by float64) (cx, footY, hop float64) {
+	g := s.eng.G
+	return bx + g.X*cell, by + (float64(road.PlayerRow)+0.75)*cell + bunnyHeight, float64(g.Distance) + s.eng.Scroll()
 }
 
 // bunnyHidden reports whether the bunny is left out this frame: she blinks during READY
