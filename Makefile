@@ -1,4 +1,4 @@
-.PHONY: build run test test-long test-pixels e2e vet fmt lint vuln licenses tools clean help
+.PHONY: build run test test-long test-pixels e2e readme vet fmt lint vuln licenses tools clean help
 
 APP         = rabbitrun
 VERSION     = $(shell git describe --tags --abbrev=0 2>/dev/null || echo dev)
@@ -28,6 +28,9 @@ test-pixels: ## Read back what the screens draw (opens a window; on Linux withou
 
 e2e: ## Run the atago end-to-end tests (requires atago; set RABBITRUN_E2E_DISPLAY=1 to include the specs that open a window)
 	$(GO) run ./e2e/runner
+
+readme: ## Refresh the README's picture counts, screenshots and demo GIF (needs ffmpeg and a display or xvfb-run)
+	./scripts/readme_assets.sh
 
 vet: ## Run go vet
 	$(GO) vet ./...

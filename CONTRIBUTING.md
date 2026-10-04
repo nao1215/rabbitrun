@@ -24,7 +24,7 @@ Useful flags while developing:
 - `./rabbitrun --bgm-wav DIR` renders each background-music arrangement to WAV and exits.
 - `./rabbitrun --record-demo FILE` lets the game play by itself and records it with ffmpeg (`--record-char`, `--record-stage` and `--record-seconds` pick what is recorded).
 
-The screenshots and the demo GIF in the README come from `--capture` and `--record-demo`.
+The screenshots and the demo GIF in the README come from `--capture` and `--record-demo`. `make readme` (`scripts/readme_assets.sh`) regenerates them into `doc/img`, each screen with a save data of its own that keeps the secret character and the extra illustrations out, and updates the picture counts in the README's character table from `assets/`; it needs ffmpeg and a display (or `xvfb-run`), and `scripts/readme_assets.sh counts` updates only the counts. Look at every regenerated image before committing it.
 
 ### Where the code lives
 
@@ -55,6 +55,7 @@ make test    # unit tests with the race detector and coverage
 make test-long  # the tests that play and search every whole run (CI: LongTests, also nightly)
 make test-pixels  # reads back what the screens draw (opens a window; xvfb-run on Linux without a desktop)
 make e2e     # end-to-end tests of the built binary (requires atago)
+make readme  # regenerate the README's screenshots, demo GIF and picture counts (ffmpeg and a display or xvfb-run)
 make vet
 make fmt
 make lint    # golangci-lint, the same configuration CI enforces
