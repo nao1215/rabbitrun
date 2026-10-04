@@ -64,13 +64,29 @@ type Input struct {
 	pads       []ebiten.GamepadID
 	// lastSide is the side (-1 left, 1 right) pressed last: it wins while both are held.
 	lastSide int
+	// script, when set, stands in for the keyboard and the pads (the scenario tests play
+	// the game with it); typed are the letters it typed this frame.
+	script inputScript
+	typed  []rune
+}
+
+// inputScript plays the game in place of a player: each frame it gives the actions held
+// and the letters typed.
+type inputScript interface {
+	frame() (held [actionCount]bool, typed []rune)
 }
 
 func (in *Input) Update() {
 	in.prev = in.held
-	in.pads = ebiten.AppendGamepadIDs(in.pads[:0])
+	if in.script != nil {
+		in.held, in.typed = in.script.frame()
+	} else {
+		in.pads = ebiten.AppendGamepadIDs(in.pads[:0])
+		for a := Action(0); a < actionCount; a++ {
+			in.held[a] = in.poll(a)
+		}
+	}
 	for a := Action(0); a < actionCount; a++ {
-		in.held[a] = in.poll(a)
 		if in.held[a] {
 			in.holdFrames[a]++
 		} else {
@@ -155,6 +171,14 @@ func stickHit(a Action, x, y float64) bool {
 	default:
 		return false
 	}
+}
+
+// Chars returns the letters typed this frame.
+func (in *Input) Chars() []rune {
+	if in.script != nil {
+		return in.typed
+	}
+	return ebiten.AppendInputChars(nil)
 }
 
 func (in *Input) Held(a Action) bool    { return in.held[a] }
