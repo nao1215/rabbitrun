@@ -9,6 +9,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	flag "github.com/spf13/pflag"
 
+	"github.com/nao1215/rabbitrun/internal/save"
 	"github.com/nao1215/rabbitrun/internal/sound"
 )
 
@@ -38,7 +39,7 @@ func (g *Game) SetScene(s Scene) {
 	if r, ok := g.scene.(interface{ release() }); ok && g.scene != s {
 		r.release()
 	}
-	flushSave()
+	store.Flush()
 	g.scene = s
 }
 
@@ -57,7 +58,7 @@ func (g *Game) Update() error {
 		g.cap.update(g)
 	}
 	g.scene.Update(g)
-	flushSave()
+	store.Flush()
 	if quitRequested {
 		return ebiten.Termination
 	}
@@ -114,13 +115,13 @@ func main() {
 	}
 	if *resetSaveFlag {
 		// only resets the save data; the game is started again without the flag
-		moved, err := resetSave()
+		moved, err := save.Reset()
 		if err != nil {
 			log.Fatal(err)
 		}
-		msg := fmt.Sprintf("the save data was reset (the old one is kept as %s.bak)", savePath())
+		msg := fmt.Sprintf("the save data was reset (the old one is kept as %s.bak)", save.Path())
 		if !moved {
-			msg = fmt.Sprintf("there is no save data to reset (looked for %s)", savePath())
+			msg = fmt.Sprintf("there is no save data to reset (looked for %s)", save.Path())
 		}
 		if _, err := fmt.Println(msg); err != nil {
 			log.Fatal(err)
@@ -137,11 +138,11 @@ func main() {
 			log.Fatal(err)
 		}
 	}
-	loadSave()
+	store.Load()
 	// the scripted runs of a capture or a demo must not change the player's save
-	saveReadOnly = *captureDir != "" || *recordPath != ""
+	store.ReadOnly = *captureDir != "" || *recordPath != ""
 	initBlocks()
-	if saveReadOnly {
+	if store.ReadOnly {
 		// A capture or a demo plays no sound, so it does not open the audio device: on a
 		// machine without one (a CI runner) opening it fails and ends the game.
 		sound.SetMuted(true)
@@ -179,7 +180,7 @@ func main() {
 		sound.SetMuted(true)
 	}
 	err := ebiten.RunGame(g)
-	flushSave() // the window was closed: whatever changed last is written
+	store.Flush() // the window was closed: whatever changed last is written
 	if err != nil {
 		log.Fatal(err)
 	}

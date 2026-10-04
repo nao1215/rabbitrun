@@ -3,6 +3,8 @@ package main
 import (
 	"slices"
 	"testing"
+
+	"github.com/nao1215/rabbitrun/internal/save"
 )
 
 func TestStickHit(t *testing.T) {
@@ -149,7 +151,7 @@ func TestRetryShowsComebackAfterGameOverPose(t *testing.T) {
 	c := &Character{ID: "t", Expressions: []ImageEntry{
 		{ID: ExprNormal, State: ExprNormal}, {ID: ExprGameOver, State: ExprGameOver}, {ID: ExprComeback, State: ExprComeback},
 	}}
-	s := &PlayScene{char: c, eng: newRun(heroID, false), prog: &CharProgress{SeenExpr: map[string]bool{}}}
+	s := &PlayScene{char: c, eng: newRun(heroID, false), prog: &save.CharProgress{SeenExpr: map[string]bool{}}}
 	s.expr, s.exprID, s.comeback = ExprGameOver, ExprGameOver, comebackDelay
 	for range comebackDelay - 1 {
 		s.updateComeback()

@@ -3,28 +3,29 @@ package main
 import (
 	"testing"
 
+	"github.com/nao1215/rabbitrun/internal/save"
 	"github.com/nao1215/rabbitrun/internal/sound"
 )
 
 func TestSecretUnlocked(t *testing.T) {
 	t.Parallel()
 	chars := []*Character{{ID: "a"}, {ID: "b"}, {ID: "c"}, {ID: "d"}, {ID: "s", Secret: true}}
-	cleared := func(ids ...string) *SaveData {
-		sd := &SaveData{Characters: map[string]*CharProgress{}}
+	cleared := func(ids ...string) *save.Data {
+		sd := &save.Data{Characters: map[string]*save.CharProgress{}}
 		for _, id := range ids {
-			sd.Characters[id] = &CharProgress{Cleared: true}
+			sd.Characters[id] = &save.CharProgress{Cleared: true}
 		}
 		return sd
 	}
 	cases := []struct {
 		name string
-		save *SaveData
+		save *save.Data
 		want bool
 	}{
 		{"nothing cleared", cleared(), false},
 		{"three of four cleared", cleared("a", "b", "c"), false},
 		{"all four cleared", cleared("a", "b", "c", "d"), true},
-		{"far but not cleared", &SaveData{Characters: map[string]*CharProgress{"a": {BestStage: 3}, "b": {BestStage: 3}, "c": {BestStage: 3}, "d": {BestStage: 3}}}, false},
+		{"far but not cleared", &save.Data{Characters: map[string]*save.CharProgress{"a": {BestStage: 3}, "b": {BestStage: 3}, "c": {BestStage: 3}, "d": {BestStage: 3}}}, false},
 	}
 	for _, tc := range cases {
 		if got := secretUnlocked(chars, tc.save); got != tc.want {
@@ -36,11 +37,11 @@ func TestSecretUnlocked(t *testing.T) {
 func TestAllExtraCleared(t *testing.T) {
 	t.Parallel()
 	chars := []*Character{{ID: "a"}, {ID: "s", Secret: true}}
-	sd := &SaveData{Characters: map[string]*CharProgress{"a": {ClearedExtra: true}}}
+	sd := &save.Data{Characters: map[string]*save.CharProgress{"a": {ClearedExtra: true}}}
 	if allExtraCleared(chars, sd) {
 		t.Fatal("the secret character has not cleared the extra stages yet")
 	}
-	sd.Characters["s"] = &CharProgress{ClearedExtra: true, Cleared: true}
+	sd.Characters["s"] = &save.CharProgress{ClearedExtra: true, Cleared: true}
 	if !allExtraCleared(chars, sd) {
 		t.Fatal("everyone cleared the extra stages")
 	}
@@ -78,7 +79,7 @@ func TestTitleBringsInANewCharacterOnce(t *testing.T) { //nolint:paralleltest //
 	}
 	g.in.held[ActConfirm] = true
 	s.Update(g)
-	if s.reveal >= 0 || !save.Announced[secret] {
+	if s.reveal >= 0 || !store.Data.Announced[secret] {
 		t.Fatal("a press did not go on to the usual title")
 	}
 	if newTitleScene().reveal >= 0 {
@@ -123,7 +124,7 @@ func TestTitleTellsTheWordOnlyAfterTheSecretCharacterClears(t *testing.T) { //no
 	}
 	g.in.held[ActConfirm] = true
 	s.Update(g)
-	if s.word || !save.WordTold || newTitleScene().word {
+	if s.word || !store.Data.WordTold || newTitleScene().word {
 		t.Fatal("the word is told once, and a press goes on")
 	}
 }

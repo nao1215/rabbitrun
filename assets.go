@@ -599,11 +599,11 @@ func (c *Character) PlayCGs() []ImageEntry {
 // GalleryCGs are the illustrations the gallery lists: only the regular ones until the
 // hidden command has been found, so a full gallery looks complete.
 func (c *Character) GalleryCGs() []ImageEntry {
-	if save.ExtraFound {
+	if store.Data.ExtraFound {
 		return c.CGs
 	}
 	return c.MainCGs()
 }
 
 // extraMode reports whether the extra stages are being played.
-func extraMode() bool { return save.ExtraFound && save.ExtraMode }
+func extraMode() bool { return store.Data.ExtraFound && store.Data.ExtraMode }

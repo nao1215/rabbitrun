@@ -3,11 +3,9 @@ package main
 import (
 	"testing"
 
+	"github.com/nao1215/rabbitrun/internal/save"
 	"github.com/nao1215/rabbitrun/road"
 )
-
-// testCGID is an illustration ID used by the tests.
-const testCGID = "cg_peace"
 
 // The stage tests below share the package-level save data (courseClear changes it), so
 // they do not run in parallel.
@@ -19,7 +17,7 @@ func stageScene(n int) *PlayScene {
 		c.CGs = append(c.CGs, ImageEntry{ID: "cg" + string(rune('a'+i)), has: 1})
 	}
 	return &PlayScene{char: c, eng: newRun(heroID, false),
-		prog: &CharProgress{SeenExpr: map[string]bool{}, UnlockedCG: map[string]bool{}}}
+		prog: &save.CharProgress{SeenExpr: map[string]bool{}, UnlockedCG: map[string]bool{}}}
 }
 
 func TestCourseClearUnlocksItsIllustration(t *testing.T) { //nolint:paralleltest // shares the save data

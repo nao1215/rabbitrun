@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"os"
 	"strings"
 	"testing"
 
@@ -115,39 +114,5 @@ func TestFindFFmpegTellsWhatIsMissing(t *testing.T) {
 	err := findFFmpeg()
 	if err == nil || !strings.Contains(err.Error(), "--record-demo needs ffmpeg on PATH") {
 		t.Fatalf("findFFmpeg() = %v, want an error naming ffmpeg", err)
-	}
-}
-
-//nolint:paralleltest // uses t.Setenv and the package-level save data
-func TestResetSaveWithoutASave(t *testing.T) {
-	useTempConfig(t)
-	moved, err := resetSave()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if moved {
-		t.Error("resetSave reported a save moved aside when there was none")
-	}
-	if _, err := os.Stat(savePath() + ".bak"); !errors.Is(err, os.ErrNotExist) {
-		t.Errorf("a backup appeared without a save: %v", err)
-	}
-}
-
-// TestReadOnlySaveIsNotWritten: a capture or a demo recording clears courses and reaches
-// the ending; with the save read-only, none of it reaches the player's save file.
-//
-//nolint:paralleltest // uses t.Setenv and the package-level save data
-func TestReadOnlySaveIsNotWritten(t *testing.T) {
-	useTempConfig(t)
-	saveReadOnly = true
-	t.Cleanup(func() { saveReadOnly = false })
-	progress(heroID).Cleared = true
-	markSave()
-	flushSave()
-	if _, err := os.Stat(savePath()); !errors.Is(err, os.ErrNotExist) {
-		t.Fatalf("the read-only save was written: %v", err)
-	}
-	if saveDirty {
-		t.Error("the change is still pending after the flush")
 	}
 }

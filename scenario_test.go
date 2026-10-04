@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/nao1215/rabbitrun/internal/save"
 	"github.com/nao1215/rabbitrun/internal/sound"
 	"github.com/nao1215/rabbitrun/road"
 )
@@ -92,7 +93,7 @@ func newScenarioWith(t *testing.T, chars []*Character, prepare func()) *Game {
 	t.Cleanup(func() { characters = old })
 	if prepare != nil {
 		prepare()
-		writeSave()
+		store.Write()
 	}
 	bg = newBackground()
 	g := &Game{bg: bg, scene: newTitleScene()}
@@ -112,14 +113,14 @@ func play(t *testing.T, g *Game, frames []scriptFrame) {
 }
 
 // reloadSave reads the save file back, as the next launch does.
-func reloadSave(t *testing.T) *SaveData {
+func reloadSave(t *testing.T) *save.Data {
 	t.Helper()
-	raw, err := os.ReadFile(savePath())
+	raw, err := os.ReadFile(save.Path())
 	if err != nil {
 		t.Fatal(err)
 	}
-	sd := &SaveData{}
-	if err := decodeSave(sd, raw); err != nil {
+	sd := &save.Data{}
+	if err := save.Decode(sd, raw); err != nil {
 		t.Fatal(err)
 	}
 	return sd
@@ -327,7 +328,7 @@ func TestScenarioSecretWord(t *testing.T) {
 			prepare: func() {
 				clearRegulars()
 				progress(secretID()).Cleared = true
-				save.Announced = map[string]bool{secretID(): true}
+				store.Data.Announced = map[string]bool{secretID(): true}
 			},
 			input: typeText(secretWord),
 		},
@@ -336,7 +337,7 @@ func TestScenarioSecretWord(t *testing.T) {
 			prepare: func() {
 				clearRegulars()
 				progress(secretID()).Cleared = true
-				save.Announced = map[string]bool{secretID(): true}
+				store.Data.Announced = map[string]bool{secretID(): true}
 			},
 			input:     steps(wait(wordWait+1), press(ActConfirm), typeText(secretWord)),
 			wantFound: true, wantExtra: true,
@@ -347,9 +348,9 @@ func TestScenarioSecretWord(t *testing.T) {
 			g := newScenario(t, tc.prepare)
 			play(t, g, tc.input)
 			s := titleOf(t, g)
-			if save.ExtraFound != tc.wantFound || extraMode() != tc.wantExtra || s.group != tc.wantExtra {
+			if store.Data.ExtraFound != tc.wantFound || extraMode() != tc.wantExtra || s.group != tc.wantExtra {
 				t.Fatalf("found %v, extra %v (title %v), want found %v, extra %v",
-					save.ExtraFound, extraMode(), s.group, tc.wantFound, tc.wantExtra)
+					store.Data.ExtraFound, extraMode(), s.group, tc.wantFound, tc.wantExtra)
 			}
 			if tc.wantFound {
 				if s.sel != 0 {

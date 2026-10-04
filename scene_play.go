@@ -8,6 +8,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"github.com/nao1215/rabbitrun/internal/save"
 	"github.com/nao1215/rabbitrun/internal/sound"
 	"github.com/nao1215/rabbitrun/road"
 )
@@ -47,7 +48,7 @@ type PlayScene struct {
 	holdFrames  int     // frames it has been held
 	char        *Character
 	eng         *Engine
-	prog        *CharProgress
+	prog        *save.CharProgress
 	auto        *autoPlayer // when set, the game plays itself (demo)
 
 	frame    int
@@ -414,7 +415,7 @@ func (s *PlayScene) commitRun() {
 	s.committed = true
 	s.prog.BestStage = max(s.prog.BestStage, s.eng.G.Stage)
 	s.prog.PlaySeconds += s.eng.PlayFrames / 60
-	markSave()
+	store.Mark()
 }
 
 func (s *PlayScene) updateEffects() {

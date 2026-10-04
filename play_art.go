@@ -53,7 +53,7 @@ func (s *PlayScene) courseClear(n int) {
 		cg := &cgs[i]
 		if !s.prog.UnlockedCG[cg.ID] {
 			s.prog.UnlockedCG[cg.ID] = true
-			markSave()
+			store.Mark()
 			if cg.HasImage() {
 				sound.Play(sound.Unlock)
 			}
@@ -83,7 +83,7 @@ func (s *PlayScene) allClearNow() {
 	} else {
 		s.prog.Cleared = true
 	}
-	markSave()
+	store.Mark()
 }
 
 func (s *PlayScene) setStageCG(cg *ImageEntry) {

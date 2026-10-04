@@ -41,7 +41,7 @@ func newTitleScene() *TitleScene {
 func newSecret() int {
 	n := -1
 	for i, c := range characters {
-		if c.Secret && !c.locked() && !save.Announced[c.ID] {
+		if c.Secret && !c.locked() && !store.Data.Announced[c.ID] {
 			n = i
 		}
 	}
@@ -50,11 +50,11 @@ func newSecret() int {
 
 // markAnnounced records that the unlock of the character id has been announced.
 func markAnnounced(id string) {
-	if save.Announced == nil {
-		save.Announced = map[string]bool{}
+	if store.Data.Announced == nil {
+		store.Data.Announced = map[string]bool{}
 	}
-	save.Announced[id] = true
-	markSave()
+	store.Data.Announced[id] = true
+	store.Mark()
 }
 
 // The reveal of a new character on the title: she comes in grey, takes her colors over
@@ -108,8 +108,8 @@ func (s *TitleScene) Update(g *Game) {
 		}
 		if s.wordFrame > wordWait && g.in.Pressed(ActConfirm) {
 			sound.Play(sound.Confirm)
-			save.WordTold = true
-			markSave()
+			store.Data.WordTold = true
+			store.Mark()
 			s.word = false
 		}
 		return
@@ -200,11 +200,11 @@ const wordWait = 40
 // wordDue reports whether the title has the secret word to tell: the secret character has
 // cleared the regular stages, and it has not been told yet.
 func wordDue() bool {
-	if save.WordTold {
+	if store.Data.WordTold {
 		return false
 	}
 	for _, c := range characters {
-		if p := save.Characters[c.ID]; c.Secret && p != nil && p.Cleared {
+		if p := store.Data.Characters[c.ID]; c.Secret && p != nil && p.Cleared {
 			return true
 		}
 	}

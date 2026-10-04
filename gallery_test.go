@@ -167,9 +167,9 @@ func TestGalleryViewer(t *testing.T) { //nolint:paralleltest // shares the save 
 func TestGalleryTabs(t *testing.T) { //nolint:paralleltest // shares the save data and the characters
 	g, screen := newDrawScenario(t, func() {
 		clearRegulars()
-		progress(secretID()).Cleared = true                // the secret character is open too, already
-		save.Announced = map[string]bool{secretID(): true} // brought in on the title
-		save.WordTold = true
+		progress(secretID()).Cleared = true                      // the secret character is open too, already
+		store.Data.Announced = map[string]bool{secretID(): true} // brought in on the title
+		store.Data.WordTold = true
 	})
 	s := openGallery(t, g, screen)
 	first := s.charIdx
