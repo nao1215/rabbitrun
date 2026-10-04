@@ -1,0 +1,48 @@
+name: README assets
+
+# Regenerates what the README shows of the game (scripts/readme_assets.sh, the same as
+# `make readme`): the picture counts in README.md, the screenshots and the demo GIF in
+# doc/img. It runs only by hand and commits nothing: the result is uploaded as an
+# artifact to look at, and committed from a local checkout if it is right.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  readme-assets:
+    name: Regenerate the README assets
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The OpenGL/X11/ALSA headers and Xvfb: the script runs the game under xvfb-run.
+      - uses: nao1215/setup-ebitengine@cfefbee9dc7af161aebb2c8d36c07a0e1727271a # v1.0.0
+        with:
+          xvfb: true
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg
+
+      - name: Regenerate the counts, screenshots and demo GIF
+        run: ./scripts/readme_assets.sh
+
+      - name: Upload the regenerated files
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: readme-assets
+          path: |
+            README.md
+            doc/img/
