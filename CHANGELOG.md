@@ -6,7 +6,7 @@ All notable changes to this project are documented in this file. The format is b
 
 ### Added
 - Rabbit Run: a portrait (720x900) road runner built with Ebitengine. A bunny hops up a road of gummy blocks; slide her left and right, pick up macarons and stay off the walls. A run is four stages of four courses, about three minutes.
-- Course themes: every course has one of twenty-nine themes (a winding narrow road, wide swings from side to side, slaloms, gates, pillars that step across the road, lanes, a checkerboard, a funnel and more). Each character runs roads of her own, the same every time, and a long straight run ends with a block to dodge.
+- Course themes: every course has one of thirty-one themes (a winding narrow road, wide swings from side to side, slaloms, gates, pillars that step across the road, lanes, a checkerboard, a funnel and more). Each character runs roads of her own, the same every time, and a long straight run ends with a block to dodge.
 - Macarons that add up to extra lives (every 100), some laid in lines along the way, and vaults with an extra life that only the hammer opens.
 - Bonus courses: one course in each stage after the first is walled with blocks of every candy color, with a wider road, twice the sweets and a feast of macarons.
 - The hammer: a squeaky toy hammer that smashes every wall on the screen, with a cut-in of the character.
@@ -24,6 +24,7 @@ All notable changes to this project are documented in this file. The format is b
 - Release archives and Linux packages for Linux, macOS and Windows (amd64 and arm64), with a cosign-signed checksum file, an SBOM per archive, GitHub build provenance and the license texts of the linked Go modules under `THIRD_PARTY_LICENSES/`.
 - A Homebrew cask in nao1215/tap (`brew install --cask nao1215/tap/rabbitrun`).
 - Eight course themes built around one idea each that can be read well ahead, with their macarons, hammers and extra lives laid as part of the design (one of them a fork whose hard lane pays off), spread over every character's runs.
+- Two more course themes: a side lane beside a safe one that gets harder and pays more the deeper she goes, with ways back out, and a lesson that shows three moves one at a time before stringing them into a phrase and mirroring it.
 - Difficulty and fun scores for every course, measured on the road itself (narrow rows, sideways slides, rests, blocks to aim past, speed, help; sweets, items, rewards off the easy line, feasts, how much the road repeats), with tests that keep the runs harder from left to right on the character select screen, the extra side harder than the regular side course by course, every run harder stage by stage, every stage fun enough and no theme twice in a row.
 
 ### Changed
