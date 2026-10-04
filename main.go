@@ -140,7 +140,13 @@ func main() {
 	// the scripted runs of a capture or a demo must not change the player's save
 	saveReadOnly = *captureDir != "" || *recordPath != ""
 	initBlocks()
-	initAudio()
+	if saveReadOnly {
+		// A capture or a demo plays no sound, so it does not open the audio device: on a
+		// machine without one (a CI runner) opening it fails and ends the game.
+		audioMuted = true
+	} else {
+		initAudio()
+	}
 
 	ebiten.SetWindowTitle("Rabbit Run")
 	// Shrink the window so it fits the monitor height.
