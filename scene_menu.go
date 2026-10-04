@@ -7,6 +7,8 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+
+	"github.com/nao1215/rabbitrun/internal/sound"
 )
 
 // ---- Title ----
@@ -78,10 +80,10 @@ func selectEntries() []*ImageEntry {
 func (s *TitleScene) Update(g *Game) {
 	s.frame++
 	uploadPrefetched(selectEntries(), 2)
-	if bgmSong != titleSong {
-		startBGM(titleSong)
+	if sound.CurrentSong() != sound.TitleSong {
+		sound.StartBGM(sound.TitleSong)
 	}
-	setBGMState(0)
+	sound.SetBGMState(0)
 	bg.set(popPink)
 	bg.setImage("title")
 	if titleComplete() {
@@ -90,10 +92,10 @@ func (s *TitleScene) Update(g *Game) {
 	if s.reveal >= 0 {
 		s.revealFrame++
 		if s.revealFrame == revealWordsAt {
-			playSE(seUnlock)
+			sound.Play(sound.Unlock)
 		}
 		if s.revealFrame > revealWordsAt+20 && g.in.Pressed(ActConfirm) {
-			playSE(seConfirm)
+			sound.Play(sound.Confirm)
 			markAnnounced(characters[s.reveal].ID)
 			s.reveal = -1
 		}
@@ -102,10 +104,10 @@ func (s *TitleScene) Update(g *Game) {
 	if s.word {
 		s.wordFrame++
 		if s.wordFrame == 1 {
-			playSE(seUnlock)
+			sound.Play(sound.Unlock)
 		}
 		if s.wordFrame > wordWait && g.in.Pressed(ActConfirm) {
-			playSE(seConfirm)
+			sound.Play(sound.Confirm)
 			save.WordTold = true
 			markSave()
 			s.word = false
@@ -115,11 +117,11 @@ func (s *TitleScene) Update(g *Game) {
 	if s.command.feed(g.in.Chars()) {
 		s.group = toggleExtra()
 		s.sel = 0 // the letters typed also moved the menu
-		playSE(seUnlock)
+		sound.Play(sound.Unlock)
 	}
 	s.sel = g.in.menuNav(s.sel, len(titleItems), ActUp, ActDown)
 	if g.in.Pressed(ActConfirm) {
-		playSE(seConfirm)
+		sound.Play(sound.Confirm)
 		switch s.sel {
 		case 0:
 			g.SetScene(newCharSelectScene(modePlay))
@@ -294,14 +296,14 @@ func (s *CharSelectScene) leave() {
 func (s *CharSelectScene) Update(g *Game) {
 	s.frame++
 	if s.frame == 1 && s.announce >= 0 {
-		playSE(seUnlock) // the newly unlocked character is already selected; a chime marks it
+		sound.Play(sound.Unlock) // the newly unlocked character is already selected; a chime marks it
 	}
 	// The select screen has its own song (the road has another).
-	if bgmSong != selectSong {
-		startBGM(selectSong)
+	if sound.CurrentSong() != sound.SelectSong {
+		sound.StartBGM(sound.SelectSong)
 	}
 	// The longer the player stays on this screen, the faster and busier the music gets.
-	setBGMState(selectIntensity(s.frame))
+	sound.SetBGMState(selectIntensity(s.frame))
 	bg.set(popYellow)
 	bg.setImage("select")
 	n := len(characters)
@@ -312,8 +314,8 @@ func (s *CharSelectScene) Update(g *Game) {
 		prefetchImgs([]*ImageEntry{c.Expression(ExprNormal), c.Cutin})
 	}
 	if g.in.Pressed(ActCancel) {
-		playSE(seCancel)
-		stopBGM()
+		sound.Play(sound.Cancel)
+		sound.StopBGM()
 		s.leave()
 		g.SetScene(newTitleScene())
 		return
@@ -321,12 +323,12 @@ func (s *CharSelectScene) Update(g *Game) {
 	if g.in.Pressed(ActConfirm) {
 		c := characters[s.sel]
 		if c.locked() {
-			playSE(seDenied)
+			sound.Play(sound.Denied)
 			return
 		}
-		playSE(seConfirm)
+		sound.Play(sound.Confirm)
 		s.leave()
-		stopBGM() // play starts music after READY; the gallery plays sound effects only
+		sound.StopBGM() // play starts music after READY; the gallery plays sound effects only
 		if s.mode == modePlay {
 			g.SetScene(newRunScene(c))
 		} else {

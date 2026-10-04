@@ -6,11 +6,12 @@ import (
 	"math"
 	"runtime"
 
-	"github.com/nao1215/rabbitrun/road"
-
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/colorm"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+
+	"github.com/nao1215/rabbitrun/internal/sound"
+	"github.com/nao1215/rabbitrun/road"
 )
 
 // GalleryScene is the screen for browsing portraits and illustrations, reached from the title.
@@ -115,10 +116,10 @@ func (s *GalleryScene) unlocked(it galleryItem) bool {
 
 func (s *GalleryScene) Update(g *Game) {
 	s.frame++
-	if bgmSong != gallerySong {
-		startBGM(gallerySong)
+	if sound.CurrentSong() != sound.GallerySong {
+		sound.StartBGM(sound.GallerySong)
 	}
-	setBGMState(0) // calm: the pictures are looked at slowly
+	sound.SetBGMState(0) // calm: the pictures are looked at slowly
 	bg.set(popCream)
 	bg.setImage("gallery")
 	items := s.items()
@@ -138,7 +139,7 @@ func (s *GalleryScene) Update(g *Game) {
 				if s.open[j] {
 					s.releaseViewed(items)
 					s.sel = j
-					playSE(seMove)
+					sound.Play(sound.Move)
 					break
 				}
 			}
@@ -146,7 +147,7 @@ func (s *GalleryScene) Update(g *Game) {
 		if g.in.Pressed(ActCancel) || g.in.Pressed(ActConfirm) {
 			s.releaseViewed(items)
 			s.viewing = false
-			playSE(seCancel)
+			sound.Play(sound.Cancel)
 		}
 		return
 	}
@@ -161,7 +162,7 @@ func (s *GalleryScene) Update(g *Game) {
 			}
 		}
 		s.sel, s.scroll, s.scrollView = 0, 0, 0
-		playSE(seMove)
+		sound.Play(sound.Move)
 		return
 	}
 	old := s.sel
@@ -178,7 +179,7 @@ func (s *GalleryScene) Update(g *Game) {
 		s.sel += galleryCols
 	}
 	if s.sel != old {
-		playSE(seMove)
+		sound.Play(sound.Move)
 	}
 	// Scroll by whole rows so the selected row is on screen and no row is cut off.
 	row := s.sel / galleryCols
@@ -194,13 +195,13 @@ func (s *GalleryScene) Update(g *Game) {
 	if g.in.Pressed(ActConfirm) {
 		if s.open[s.sel] {
 			s.viewing = true
-			playSE(seConfirm)
+			sound.Play(sound.Confirm)
 		} else {
-			playSE(seDenied)
+			sound.Play(sound.Denied)
 		}
 	}
 	if g.in.Pressed(ActCancel) {
-		playSE(seCancel)
+		sound.Play(sound.Cancel)
 		g.SetScene(newTitleScene())
 	}
 }

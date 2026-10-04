@@ -8,6 +8,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"github.com/nao1215/rabbitrun/internal/sound"
 	"github.com/nao1215/rabbitrun/road"
 )
 
@@ -207,21 +208,21 @@ func (s *PlayScene) Update(g *Game) {
 	if g.in.Pressed(ActPause) && !s.eng.G.Missed && s.countdown == 0 {
 		s.paused = true
 		s.pauseSel = 0
-		playSE(sePause)
-		pauseBGM(true)
+		sound.Play(sound.Pause)
+		sound.PauseBGM(true)
 		return
 	}
 	if s.ready > 0 {
 		switch s.ready {
 		case readyFr:
-			playSE(seReady)
+			sound.Play(sound.Ready)
 		case goFrames:
-			playSE(seGo)
+			sound.Play(sound.Go)
 		}
 		s.updateComeback()
 		s.ready--
 		if s.ready == 0 {
-			startBGM(gameSong)
+			sound.StartBGM(sound.GameSong)
 		}
 		return
 	}
@@ -295,21 +296,21 @@ func (s *PlayScene) handleEvents() {
 			s.landing = 1 // a little squish for each sweet
 			switch {
 			case ev.Streak >= 5 && ev.Streak%5 == 0:
-				playSE(seStreak)
+				sound.Play(sound.Streak)
 				s.comboStep = ev.Streak/5 - 1 // each five in a row shows the next combo pose
 				s.react(ExprCombo, 120, rankCombo)
 			case ev.Sweet == road.SweetMacaron:
-				playSE(sePick)
+				sound.Play(sound.Pick)
 				s.react(ExprGreat, 100, rankGood)
 			default:
-				playSE(sePick)
+				sound.Play(sound.Pick)
 				s.react(ExprHappy, 80, rankSmall)
 			}
 		case road.EventOneUp:
-			playSE(seLevelUp)
+			sound.Play(sound.LevelUp)
 			s.popups = append(s.popups, popup{text: "1UP", timer: 60})
 			if ev.Sweet == road.SweetOneUp {
-				playSE(seTreat)
+				sound.Play(sound.Treat)
 				s.react(ExprTreat, 150, rankBig) // an extra life picked up off the road: the big moment
 			} else {
 				s.react(ExprExcited, 100, rankGood)
@@ -321,7 +322,7 @@ func (s *PlayScene) handleEvents() {
 		case road.EventNearMiss:
 			s.react(ExprNervous, 50, rankHint)
 		case road.EventCrash:
-			playSE(seGameOver)
+			sound.Play(sound.GameOver)
 			if !e.Over() {
 				s.react(ExprCrying, missFrames-5, rankPerfect) // a miss: she cries until the restart
 			}
@@ -337,7 +338,7 @@ func (s *PlayScene) handleEvents() {
 		case road.EventAllClear:
 			s.allClearNow()
 		case road.EventBombGain:
-			playSE(seConfirm)
+			sound.Play(sound.Confirm)
 		case road.EventRestart:
 			s.react(ExprComeback, 150, rankBig) // back on her feet
 		case road.EventBomb, road.EventOver:
@@ -346,7 +347,7 @@ func (s *PlayScene) handleEvents() {
 	}
 	e.Events = e.Events[:0]
 	if courses > 0 { // a new course is a level up: the road is faster now
-		playSE(seLevelUp)
+		sound.Play(sound.LevelUp)
 		s.react(ExprLevelUp, 60, rankHint)
 	}
 }
@@ -386,7 +387,7 @@ func (s *PlayScene) updateMusic() {
 		intensity = 1
 	}
 	s.intensity = intensity
-	setBGMTempo(intensity, playBPM(lv, s.eng.G.Profile.Speed*math.Max(1, s.eng.Boost)))
+	sound.SetBGMTempo(intensity, playBPM(lv, s.eng.G.Profile.Speed*math.Max(1, s.eng.Boost)))
 }
 
 // playBPM is the tempo of the music on a course: it follows the speed of the road (speed
@@ -399,8 +400,8 @@ func playBPM(level int, speed float64) float64 {
 
 func (s *PlayScene) onGameOver() {
 	s.overFrame = 0
-	stopBGM()
-	playSE(seGameOver)
+	sound.StopBGM()
+	sound.Play(sound.GameOver)
 	s.commitRun()
 	s.updateExpression()
 }

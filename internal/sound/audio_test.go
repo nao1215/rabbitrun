@@ -1,4 +1,4 @@
-package main
+package sound
 
 import (
 	"encoding/binary"
@@ -8,7 +8,7 @@ import (
 
 func TestTheFourSeasonsAreWellFormed(t *testing.T) {
 	t.Parallel()
-	for _, name := range []string{titleSong, selectSong, gameSong, gallerySong} {
+	for _, name := range []string{TitleSong, SelectSong, GameSong, GallerySong} {
 		sg, ok := songs[name]
 		if !ok {
 			t.Fatalf("%s: no such song", name)

@@ -1,6 +1,9 @@
 package main
 
-import "github.com/nao1215/rabbitrun/road"
+import (
+	"github.com/nao1215/rabbitrun/internal/sound"
+	"github.com/nao1215/rabbitrun/road"
+)
 
 // The start of a run: before READY, the open road fills with blocks, she swings a hammer,
 // and they all break, so the player sees what a hammer does before the first one comes up.
@@ -21,7 +24,7 @@ func (s *PlayScene) startHammerShow() {
 		}
 	}
 	s.showHold, s.showing = showHold, true
-	playSE(seDenied) // the way is shut
+	sound.Play(sound.Denied) // the way is shut
 	s.react(ExprBlocked, showHold, rankBig)
 }
 

@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/binary"
 	"image"
 	"image/color"
 	"image/png"
@@ -14,39 +13,6 @@ import (
 
 	flag "github.com/spf13/pflag"
 )
-
-// TestSoundEffectsAreSynthesized synthesizes every sound effect: each is stereo float32
-// audio of some length, within -1 and 1, not silent, and ends faded out (no click).
-func TestSoundEffectsAreSynthesized(t *testing.T) {
-	t.Parallel()
-	var d [seCount][]byte
-	synthEffects(&d)
-	for id, b := range d {
-		if len(b) == 0 || len(b)%8 != 0 {
-			t.Errorf("effect %d: %d bytes, want whole stereo frames", id, len(b))
-			continue
-		}
-		peak := 0.0
-		for i := 0; i+8 <= len(b); i += 8 {
-			l := float64(math.Float32frombits(binary.LittleEndian.Uint32(b[i:])))
-			r := float64(math.Float32frombits(binary.LittleEndian.Uint32(b[i+4:])))
-			if l != r {
-				t.Fatalf("effect %d: left %v and right %v differ at frame %d", id, l, r, i/8)
-			}
-			if math.IsNaN(l) || l < -1 || l > 1 {
-				t.Fatalf("effect %d: sample %v out of range at frame %d", id, l, i/8)
-			}
-			peak = math.Max(peak, math.Abs(l))
-		}
-		if peak < 0.01 {
-			t.Errorf("effect %d is silent (peak %v)", id, peak)
-		}
-		last := math.Float32frombits(binary.LittleEndian.Uint32(b[len(b)-8:]))
-		if math.Abs(float64(last)) > 0.01 {
-			t.Errorf("effect %d ends on %v, not faded out", id, last)
-		}
-	}
-}
 
 // TestGlossyBlockShape renders the stand-in block drawn when a block picture is missing:
 // see-through at the rounded corners, opaque and in its candy color in the middle, and
@@ -224,60 +190,16 @@ func TestKeyboardPollingWithNothingPressed(t *testing.T) { //nolint:paralleltest
 	}
 }
 
-// TestBGMControlsWithoutMusic changes the music when none plays: nothing happens, and
-// nothing fails.
-func TestBGMControlsWithoutMusic(t *testing.T) { //nolint:paralleltest // uses the package-level music
-	oldPlayer, oldBGM, oldMuted := bgmPlayer, bgm, audioMuted
-	t.Cleanup(func() { bgmPlayer, bgm, audioMuted = oldPlayer, oldBGM, oldMuted })
-	bgmPlayer, bgm, audioMuted = nil, nil, true
-	bgmSong = titleSong
-	startBGM(gameSong)
-	if bgmSong != "" || bgm != nil {
-		t.Errorf("muted, startBGM set song %q, stream %v", bgmSong, bgm)
-	}
-	pauseBGM(true)
-	pauseBGM(false)
-	setBGMState(2)
-	setBGMTempo(1, 160)
-	playSE(seMove)
-
-	bgm = newMusicStream(songs[gameSong])
-	setBGMState(2)
-	if got := bgm.curBPMShared(); got != intensityBPM[2] {
-		t.Errorf("tempo %v after setBGMState(2), want %v", got, intensityBPM[2])
-	}
-	setBGMTempo(1, 160)
-	if got := bgm.curBPMShared(); got != 160 {
-		t.Errorf("tempo %v after setBGMTempo, want 160", got)
-	}
-	if got := bgm.target.Load(); got != 1 {
-		t.Errorf("intensity %d after setBGMTempo(1), want 1", got)
-	}
-}
-
 // TestBeatBounce squashes her to the beat only in a cheerful mood while lively music plays.
-func TestBeatBounce(t *testing.T) { //nolint:paralleltest // uses the package-level music
-	old := bgm
-	t.Cleanup(func() { bgm = old })
+func TestBeatBounce(t *testing.T) { //nolint:paralleltest // swaps the music's beat
+	old := beatPhase
+	t.Cleanup(func() { beatPhase = old })
 	s := &PlayScene{expr: ExprHappy, intensity: 2}
-	bgm = nil
+	beatPhase = func() (float64, bool) { return 0, false }
 	if b := s.bounce(); b != 0 {
 		t.Errorf("bounce %v with no music", b)
 	}
-	bgm = newMusicStream(songs[gameSong])
-	if _, ok := bgm.beatPhase(); ok {
-		t.Error("a beat phase before the music played")
-	}
-	if b := s.bounce(); b != 0 {
-		t.Errorf("bounce %v before the music played", b)
-	}
-	if _, err := bgm.Read(make([]byte, 8*256)); err != nil {
-		t.Fatal(err)
-	}
-	ph, ok := bgm.beatPhase()
-	if !ok || ph < 0 || ph >= 1 {
-		t.Fatalf("beat phase %v, %v after the music played", ph, ok)
-	}
+	beatPhase = func() (float64, bool) { return 0.1, true }
 	if b := s.bounce(); b <= 0 || b > 0.016 {
 		t.Errorf("bounce %v in a happy mood with lively music", b)
 	}

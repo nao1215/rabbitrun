@@ -5,10 +5,11 @@ import (
 	"log"
 	"os"
 
-	flag "github.com/spf13/pflag"
-
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	flag "github.com/spf13/pflag"
+
+	"github.com/nao1215/rabbitrun/internal/sound"
 )
 
 // Portrait screen (4:5).
@@ -106,7 +107,7 @@ func main() {
 		}
 	}
 	if *bgmWavDir != "" {
-		if err := writeBGMWavs(*bgmWavDir); err != nil {
+		if err := sound.WriteBGMWavs(*bgmWavDir); err != nil {
 			log.Fatal(err)
 		}
 		return
@@ -143,9 +144,9 @@ func main() {
 	if saveReadOnly {
 		// A capture or a demo plays no sound, so it does not open the audio device: on a
 		// machine without one (a CI runner) opening it fails and ends the game.
-		audioMuted = true
+		sound.SetMuted(true)
 	} else {
-		initAudio()
+		sound.Init()
 	}
 
 	ebiten.SetWindowTitle("Rabbit Run")
@@ -164,7 +165,7 @@ func main() {
 	g.scene = newTitleScene()
 	if *captureDir != "" {
 		g.cap = &captureState{}
-		audioMuted = true
+		sound.SetMuted(true)
 		// Without vsync: held to the display's refresh, a window in the background got a
 		// few frames a second and the capture took minutes. The game still runs at 60
 		// ticks a second, so the pictures decoded in the background are in on time.
@@ -175,7 +176,7 @@ func main() {
 		if err := g.rec.start(g); err != nil {
 			log.Fatal(err)
 		}
-		audioMuted = true
+		sound.SetMuted(true)
 	}
 	err := ebiten.RunGame(g)
 	flushSave() // the window was closed: whatever changed last is written

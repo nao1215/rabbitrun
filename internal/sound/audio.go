@@ -1,4 +1,7 @@
-package main
+// Package sound plays the game's music and sound effects. All of it is synthesized in
+// code (no audio files): the music plays scores of Vivaldi's Four Seasons as drum and
+// bass (songs_data.go, arranged in music.go), and the sound effects are small synths.
+package sound
 
 import (
 	"encoding/binary"
@@ -9,9 +12,6 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2/audio"
 )
-
-// All sound is synthesized in code (no audio files): the BGM plays scores of Vivaldi's
-// Four Seasons as drum and bass (songs_data.go), and the sound effects are small synths.
 
 const sampleRate = 44100
 
@@ -78,15 +78,16 @@ var (
 	bgmSong   string
 )
 
-// startBGM plays the song name (a key of songs) from the beginning.
-func startBGM(name string) {
-	stopBGM()
-	if audioMuted {
+// StartBGM plays the song name (TitleSong, SelectSong, GameSong or GallerySong) from the
+// beginning.
+func StartBGM(name string) {
+	StopBGM()
+	if muted {
 		return
 	}
 	sg, ok := songs[name]
 	if !ok {
-		sg = songs[gameSong]
+		sg = songs[GameSong]
 	}
 	bgmSong = name
 	bgm = newMusicStream(sg)
@@ -101,7 +102,8 @@ func startBGM(name string) {
 	bgmPlayer = p
 }
 
-func stopBGM() {
+// StopBGM stops the music.
+func StopBGM() {
 	bgmSong = ""
 	if bgmPlayer != nil {
 		bgmPlayer.PauseAndStopReading()
@@ -109,7 +111,8 @@ func stopBGM() {
 	}
 }
 
-func pauseBGM(paused bool) {
+// PauseBGM pauses the music, or plays it on again.
+func PauseBGM(paused bool) {
 	if bgmPlayer == nil {
 		return
 	}
@@ -120,20 +123,32 @@ func pauseBGM(paused bool) {
 	}
 }
 
+// CurrentSong is the song StartBGM last started, or "" when no music plays.
+func CurrentSong() string { return bgmSong }
+
+// BeatPhase returns where the music is within the current beat (0 at the beat, rising to
+// 1). ok is false while no music plays.
+func BeatPhase() (phase float64, ok bool) {
+	if bgm == nil {
+		return 0, false
+	}
+	return bgm.beatPhase()
+}
+
 // The songs of the game, the same for every character (played as drum and bass): Vivaldi's
 // Four Seasons, one for each screen.
 const (
-	titleSong   = "spring"
-	selectSong  = "autumn"
-	gameSong    = "winter"
-	gallerySong = "summer"
+	TitleSong   = "spring"
+	SelectSong  = "autumn"
+	GameSong    = "winter"
+	GallerySong = "summer"
 )
 
 // Tempo per intensity stage: relaxed when calm, a drum-and-bass 174 at full intensity.
 var intensityBPM = [3]float64{148, 162, 174}
 
-// setBGMState sets the intensity stage and its tempo (the screens other than play).
-func setBGMState(intensity int) {
+// SetBGMState sets the intensity stage and its tempo (the screens other than play).
+func SetBGMState(intensity int) {
 	if bgm == nil {
 		return
 	}
@@ -141,9 +156,9 @@ func setBGMState(intensity int) {
 	bgm.setBPM(intensityBPM[intensity])
 }
 
-// setBGMTempo sets the intensity stage and the tempo directly (the play screen follows
+// SetBGMTempo sets the intensity stage and the tempo directly (the play screen follows
 // the speed of the road with it).
-func setBGMTempo(intensity int, bpm float64) {
+func SetBGMTempo(intensity int, bpm float64) {
 	if bgm == nil {
 		return
 	}
@@ -153,33 +168,37 @@ func setBGMTempo(intensity int, bpm float64) {
 
 // ---- Sound effects ----
 
-type seID int
+// Effect is a sound effect.
+type Effect int
 
+// The sound effects.
 const (
-	seMove   seID = iota
-	sePick        // a sweet picked up
-	seStreak      // five sweets in a row
-	seTreat       // the precious sweet (worth three)
-	seLevelUp
-	seUnlock
-	seGameOver
-	seConfirm
-	seCancel
-	seDenied
-	seReady
-	seGo
-	sePause
-	seHammer // the hammer goes off: an explosion
-	seBreak  // a row of walls breaks after the hammer: a short crack
-	seCount
+	Move   Effect = iota
+	Pick          // a sweet picked up
+	Streak        // five sweets in a row
+	Treat         // the precious sweet (worth three)
+	LevelUp
+	Unlock
+	GameOver
+	Confirm
+	Cancel
+	Denied
+	Ready
+	Go
+	Pause
+	Hammer // the hammer goes off: an explosion
+	Break  // a row of walls breaks after the hammer: a short crack
+	effectCount
 )
 
 var (
-	seData [seCount][]byte
+	seData [effectCount][]byte
 	seMu   sync.Mutex
 )
 
-func initAudio() {
+// Init opens the audio device and starts synthesizing the sound effects. Without it (or
+// muted) Play and StartBGM do nothing.
+func Init() {
 	audioCtx = audio.NewContext(sampleRate)
 	go func() {
 		synthEffects(&seData)
@@ -189,22 +208,22 @@ func initAudio() {
 
 // seSynthed is closed once the sound effects are synthesized. They are made in the
 // background (a tenth of a second of work, more on a slow machine), so the window opens
-// without waiting for them; playSE waits in the rare case one is wanted before they are
+// without waiting for them; Play waits in the rare case one is wanted before they are
 // done (nothing plays a sound in the first frames).
 var seSynthed = make(chan struct{})
 
 // synthEffects synthesizes every sound effect into d.
-func synthEffects(d *[seCount][]byte) {
+func synthEffects(d *[effectCount][]byte) {
 	// The menu cursor clicks with a soft sine wave of falling pitch (squishy, bouncy).
-	d[seMove] = synth(0.05, func(t float64) float64 { return glide(t, 1100, 800, 60) * soft(t, 0.002, 70) * .18 })
-	d[seHammer] = hammerSound()
-	d[seBreak] = breakSound()
-	d[sePick] = arp([]int{72, 76, 79, 84}, 0.05, 0.3)
-	d[seStreak] = arp([]int{72, 76, 79, 84, 88, 91, 96}, 0.045, 0.35)
-	d[seTreat] = arp([]int{74, 81, 86, 93}, 0.05, 0.3)
-	d[seLevelUp] = arp([]int{67, 72, 76, 79, 84}, 0.07, 0.3)
+	d[Move] = synth(0.05, func(t float64) float64 { return glide(t, 1100, 800, 60) * soft(t, 0.002, 70) * .18 })
+	d[Hammer] = hammerSound()
+	d[Break] = breakSound()
+	d[Pick] = arp([]int{72, 76, 79, 84}, 0.05, 0.3)
+	d[Streak] = arp([]int{72, 76, 79, 84, 88, 91, 96}, 0.045, 0.35)
+	d[Treat] = arp([]int{74, 81, 86, 93}, 0.05, 0.3)
+	d[LevelUp] = arp([]int{67, 72, 76, 79, 84}, 0.07, 0.3)
 	bell := []float64{noteFreq(84), noteFreq(88), noteFreq(91), noteFreq(96)}
-	d[seUnlock] = synth(1.2, func(t float64) float64 { // bell-like chord
+	d[Unlock] = synth(1.2, func(t float64) float64 { // bell-like chord
 		v := 0.0
 		for i, f := range bell {
 			st := float64(i) * 0.08
@@ -214,14 +233,14 @@ func synthEffects(d *[seCount][]byte) {
 		}
 		return v * .18
 	})
-	d[seGameOver] = arp([]int{72, 67, 64, 60, 55, 48}, 0.12, 0.3)
-	d[seConfirm] = arp([]int{79, 84}, 0.05, 0.3)
-	d[seCancel] = arp([]int{76, 69}, 0.05, 0.25)
-	d[seDenied] = synth(0.15, func(t float64) float64 { return sq(t, 140) * decay(t, 12) * .2 })
+	d[GameOver] = arp([]int{72, 67, 64, 60, 55, 48}, 0.12, 0.3)
+	d[Confirm] = arp([]int{79, 84}, 0.05, 0.3)
+	d[Cancel] = arp([]int{76, 69}, 0.05, 0.25)
+	d[Denied] = synth(0.15, func(t float64) float64 { return sq(t, 140) * decay(t, 12) * .2 })
 	ready, goF := noteFreq(69), noteFreq(81)
-	d[seReady] = synth(0.15, func(t float64) float64 { return sq(t, ready) * decay(t, 10) * .25 })
-	d[seGo] = synth(0.4, func(t float64) float64 { return sq(t, goF) * decay(t, 5) * .25 })
-	d[sePause] = arp([]int{84, 79, 84}, 0.06, 0.25)
+	d[Ready] = synth(0.15, func(t float64) float64 { return sq(t, ready) * decay(t, 10) * .25 })
+	d[Go] = synth(0.4, func(t float64) float64 { return sq(t, goF) * decay(t, 5) * .25 })
+	d[Pause] = arp([]int{84, 79, 84}, 0.06, 0.25)
 }
 
 // hammerSound is an explosion: a deep boom falling in pitch, a burst of noise that darkens
@@ -326,10 +345,16 @@ func synth(sec float64, f func(t float64) float64) []byte {
 	return b
 }
 
-var audioMuted bool
+// muted silences the game: a capture or a demo recording plays no sound, and the tests
+// play none either.
+var muted bool
 
-func playSE(id seID) {
-	if audioCtx == nil || audioMuted {
+// SetMuted silences the music and the sound effects from now on (or lets them play).
+func SetMuted(m bool) { muted = m }
+
+// Play plays the sound effect id.
+func Play(id Effect) {
+	if audioCtx == nil || muted {
 		return
 	}
 	<-seSynthed

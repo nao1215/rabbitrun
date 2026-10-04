@@ -7,6 +7,8 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+
+	"github.com/nao1215/rabbitrun/internal/sound"
 )
 
 // The screens over the road: the pause menu, the miss, the game over and the ending.
@@ -27,7 +29,7 @@ func (s *PlayScene) updateMiss(g *Game) {
 	if s.countdown > 0 {
 		s.countdown--
 		if s.countdown == countdownFrames/2 {
-			playSE(seCancel) // the life goes
+			sound.Play(sound.Cancel) // the life goes
 		}
 		if s.countdown == 0 && s.eng.Restart() {
 			s.missFrame = 0
@@ -47,10 +49,10 @@ func (s *PlayScene) updateMiss(g *Game) {
 	}
 	if g.in.Repeat(ActUp) || g.in.Repeat(ActDown) {
 		s.missSel = 1 - s.missSel
-		playSE(seMove)
+		sound.Play(sound.Move)
 	}
 	if g.in.Pressed(ActConfirm) {
-		playSE(seConfirm)
+		sound.Play(sound.Confirm)
 		if s.missSel == 0 {
 			s.countdown = countdownFrames
 			return
@@ -71,17 +73,17 @@ func (s *PlayScene) updatePause(g *Game) {
 	s.pauseSel = g.in.menuNav(s.pauseSel, len(pauseItems), ActUp, ActDown)
 	resume := g.in.Pressed(ActCancel) || g.in.Pressed(ActPause)
 	if g.in.Pressed(ActConfirm) {
-		playSE(seConfirm)
+		sound.Play(sound.Confirm)
 		switch s.pauseSel {
 		case 0:
 			resume = true
 		case 1:
-			stopBGM()
+			sound.StopBGM()
 			s.commitRun()
 			g.SetScene(newRunScene(s.char))
 			return
 		case 2:
-			stopBGM()
+			sound.StopBGM()
 			s.commitRun()
 			g.SetScene(newTitleScene())
 			return
@@ -89,7 +91,7 @@ func (s *PlayScene) updatePause(g *Game) {
 	}
 	if resume {
 		s.paused = false
-		pauseBGM(false)
+		sound.PauseBGM(false)
 	}
 }
 
@@ -105,14 +107,14 @@ func (s *PlayScene) updateGameOver(g *Game) {
 	if s.allClear {
 		// the ending has one way on: back to the title (where what the clear opened shows)
 		if g.in.Pressed(ActConfirm) {
-			playSE(seConfirm)
+			sound.Play(sound.Confirm)
 			g.SetScene(newTitleScene())
 		}
 		return
 	}
 	s.overSel = g.in.menuNav(s.overSel, len(overItems), ActUp, ActDown)
 	if g.in.Pressed(ActConfirm) {
-		playSE(seConfirm)
+		sound.Play(sound.Confirm)
 		switch s.overSel {
 		case 0:
 			g.SetScene(newRetryScene(s.char))

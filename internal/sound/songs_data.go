@@ -4,7 +4,7 @@
 // not needed to build or test the game, and hand edits here are lost when the author runs it
 // again. The changes it makes to the scores are listed in NOTICE.md.
 
-package main
+package sound
 
 // Vivaldi, L'Inverno (Winter) Op. 8 No. 4, 1st movement. Adapted from Mutopia Project piece 351
 // (https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=351, Mutopia-2010/02/08-351),

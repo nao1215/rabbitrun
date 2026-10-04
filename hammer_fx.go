@@ -7,6 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 
+	"github.com/nao1215/rabbitrun/internal/sound"
 	"github.com/nao1215/rabbitrun/road"
 )
 
@@ -19,7 +20,7 @@ const cutinFrames = 70
 func (s *PlayScene) useHammer() {
 	s.keepWalls()
 	if !s.eng.UseHammer() {
-		playSE(seDenied)
+		sound.Play(sound.Denied)
 		return
 	}
 	s.swingHammer()
@@ -35,7 +36,7 @@ func (s *PlayScene) keepWalls() {
 
 // swingHammer starts the cut-in of a hammer: the explosion, and her big reaction.
 func (s *PlayScene) swingHammer() {
-	playSE(seHammer)
+	sound.Play(sound.Hammer)
 	s.cutin = cutinFrames
 	s.react(ExprExcited, 120, rankBig)
 }
@@ -113,7 +114,7 @@ func (s *PlayScene) breaking() bool { return s.crumble > 0 }
 func (s *PlayScene) updateCrumble() {
 	if k := (s.crumble - 1) / crumbleStep; (s.crumble-1)%crumbleStep == 0 && k <= road.Rows {
 		if rowHasWall(s.hammerWalls[road.Rows-k]) { // the row breaking now (rowBroken)
-			playSE(seBreak)
+			sound.Play(sound.Break)
 		}
 	}
 	if s.crumble++; s.crumble > (road.Rows+1)*crumbleStep+crumbleFly {

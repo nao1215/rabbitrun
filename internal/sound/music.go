@@ -1,4 +1,4 @@
-package main
+package sound
 
 import (
 	"encoding/binary"
@@ -402,7 +402,7 @@ func (m *musicStream) beatPhase() (float64, bool) {
 		return 0, false
 	}
 	elapsed := float64(time.Now().UnixNano()-int64(at)) / 1e9 //nolint:gosec // G115: a clock reading fits int64
-	const latency = 0.08                                      // the player's buffer (startBGM)
+	const latency = 0.08                                      // the player's buffer (StartBGM)
 	b := math.Float64frombits(m.shared.Load()) + (elapsed-latency)*m.curBPMShared()/60
 	return b - math.Floor(b), true
 }

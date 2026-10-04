@@ -1,6 +1,10 @@
 package main
 
-import "github.com/hajimehoshi/ebiten/v2"
+import (
+	"github.com/hajimehoshi/ebiten/v2"
+
+	"github.com/nao1215/rabbitrun/internal/sound"
+)
 
 // The illustrations behind the road: earned course by course, decoded ahead of time, and
 // freed with the scene.
@@ -51,7 +55,7 @@ func (s *PlayScene) courseClear(n int) {
 			s.prog.UnlockedCG[cg.ID] = true
 			markSave()
 			if cg.HasImage() {
-				playSE(seUnlock)
+				sound.Play(sound.Unlock)
 			}
 		}
 	}
@@ -70,8 +74,8 @@ func (s *PlayScene) allClearNow() {
 	s.allClear = true
 	s.overFrame = 0
 	s.commitRun()
-	stopBGM()
-	playSE(seUnlock)
+	sound.StopBGM()
+	sound.Play(sound.Unlock)
 	// the rewards (see secret.go) show on the title screen: a new character comes in, the
 	// secret word is told, or the title gets its own picture
 	if extraMode() {

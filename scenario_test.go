@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/nao1215/rabbitrun/internal/sound"
 	"github.com/nao1215/rabbitrun/road"
 )
 
@@ -85,7 +86,7 @@ func newScenario(t *testing.T, prepare func()) *Game {
 func newScenarioWith(t *testing.T, chars []*Character, prepare func()) *Game {
 	t.Helper()
 	useTempConfig(t)
-	audioMuted = true
+	sound.SetMuted(true)
 	old := characters
 	characters = chars
 	t.Cleanup(func() { characters = old })

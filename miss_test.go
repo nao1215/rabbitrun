@@ -3,12 +3,13 @@ package main
 import (
 	"testing"
 
+	"github.com/nao1215/rabbitrun/internal/sound"
 	"github.com/nao1215/rabbitrun/road"
 )
 
 func TestMissHoldsOnePose(t *testing.T) { //nolint:paralleltest // shares the save data
 	useTempConfig(t)
-	audioMuted = true
+	sound.SetMuted(true)
 	chars, err := readCharacters(assetFS)
 	if err != nil {
 		t.Fatal(err)
@@ -37,7 +38,7 @@ func TestMissHoldsOnePose(t *testing.T) { //nolint:paralleltest // shares the sa
 
 func TestPauseKeyDoesNothingOnTheMissScreen(t *testing.T) { //nolint:paralleltest // shares the save data
 	useTempConfig(t)
-	audioMuted = true
+	sound.SetMuted(true)
 	chars, err := readCharacters(assetFS)
 	if err != nil {
 		t.Fatal(err)

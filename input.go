@@ -2,6 +2,8 @@ package main
 
 import (
 	"github.com/hajimehoshi/ebiten/v2"
+
+	"github.com/nao1215/rabbitrun/internal/sound"
 )
 
 type Action int
@@ -195,11 +197,11 @@ func (in *Input) Repeat(a Action) bool {
 func (in *Input) menuNav(sel, n int, prev, next Action) int {
 	if in.Repeat(prev) {
 		sel = (sel + n - 1) % n
-		playSE(seMove)
+		sound.Play(sound.Move)
 	}
 	if in.Repeat(next) {
 		sel = (sel + 1) % n
-		playSE(seMove)
+		sound.Play(sound.Move)
 	}
 	return sel
 }

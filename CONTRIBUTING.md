@@ -54,7 +54,7 @@ make licenses
 
 ### 5. Artwork and music
 
-The images under `assets/` and the music data in `songs_data.go` are maintained by the author. If you would like a change to the artwork, please open an issue rather than sending replacement images.
+The images under `assets/` and the music data in `internal/sound/songs_data.go` are maintained by the author. If you would like a change to the artwork, please open an issue rather than sending replacement images.
 
 ### 6. Commit messages
 

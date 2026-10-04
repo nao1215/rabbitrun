@@ -8,6 +8,8 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/colorm"
+
+	"github.com/nao1215/rabbitrun/internal/sound"
 )
 
 // The character in the frame moves like a little animation instead of only swapping pictures:
@@ -137,7 +139,7 @@ func (s *PlayScene) comboPose(n int) string {
 // bounce returns the soft squash of the beat bounce (0 none, up to about 0.015), only in
 // the cheerful moods while the music is lively.
 func (s *PlayScene) bounce() float64 {
-	if bgm == nil || s.intensity == 0 {
+	if s.intensity == 0 {
 		return 0
 	}
 	switch family(s.expr) {
@@ -145,12 +147,16 @@ func (s *PlayScene) bounce() float64 {
 	default:
 		return 0
 	}
-	ph, ok := bgm.beatPhase()
+	ph, ok := beatPhase()
 	if !ok {
 		return 0
 	}
 	return 0.008 * float64(s.intensity) * math.Exp(-ph*7)
 }
+
+// beatPhase is where the music is within its beat (sound.BeatPhase); the tests stand in
+// for the music with it.
+var beatPhase = sound.BeatPhase
 
 // drawPortrait draws img fitted into the w x h box of dst, scaled by sx and sy around the
 // middle of its feet (so she squashes and springs from the floor), moved by dx and lifted

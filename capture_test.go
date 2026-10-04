@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/nao1215/rabbitrun/internal/sound"
 	"github.com/nao1215/rabbitrun/road"
 )
 
@@ -12,7 +13,7 @@ import (
 // and the feast must be in view.
 func TestCaptureScenesAreOnRealCourses(t *testing.T) { //nolint:paralleltest // shares the save data
 	useTempConfig(t)
-	audioMuted = true
+	sound.SetMuted(true)
 	chars, err := readCharacters(assetFS)
 	if err != nil {
 		t.Fatal(err)
