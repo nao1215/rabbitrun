@@ -147,6 +147,9 @@ type Game struct {
 	section     int
 	sectionLeft int
 	sectionRow  int
+	// helpLaid has a bit (1 << the sweet) for each help of checkerHelp laid on the course
+	// being built
+	helpLaid int
 }
 
 // Tuning.
@@ -746,6 +749,9 @@ func (g *Game) addThings(row Row, left, right int) Row {
 		return row
 	}
 	switch {
+	case g.checkerHelp() != SweetNone:
+		thing = g.checkerHelp()
+		g.helpLaid |= 1 << thing
 	case g.stageRow == g.hammerRowOf(g.Stage):
 		thing = SweetBomb
 	case g.rng.Float64() < p.SweetsRate*bonusSweets(g.Bonus()):
@@ -764,6 +770,28 @@ func (g *Game) addThings(row Row, left, right int) Row {
 	g.pathLine(&row, left, right)
 	return row
 }
+
+// checkerHelp is the help due on the row being built of a checkerboard course (or
+// SweetNone): a hammer as its checker rows begin, from row checkerHammerRow, and an extra
+// life halfway through, each on the first row of sweets from there (not in a feast). The
+// checkerboard asks for a step aside on most of its rows, and a dense stretch of it was
+// hard to get through without one of them.
+func (g *Game) checkerHelp() int8 {
+	if g.TotalCourses == 0 || g.theme() != ThemeCheckers {
+		return SweetNone
+	}
+	switch {
+	case g.helpLaid&(1<<SweetBomb) == 0 && g.courseRow >= checkerHammerRow:
+		return SweetBomb
+	case g.helpLaid&(1<<SweetOneUp) == 0 && g.courseRow >= g.lenOf(g.Level)/2:
+		return SweetOneUp
+	}
+	return SweetNone
+}
+
+// checkerHammerRow is the row of a checkerboard course from which its hammer is laid: just
+// past the rows that turn the road to the theme (settleRows), as the first checker rows come.
+const checkerHammerRow = settleRows + 2
 
 // pathLine lays lines of sweets that trace the way along the road, like the coins of the
 // old platform games: a line starts now and then and puts a sweet a row in the middle of
@@ -896,6 +924,7 @@ func (g *Game) startCourse() {
 	g.settle = settleRows // the road turns to the new course's theme before its blocks come
 	g.section, g.sinceObs, g.alcove, g.alcoveFor, g.dir = sectionNone, 0, -1, 0, 1
 	g.vaultAt, g.feastAt = -1, -1
+	g.helpLaid = 0
 	if _, ok := Vaults[g.Level]; ok && g.TotalCourses > 0 {
 		g.vaultAt = specialAt
 	}

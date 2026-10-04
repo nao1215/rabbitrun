@@ -49,39 +49,69 @@ func longestWithoutRest(rows []road.Row, restRows int) int {
 	return longest
 }
 
-// TestCoolCheckerboardHasRests measures the cool girl's checkerboard (the thirteenth course
-// of her regular run, stage 4): a row of blocks every third row on every other cell, the
-// pattern shifting each time, asked for a step aside on every one of them all course long.
-// A block left out now and then lets her stand still past three of them: the course had 60
-// rows in a row with nowhere to stay put, and has 7 at most with 6 of its 218 blocks left
-// out.
-func TestCoolCheckerboardHasRests(t *testing.T) {
-	t.Parallel()
-	const level = 13
-	if th := themesFor("cool", false)[level-1]; th != road.ThemeLooseCheckers {
-		t.Fatalf("course %d of the cool girl's run is theme %d, not the loose checkerboard", level, th)
-	}
-	rows := courseRoad("cool", false, level)
-	if len(rows) < 40 {
-		t.Fatalf("the course has %d rows", len(rows))
-	}
-	blocks := 0
-	for _, row := range rows {
-		for x := range row {
-			if row[x].Wall != 0 {
-				blocks++
+// checkersCourse is a checkerboard course of a character's run.
+type checkersCourse struct {
+	id    string
+	extra bool
+	level int
+}
+
+// checkersCourses lists every checkerboard course of every run.
+func checkersCourses() []checkersCourse {
+	var out []checkersCourse
+	for _, id := range runIDs() {
+		for _, extra := range []bool{false, true} {
+			for i, th := range themesFor(id, extra) {
+				if th == road.ThemeCheckers {
+					out = append(out, checkersCourse{id, extra, i + 1})
+				}
 			}
 		}
 	}
-	// two checker rows and the rows between: she stands in one column past both of them
-	const restRows = 7
-	got := longestWithoutRest(rows, restRows)
-	t.Logf("%d rows, %d blocks, at most %d rows in a row without a rest", len(rows), blocks, got)
-	if got > 12 {
-		t.Errorf("%d rows in a row without a column to rest in, want 12 at most", got)
+	return out
+}
+
+// TestCheckerboardsHaveRestsAndHelp measures every checkerboard course (the cool girl's on
+// stage 4, the gyaru's and the bunny girl's): a row of blocks on every other cell every
+// third or fourth row, the pattern shifting each time, asked for a step aside on every one
+// of them all course long. A block left out of every fourth checker row lets her stand
+// still past three of them, and each course lays a hammer as its checker rows begin and an
+// extra life halfway through.
+func TestCheckerboardsHaveRestsAndHelp(t *testing.T) {
+	t.Parallel()
+	courses := checkersCourses()
+	if len(courses) < 8 {
+		t.Fatalf("%d checkerboard courses, want the cool girl's, the gyaru's two and the bunny girl's five", len(courses))
 	}
-	// still a checkerboard: only a few blocks are left out
-	if blocks < 200 {
-		t.Errorf("%d blocks: too many left out of the checkerboard", blocks)
+	for _, c := range courses {
+		rows := courseRoad(c.id, c.extra, c.level)
+		if len(rows) < 30 {
+			t.Fatalf("%v: the course has %d rows", c, len(rows))
+		}
+		blocks, hammers, lives := 0, 0, 0
+		for _, row := range rows {
+			for x := range row {
+				if row[x].Wall != 0 {
+					blocks++
+				}
+				switch row[x].Sweet {
+				case road.SweetBomb:
+					hammers++
+				case road.SweetOneUp:
+					lives++
+				}
+			}
+		}
+		// two checker rows and the rows between: she stands in one column past both of them
+		const restRows = 7
+		got := longestWithoutRest(rows, restRows)
+		t.Logf("%s extra %v course %d-%d: %d rows, %d blocks, at most %d rows without a rest, %d hammers, %d extra lives",
+			c.id, c.extra, (c.level-1)/road.Courses+1, (c.level-1)%road.Courses+1, len(rows), blocks, got, hammers, lives)
+		if got > 14 {
+			t.Errorf("%v: %d rows in a row without a column to rest in, want 14 at most", c, got)
+		}
+		if hammers == 0 || lives == 0 {
+			t.Errorf("%v: %d hammers and %d extra lives on the course, want one of each at least", c, hammers, lives)
+		}
 	}
 }

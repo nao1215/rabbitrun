@@ -34,7 +34,7 @@ func TestPatternedRoadsLeaveNoSafeLane(t *testing.T) {
 	t.Parallel()
 	// a pattern that never blocks a column (the sides of the checkers, the middle of a
 	// slalom, the sides beside a diamond) is a lane to run down without moving
-	for _, th := range []Theme{ThemeCheckers, ThemeLooseCheckers, ThemeSlalom, ThemeDiamonds} {
+	for _, th := range []Theme{ThemeCheckers, ThemeSlalom, ThemeDiamonds} {
 		for _, hard := range []bool{false, true} {
 			for seed := uint64(1); seed <= 6; seed++ {
 				if n := longestOpenColumn(th, hard, seed); n > 32 {
