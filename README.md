@@ -61,6 +61,14 @@ Your character stands beside the road and reacts to the run: she relaxes on a wi
 
 ## How to play
 
+Install Rabbit Run (see [How to install](#how-to-install)) and start it from a terminal:
+
+```shell
+rabbitrun
+```
+
+On Windows, you can also double-click `rabbitrun.exe`. The game opens in a window; press F11 or Alt+Enter to switch to full screen.
+
 | Action | Keyboard | Gamepad |
 | --- | --- | --- |
 | Move | ← → / A D / H L | D-pad left / right |
@@ -72,21 +80,6 @@ Your character stands beside the road and reacts to the run: she relaxes on a wi
 | Switch character in the gallery | Q / E | LB / RB |
 
 Choose PLAY on the title screen, pick a character, and the run starts. GALLERY shows the character portraits you have seen and the illustrations you have unlocked. Your progress is saved to `rabbitrun/save.json` in the user config directory (`~/.config` on Linux, `~/Library/Application Support` on macOS, `%AppData%` on Windows).
-
-| Option | Description |
-| --- | --- |
-| `-h`, `--help` | Show the help and exit. |
-| `-V`, `--version` | Print the version and exit. |
-| `--debug` | Unlock every character, portrait and illustration for this run. The save data is not changed. |
-| `--reset-save` | Delete the save data and exit without starting the game. The old save is kept next to it as `save.json.bak`. |
-| `--capture DIR` | Save a screenshot of every screen to `DIR` and exit. The save data is not changed. |
-| `--bgm-wav DIR` | Write each background music arrangement to `DIR` as WAV and exit. |
-| `--record-demo FILE` | Let the game play by itself and save it as a video to `FILE` (needs ffmpeg). The save data is not changed. |
-| `--record-char ID` | The character of the demo recording (`gyal` by default). |
-| `--record-stage N` | The stage the demo recording starts at, from 1 to 4. |
-| `--record-seconds N` | The length of the demo recording in seconds (60 by default). |
-
-A mistake in the options, such as an unknown option, a stray argument or two of `--capture`, `--bgm-wav`, `--reset-save` and `--record-demo` at once, exits with status 2 before the game opens. A failure while doing the job, such as a directory that cannot be written, exits with status 1.
 
 ## How to install
 
@@ -152,6 +145,23 @@ slsa-verifier verify-artifact \
 # Verify the GitHub build provenance of an archive
 gh attestation verify rabbitrun_0.1.0_linux_amd64.tar.gz --repo nao1215/rabbitrun
 ```
+
+## Command-line options
+
+| Option | Description |
+| --- | --- |
+| `-h`, `--help` | Show the help and exit. |
+| `-V`, `--version` | Print the version and exit. |
+| `--debug` | Unlock every character, portrait and illustration for this run. The save data is not changed. |
+| `--reset-save` | Delete the save data and exit without starting the game. The old save is kept next to it as `save.json.bak`. |
+| `--capture DIR` | Save a screenshot of every screen to `DIR` and exit. The save data is not changed. |
+| `--bgm-wav DIR` | Write each background music arrangement to `DIR` as WAV and exit. |
+| `--record-demo FILE` | Let the game play by itself and save it as a video to `FILE` (needs ffmpeg). The save data is not changed. |
+| `--record-char ID` | The character of the demo recording (`gyal` by default). |
+| `--record-stage N` | The stage the demo recording starts at, from 1 to 4. |
+| `--record-seconds N` | The length of the demo recording in seconds (60 by default). |
+
+A mistake in the options, such as an unknown option, a stray argument or two of `--capture`, `--bgm-wav`, `--reset-save` and `--record-demo` at once, exits with status 2 before the game opens. A failure while doing the job, such as a directory that cannot be written, exits with status 1.
 
 ## Contributing
 
