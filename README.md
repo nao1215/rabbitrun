@@ -1,4 +1,14 @@
-[![MultiPlatformUnitTest](https://github.com/nao1215/rabbitrun/actions/workflows/unit_test.yml/badge.svg)](https://github.com/nao1215/rabbitrun/actions/workflows/unit_test.yml) [![golangci-lint](https://github.com/nao1215/rabbitrun/actions/workflows/golangci-lint.yml/badge.svg)](https://github.com/nao1215/rabbitrun/actions/workflows/golangci-lint.yml) [![Release Smoke](https://github.com/nao1215/rabbitrun/actions/workflows/release-smoke.yml/badge.svg)](https://github.com/nao1215/rabbitrun/actions/workflows/release-smoke.yml) ![Coverage](https://raw.githubusercontent.com/nao1215/octocovs-central-repo/main/badges/nao1215/rabbitrun/coverage.svg) ![GitHub](https://img.shields.io/github/license/nao1215/rabbitrun) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/nao1215/rabbitrun/badge)](https://scorecard.dev/viewer/?uri=github.com/nao1215/rabbitrun)
+[![Build](https://github.com/nao1215/rabbitrun/actions/workflows/build.yml/badge.svg)](https://github.com/nao1215/rabbitrun/actions/workflows/build.yml)
+[![MultiPlatformUnitTest](https://github.com/nao1215/rabbitrun/actions/workflows/unit_test.yml/badge.svg)](https://github.com/nao1215/rabbitrun/actions/workflows/unit_test.yml)
+[![golangci-lint](https://github.com/nao1215/rabbitrun/actions/workflows/golangci-lint.yml/badge.svg)](https://github.com/nao1215/rabbitrun/actions/workflows/golangci-lint.yml)
+[![reviewdog](https://github.com/nao1215/rabbitrun/actions/workflows/reviewdog.yml/badge.svg)](https://github.com/nao1215/rabbitrun/actions/workflows/reviewdog.yml)
+[![Release Smoke](https://github.com/nao1215/rabbitrun/actions/workflows/release-smoke.yml/badge.svg)](https://github.com/nao1215/rabbitrun/actions/workflows/release-smoke.yml)
+![Coverage](https://raw.githubusercontent.com/nao1215/octocovs-central-repo/main/badges/nao1215/rabbitrun/coverage.svg)
+[![Go Reference](https://pkg.go.dev/badge/github.com/nao1215/rabbitrun.svg)](https://pkg.go.dev/github.com/nao1215/rabbitrun)
+![GitHub](https://img.shields.io/github/license/nao1215/rabbitrun)
+[![GitHub Release](https://img.shields.io/github/v/release/nao1215/rabbitrun)](https://github.com/nao1215/rabbitrun/releases)
+[![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/nao1215/rabbitrun/total)](https://github.com/nao1215/rabbitrun/releases)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/nao1215/rabbitrun/badge)](https://scorecard.dev/viewer/?uri=github.com/nao1215/rabbitrun)
 
 ![RABBIT RUN](./doc/img/banner.png)
 
