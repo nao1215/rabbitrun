@@ -1,0 +1,130 @@
+# --bgm-wav DIR renders 30 seconds of each of the four songs at each of its three
+# intensities as 16-bit stereo WAV, prints each path, and exits without a window.
+# Rendering takes about three seconds a file, so the happy path has a long timeout.
+# Run with:
+#   make e2e   (or go run ./e2e/runner)
+version: "1"
+
+suite:
+  name: rabbitrun --bgm-wav
+
+scenarios:
+  # The directory does not exist yet, two levels deep: it is created.
+  - name: twelve WAV files of 30 seconds each are written, and nothing else
+    steps:
+      - run:
+          command: rabbitrun --bgm-wav out/wav
+          sandbox_home: true
+          timeout: 600s
+      - assert:
+          exit_code: 0
+          stderr:
+            empty: true
+          # one line a file, in render order
+          stdout:
+            matches: '(?s)^out[/\\]wav[/\\]spring_0calm\.wav\n.*out[/\\]wav[/\\]winter_2full\.wav\n$'
+          # The created set is exhaustive: twelve WAVs under out/wav/ and nothing in the
+          # home (the save is not touched).
+          changes:
+            created:
+              - out/wav/spring_0calm.wav
+              - out/wav/spring_1groove.wav
+              - out/wav/spring_2full.wav
+              - out/wav/summer_0calm.wav
+              - out/wav/summer_1groove.wav
+              - out/wav/summer_2full.wav
+              - out/wav/autumn_0calm.wav
+              - out/wav/autumn_1groove.wav
+              - out/wav/autumn_2full.wav
+              - out/wav/winter_0calm.wav
+              - out/wav/winter_1groove.wav
+              - out/wav/winter_2full.wav
+            modified: []
+            deleted: []
+      - assert:
+          stdout:
+            contains: ".wav\n"
+            count: 12
+      - assert:
+          dir:
+            path: out/wav
+            count: 12
+      # A RIFF/WAVE file with a PCM format chunk and a data chunk. 44-byte header plus
+      # 30 s x 44100 Hz x 2 channels x 2 bytes = 5292044 bytes exactly.
+      - assert:
+          file:
+            path: out/wav/spring_0calm.wav
+            contains: ["RIFF", "WAVEfmt ", "data"]
+            size: 5292044
+      - assert:
+          file:
+            path: out/wav/winter_2full.wav
+            contains: ["RIFF", "WAVEfmt ", "data"]
+            size: 5292044
+
+  # Metamorphic: the arrangements are synthesized, not random, so a second run into a
+  # fresh directory writes the same bytes.
+  - name: the music is rendered deterministically
+    steps:
+      - run:
+          command: rabbitrun --bgm-wav a
+          sandbox_home: true
+          timeout: 600s
+      - run:
+          command: rabbitrun --bgm-wav b
+          sandbox_home: true
+          timeout: 600s
+      - assert:
+          exit_code: 0
+      - assert:
+          file:
+            path: a/summer_1groove.wav
+            equals_file: b/summer_1groove.wav
+      - assert:
+          file:
+            path: a/winter_2full.wav
+            equals_file: b/winter_2full.wav
+
+  - name: a file where the directory should be exits 1 and writes nothing
+    steps:
+      - fixture:
+          file: taken
+          content: "not a directory\n"
+      - run:
+          command: rabbitrun --bgm-wav taken
+          sandbox_home: true
+      - assert:
+          exit_code: 1
+          stdout:
+            empty: true
+          stderr:
+            contains: "taken"
+          changes:
+            created: []
+            modified: []
+            deleted: []
+
+  # A file that cannot be written used to be logged and skipped: twelve failures in
+  # 36 seconds, then exit 0. Now the first one stops the run at once with exit 1.
+  # A directory in the way of the first WAV makes the write fail on every OS.
+  - name: a WAV that cannot be written exits 1 at once and writes nothing
+    steps:
+      - fixture:
+          file: wav/spring_0calm.wav/keep
+          content: ""
+      - run:
+          command: rabbitrun --bgm-wav wav
+          sandbox_home: true
+          timeout: 30s
+      - assert:
+          exit_code: 1
+          stdout:
+            empty: true
+          stderr:
+            contains: "cannot write"
+          changes:
+            created: []
+            modified: []
+            deleted: []
+          duration:
+            lt: 20s

@@ -1,0 +1,93 @@
+# --capture DIR opens the game, walks through every screen, saves each as a 720x900
+# PNG, prints its path and exits by itself. It needs a display, so it runs only where
+# the runner says there is one (RABBITRUN_E2E_DISPLAY, set by CI under xvfb on Linux).
+# Run with:
+#   make e2e   (or go run ./e2e/runner)
+version: "1"
+
+suite:
+  name: rabbitrun --capture
+
+scenarios:
+  # The capture plays scripted runs through to the ending. A player's save is seeded
+  # where each OS keeps it (see reset_save.atago.yaml), and the exhaustive `changes`
+  # proves the run wrote only the PNGs: it used to unlock every illustration and the
+  # secret character in the player's save. The Mesa shader cache is turned off so the
+  # GL driver's own files do not show up as changes.
+  - name: every screen is saved as a 720x900 PNG, the save is untouched, and it exits
+    only:
+      env: RABBITRUN_E2E_DISPLAY
+    env:
+      XDG_CONFIG_HOME: "${workdir}/config"
+      APPDATA: "${workdir}/config"
+      HOME: "${workdir}/home"
+      MESA_SHADER_CACHE_DISABLE: "true"
+    steps:
+      - fixture:
+          file: config/rabbitrun/save.json
+          content: '{"characters": {}}'
+      - fixture:
+          file: home/Library/Application Support/rabbitrun/save.json
+          content: '{"characters": {}}'
+      - run:
+          command: rabbitrun --capture shots/new
+          timeout: 600s
+      - assert:
+          exit_code: 0
+          stdout:
+            matches: '(?s)^shots[/\\]new[/\\]title\.png\n.*shots[/\\]new[/\\]gallery_cg\.png\n$'
+          changes:
+            created: ["shots/new/*.png"]
+            modified: []
+            deleted: []
+      # One line a screenshot, and one file a line.
+      - assert:
+          stdout:
+            contains: ".png\n"
+            min_count: 20
+      - assert:
+          dir:
+            path: shots/new
+            min_count: 20
+            contains:
+              - title.png
+              - select.png
+              - play.png
+              - play_miss.png
+              - play_cutin.png
+              - allclear.png
+              - gameover.png
+              - gallery.png
+              - gallery_cg.png
+      - assert:
+          image:
+            path: shots/new/title.png
+            format: png
+            width: 720
+            height: 900
+      - assert:
+          image:
+            path: shots/new/gallery_cg.png
+            format: png
+            width: 720
+            height: 900
+
+  - name: a file where the directory should be exits 1 before a window opens
+    steps:
+      - fixture:
+          file: shots
+          content: "not a directory\n"
+      - run:
+          command: rabbitrun --capture shots
+          sandbox_home: true
+          timeout: 20s
+      - assert:
+          exit_code: 1
+          stdout:
+            empty: true
+          stderr:
+            contains: "shots"
+          changes:
+            created: []
+            modified: []
+            deleted: []

@@ -1,0 +1,78 @@
+name: E2E
+
+# rabbitrun's end-to-end suite drives the real binary through atago: the help and
+# the version, every command-line mistake and its exit status, --reset-save on a
+# seeded save, --bgm-wav and the WAV files it writes, and the checks --record-demo
+# makes before it opens a window. Those need no display and run on all three
+# operating systems, where the save path, the .exe suffix and the path separator
+# differ.
+#
+# The specs that open a window (--capture and a short --record-demo) run on Linux
+# only, under Xvfb, where RABBITRUN_E2E_DISPLAY tells the specs a display is there
+# and ffmpeg is installed for the recording. Elsewhere they are skipped.
+#
+# The bootstrap is `go run ./e2e/runner`, not a shell script: the Windows leg must
+# not depend on Git for Windows being installed, or it would be testing the runner
+# image rather than rabbitrun.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: E2E (atago, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    # Rendering the music takes the longest (about a minute); the cap is there so a
+    # hung scenario fails instead of burning a job's full six hours.
+    timeout-minutes: 20
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - "ubuntu-latest"
+          - "windows-latest"
+          - "macos-latest"
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Installs the OpenGL/X11/ALSA headers and Xvfb on Linux; a no-op on macOS and
+      # Windows.
+      - uses: nao1215/setup-ebitengine@cfefbee9dc7af161aebb2c8d36c07a0e1727271a # v1.0.0
+        with:
+          xvfb: true
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Install atago
+        uses: nao1215/setup-atago@5c563dcd9d85e114f8abe8bbdcd058e51de09efb # v0.1.3
+        with:
+          version: v0.25.2
+
+      - name: Install ffmpeg (Linux, for the --record-demo spec)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg
+
+      - name: Run end-to-end tests (Linux, headless X server)
+        if: runner.os == 'Linux'
+        env:
+          RABBITRUN_E2E_DISPLAY: "1"
+        run: xvfb-run --auto-servernum go run ./e2e/runner --ci
+
+      - name: Run end-to-end tests
+        if: runner.os != 'Linux'
+        run: go run ./e2e/runner --ci

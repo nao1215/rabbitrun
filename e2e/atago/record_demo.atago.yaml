@@ -1,0 +1,140 @@
+# --record-demo FILE lets the game play itself and pipes the frames to ffmpeg. Its
+# options are checked before a window opens: a stage or length out of range, an
+# unknown character or a missing ffmpeg exit at once instead of recording the wrong
+# thing (the stage used to be clamped and the character silently replaced by the
+# main one). Those checks run on every OS. The recording itself needs a display and
+# ffmpeg, so it runs only where the runner says there is a display
+# (RABBITRUN_E2E_DISPLAY, set by CI under xvfb).
+# Run with:
+#   make e2e   (or go run ./e2e/runner)
+version: "1"
+
+suite:
+  name: rabbitrun --record-demo
+
+scenarios:
+  - name: stage 0 exits 2 and names the range
+    steps:
+      - run:
+          command: rabbitrun --record-demo demo.mp4 --record-stage 0
+          sandbox_home: true
+          timeout: 20s
+      - assert:
+          exit_code: 2
+          stdout:
+            empty: true
+          stderr:
+            contains: "rabbitrun: --record-stage must be from 1 to 4, got 0"
+          changes:
+            created: []
+            modified: []
+            deleted: []
+
+  - name: a stage past the last exits 2
+    steps:
+      - run:
+          command: rabbitrun --record-demo demo.mp4 --record-stage 99
+          sandbox_home: true
+          timeout: 20s
+      - assert:
+          exit_code: 2
+          stderr:
+            contains: "--record-stage must be from 1 to 4, got 99"
+
+  - name: a negative stage exits 2
+    steps:
+      - run:
+          command: rabbitrun --record-demo demo.mp4 --record-stage=-1
+          sandbox_home: true
+          timeout: 20s
+      - assert:
+          exit_code: 2
+          stderr:
+            contains: "--record-stage must be from 1 to 4, got -1"
+
+  - name: a recording of no seconds exits 2
+    steps:
+      - run:
+          command: rabbitrun --record-demo demo.mp4 --record-seconds 0
+          sandbox_home: true
+          timeout: 20s
+      - assert:
+          exit_code: 2
+          stderr:
+            contains: "rabbitrun: --record-seconds must be 1 or more, got 0"
+
+  - name: an unknown character exits 2 and lists the ones there are
+    steps:
+      - run:
+          command: rabbitrun --record-demo demo.mp4 --record-char nobody
+          sandbox_home: true
+          timeout: 20s
+      - assert:
+          exit_code: 2
+          stdout:
+            empty: true
+          stderr:
+            contains:
+              - "rabbitrun: unknown character \"nobody\" for --record-char (choose from "
+              - "gyal"
+              - "Run 'rabbitrun --help' to see the options."
+          changes:
+            created: []
+            modified: []
+            deleted: []
+
+  # PATH holds only the directory of the rabbitrun under test, so ffmpeg cannot be
+  # found on any OS. The error names what is missing and which option needs it, and
+  # comes before a window would open.
+  - name: without ffmpeg on PATH it exits 1 and says --record-demo needs it
+    env:
+      PATH: "${env:RABBITRUN_E2E_BIN_DIR}"
+    steps:
+      - run:
+          command: rabbitrun --record-demo demo.mp4 --record-char cute --record-stage 2
+          sandbox_home: true
+          timeout: 20s
+      - assert:
+          exit_code: 1
+          stdout:
+            empty: true
+          stderr:
+            contains: "--record-demo needs ffmpeg on PATH to encode the video"
+          changes:
+            created: []
+            modified: []
+            deleted: []
+
+  # As with --capture, the demo's self-played run must not reach the player's save.
+  - name: a short recording makes an H.264 video of the right size and leaves the save
+    only:
+      env: RABBITRUN_E2E_DISPLAY
+      command: ffprobe -version
+    env:
+      XDG_CONFIG_HOME: "${workdir}/config"
+      APPDATA: "${workdir}/config"
+      HOME: "${workdir}/home"
+      MESA_SHADER_CACHE_DISABLE: "true"
+    steps:
+      - fixture:
+          file: config/rabbitrun/save.json
+          content: '{"characters": {}}'
+      - fixture:
+          file: home/Library/Application Support/rabbitrun/save.json
+          content: '{"characters": {}}'
+      - run:
+          command: rabbitrun --record-demo demo.mp4 --record-seconds 2 --record-char cute --record-stage 2
+          timeout: 300s
+      - assert:
+          exit_code: 0
+          changes:
+            created: [demo.mp4]
+            modified: []
+            deleted: []
+      - run:
+          command: ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,width,height,nb_frames -of default=noprint_wrappers=1 demo.mp4
+      # Every other frame of 2 seconds at 60 frames a second: 60 frames, 30 a second.
+      - assert:
+          exit_code: 0
+          stdout:
+            contains: ["codec_name=h264", "width=720", "height=900", "nb_frames=60"]

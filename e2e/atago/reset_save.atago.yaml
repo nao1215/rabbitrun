@@ -1,0 +1,180 @@
+# --reset-save moves the save data aside to save.json.bak and exits without opening a
+# window. The save lives in the user's config directory (os.UserConfigDir), which
+# each scenario points into its workdir:
+#   Linux    $XDG_CONFIG_HOME/rabbitrun/save.json  -> config/rabbitrun/save.json
+#   Windows  %APPDATA%\rabbitrun\save.json          -> config/rabbitrun/save.json
+#   macOS    $HOME/Library/Application Support/rabbitrun/save.json
+#                                                   -> home/Library/Application Support/rabbitrun/save.json
+# The save is seeded at both places, so one spec runs on every OS: only the one the
+# OS reads is touched, and the `changes` globs match it wherever it is.
+# Run with:
+#   make e2e   (or go run ./e2e/runner)
+version: "1"
+
+suite:
+  name: rabbitrun --reset-save
+
+scenarios:
+  - name: the save is moved to save.json.bak and nothing else changes
+    env:
+      XDG_CONFIG_HOME: "${workdir}/config"
+      APPDATA: "${workdir}/config"
+      HOME: "${workdir}/home"
+    steps:
+      - fixture:
+          file: config/rabbitrun/save.json
+          content: '{"extra_found": true, "word_told": true}'
+      - fixture:
+          file: home/Library/Application Support/rabbitrun/save.json
+          content: '{"extra_found": true, "word_told": true}'
+      - run:
+          command: rabbitrun --reset-save
+      - assert:
+          exit_code: 0
+          stderr:
+            empty: true
+          stdout:
+            matches: '^the save data was reset \(the old one is kept as .*rabbitrun[/\\]save\.json\.bak\)\n$'
+          # A rename, not a rewrite: exactly one save.json gone, one .bak in its place.
+          changes:
+            created: ["**/rabbitrun/save.json.bak"]
+            modified: []
+            deleted: ["**/rabbitrun/save.json"]
+
+  # A second reset finds nothing to move and must say so, not claim a backup it did
+  # not make, and must leave the first backup as it is.
+  - name: a second reset says there is no save and keeps the first backup
+    env:
+      XDG_CONFIG_HOME: "${workdir}/config"
+      APPDATA: "${workdir}/config"
+      HOME: "${workdir}/home"
+    steps:
+      - fixture:
+          file: config/rabbitrun/save.json
+          content: '{"extra_found": true}'
+      - fixture:
+          file: home/Library/Application Support/rabbitrun/save.json
+          content: '{"extra_found": true}'
+      - run:
+          command: rabbitrun --reset-save
+      - assert:
+          exit_code: 0
+      - run:
+          command: rabbitrun --reset-save
+      - assert:
+          exit_code: 0
+          stdout:
+            matches: '^there is no save data to reset \(looked for .*rabbitrun[/\\]save\.json\)\n$'
+          changes:
+            created: []
+            modified: []
+            deleted: []
+
+  - name: with no save at all it exits 0, says so, and creates nothing
+    env:
+      XDG_CONFIG_HOME: "${workdir}/config"
+      APPDATA: "${workdir}/config"
+      HOME: "${workdir}/home"
+    steps:
+      - run:
+          command: rabbitrun --reset-save
+      - assert:
+          exit_code: 0
+          stderr:
+            empty: true
+          stdout:
+            contains: "there is no save data to reset"
+          changes:
+            created: []
+            modified: []
+            deleted: []
+      - assert:
+          dir:
+            path: .
+            recursive: true
+            not_contains: [config/rabbitrun/save.json.bak]
+
+  # An older backup is replaced by the save being reset: the .bak always holds the
+  # save from just before the last reset.
+  - name: an older backup is replaced by the save being reset
+    skip:
+      os: darwin # the content checks name the Linux/Windows path; the scenarios above cover macOS
+    env:
+      XDG_CONFIG_HOME: "${workdir}/config"
+      APPDATA: "${workdir}/config"
+      HOME: "${workdir}/home"
+    steps:
+      - fixture:
+          file: config/rabbitrun/save.json
+          content: '{"word_told": true}'
+      - fixture:
+          file: config/rabbitrun/save.json.bak
+          content: '{"older": true}'
+      - run:
+          command: rabbitrun --reset-save
+      - assert:
+          exit_code: 0
+          changes:
+            created: []
+            modified: [config/rabbitrun/save.json.bak]
+            deleted: [config/rabbitrun/save.json]
+      - assert:
+          file:
+            path: config/rabbitrun/save.json.bak
+            equals: '{"word_told": true}'
+
+  - name: the backup holds the old save byte for byte (macOS path)
+    only:
+      os: darwin
+    env:
+      XDG_CONFIG_HOME: "${workdir}/config"
+      HOME: "${workdir}/home"
+    steps:
+      - fixture:
+          file: home/Library/Application Support/rabbitrun/save.json
+          content: '{"word_told": true}'
+      - run:
+          command: rabbitrun --reset-save
+      - assert:
+          exit_code: 0
+      - assert:
+          file:
+            path: home/Library/Application Support/rabbitrun/save.json.bak
+            equals: '{"word_told": true}'
+
+  # A save directory that cannot be renamed into is a real failure: exit 1 with the
+  # reason, and the save stays where it was. Permission bits do not bind root or
+  # Windows, so this runs on POSIX as a non-root user only.
+  - name: a read-only save directory exits 1 and leaves the save in place
+    skip:
+      os: windows
+    only:
+      command: test "$(id -u)" != 0
+    env:
+      XDG_CONFIG_HOME: "${workdir}/config"
+      HOME: "${workdir}/home"
+    steps:
+      - fixture:
+          file: config/rabbitrun/save.json
+          content: '{"word_told": true}'
+      - fixture:
+          file: home/Library/Application Support/rabbitrun/save.json
+          content: '{"word_told": true}'
+      - run:
+          shell: true
+          command: chmod 555 config/rabbitrun "home/Library/Application Support/rabbitrun"
+      - run:
+          command: rabbitrun --reset-save
+      - assert:
+          exit_code: 1
+          stdout:
+            empty: true
+          stderr:
+            contains: "permission denied"
+          changes:
+            created: []
+            modified: []
+            deleted: []
+      - run:
+          shell: true
+          command: chmod 755 config/rabbitrun "home/Library/Application Support/rabbitrun"

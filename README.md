@@ -4,6 +4,7 @@
 [![reviewdog](https://github.com/nao1215/rabbitrun/actions/workflows/reviewdog.yml/badge.svg)](https://github.com/nao1215/rabbitrun/actions/workflows/reviewdog.yml)
 [![Release Smoke](https://github.com/nao1215/rabbitrun/actions/workflows/release-smoke.yml/badge.svg)](https://github.com/nao1215/rabbitrun/actions/workflows/release-smoke.yml)
 ![Coverage](https://raw.githubusercontent.com/nao1215/octocovs-central-repo/main/badges/nao1215/rabbitrun/coverage.svg)
+[![tested with atago](https://img.shields.io/badge/tested%20with-atago-7c3aed?logo=data:image/svg%2Bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTMuNiA0LjIgMTEuOSAxMmwtOC4zIDcuOC0xLjktMi4yTDcuOSAxMiAxLjcgNi40eiIvPjxyZWN0IGZpbGw9IiNmZmYiIHg9IjEyLjYiIHk9IjE3LjIiIHdpZHRoPSI5LjciIGhlaWdodD0iMi44IiByeD0iMS40Ii8%2BPC9zdmc%2B&logoColor=white)](https://github.com/nao1215/atago)
 [![Go Reference](https://pkg.go.dev/badge/github.com/nao1215/rabbitrun.svg)](https://pkg.go.dev/github.com/nao1215/rabbitrun)
 ![GitHub](https://img.shields.io/github/license/nao1215/rabbitrun)
 [![GitHub Release](https://img.shields.io/github/v/release/nao1215/rabbitrun)](https://github.com/nao1215/rabbitrun/releases)

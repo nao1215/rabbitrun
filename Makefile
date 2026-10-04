@@ -1,4 +1,4 @@
-.PHONY: build run test vet fmt lint vuln licenses tools clean help
+.PHONY: build run test e2e vet fmt lint vuln licenses tools clean help
 
 APP         = rabbitrun
 VERSION     = $(shell git describe --tags --abbrev=0 2>/dev/null || echo dev)
@@ -19,6 +19,9 @@ run: build ## Build and start the game
 test: ## Run unit tests with coverage (writes cover.out / cover.html)
 	$(GO) test -race -cover -coverprofile=cover.out ./...
 	$(GO) tool cover -html=cover.out -o cover.html
+
+e2e: ## Run the atago end-to-end tests (requires atago; set RABBITRUN_E2E_DISPLAY=1 to include the specs that open a window)
+	$(GO) run ./e2e/runner
 
 vet: ## Run go vet
 	$(GO) vet ./...
