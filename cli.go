@@ -5,11 +5,11 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"slices"
 	"strings"
 
 	flag "github.com/spf13/pflag"
 
-	"github.com/nao1215/rabbitrun/internal/character"
 	"github.com/nao1215/rabbitrun/internal/engine"
 	"github.com/nao1215/rabbitrun/road"
 )
@@ -83,18 +83,11 @@ func checkArgs(fs *flag.FlagSet) error {
 	return nil
 }
 
-// checkRecordChar checks that id (from --record-char) names one of chars; an empty id
-// picks the main character.
-func checkRecordChar(id string, chars []*character.Character) error {
-	if id == "" {
+// checkRecordChar checks that id (from --record-char) is one of the character IDs ids; an
+// empty id picks the main character.
+func checkRecordChar(id string, ids []string) error {
+	if id == "" || slices.Contains(ids, id) {
 		return nil
-	}
-	ids := make([]string, 0, len(chars))
-	for _, c := range chars {
-		if c.ID == id {
-			return nil
-		}
-		ids = append(ids, c.ID)
 	}
 	return usageErrorf("unknown character %q for --record-char (choose from %s)", id, strings.Join(ids, ", "))
 }

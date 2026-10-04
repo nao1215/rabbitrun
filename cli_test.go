@@ -2,12 +2,12 @@ package main
 
 import (
 	"errors"
+	"io/fs"
 	"strings"
 	"testing"
 
 	flag "github.com/spf13/pflag"
 
-	"github.com/nao1215/rabbitrun/internal/assets"
 	"github.com/nao1215/rabbitrun/internal/character"
 )
 
@@ -89,25 +89,47 @@ func TestDemoStagesMatchTheGame(t *testing.T) {
 
 func TestCheckRecordChar(t *testing.T) {
 	t.Parallel()
-	chars, err := character.Read(assets.FS())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := checkRecordChar("", chars); err != nil {
+	ids := []string{"cool", "gyal", "bunny"}
+	if err := checkRecordChar("", ids); err != nil {
 		t.Errorf("no character should pick the main one, got %v", err)
 	}
-	if err := checkRecordChar(heroID, chars); err != nil {
-		t.Errorf("the main character should be accepted, got %v", err)
+	if err := checkRecordChar("gyal", ids); err != nil {
+		t.Errorf("a character of the game should be accepted, got %v", err)
 	}
-	err = checkRecordChar("nobody", chars)
+	err := checkRecordChar("nobody", ids)
 	var ue *usageError
 	if !errors.As(err, &ue) {
 		t.Fatalf("an unknown character should be a usage error, got %v", err)
 	}
-	for _, want := range []string{`unknown character "nobody"`, heroID} {
+	for _, want := range []string{`unknown character "nobody"`, "cool, gyal, bunny"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("error %q should contain %q", err, want)
 		}
+	}
+}
+
+// TestEmbeddedAssetsHoldTheGame: go:embed takes the game data from the module root, so
+// the embedded directory must hold what the game reads: the fonts, the artwork, the
+// blocks and the characters with their pictures.
+func TestEmbeddedAssetsHoldTheGame(t *testing.T) {
+	t.Parallel()
+	fsys := embeddedAssets()
+	for _, name := range []string{"fonts/mplus-1p-regular.ttf", "fonts/LilitaOne-Regular.ttf", "ui/title.jpg", "blocks/soda.png"} {
+		if _, err := fs.Stat(fsys, name); err != nil {
+			t.Errorf("%s is not embedded: %v", name, err)
+		}
+	}
+	chars, err := character.Read(fsys)
+	if err != nil || len(chars) == 0 {
+		t.Fatalf("no characters embedded (%v)", err)
+	}
+	for _, c := range chars {
+		if !c.Expression(character.ExprNormal).HasImage() {
+			t.Errorf("%s: her standing picture is not embedded", c.ID)
+		}
+	}
+	if _, err := fs.Stat(fsys, "characters/"+chars[0].ID+"/character.json"); err == nil {
+		t.Error("a character's private notes are embedded; only game.json and the images ship")
 	}
 }
 

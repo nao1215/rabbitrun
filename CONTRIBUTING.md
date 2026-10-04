@@ -26,9 +26,25 @@ Useful flags while developing:
 
 The screenshots and the demo GIF in the README come from `--capture` and `--record-demo`.
 
+### Where the code lives
+
+The `main` package at the repository root only reads the command line and opens the window (`main.go`, `flags.go`, `cli.go`, `usage.go`); it also embeds `assets/` (`assets.go`), because `go:embed` only reaches files under the package's own directory. The game itself is in these packages:
+
+- `internal/game`: the screens (title, character select, play, the gallery), the background and the gummy blocks, and the scripted runs of `--capture` and `--record-demo`.
+- `road`: the rules of the road (the wandering road, sweets, crashes, lives).
+- `internal/engine`: the road in time (scroll and slide speeds), each character's run of courses, and the auto player.
+- `internal/character`: the characters' manifests (`assets/characters/<id>/game.json`) and their pictures.
+- `internal/assets`: reading the assets directory: image decoding and the artwork of the screens.
+- `internal/gfx`: drawing helpers and text in the game's fonts.
+- `internal/input`: keys and gamepads as actions, and the script the scenario tests play through.
+- `internal/sound`: the synthesized music and sound effects.
+- `internal/save`: the save data and where it is kept.
+
+`internal/game` uses the others; none of them imports `internal/game`, and `road`, `internal/input`, `internal/sound` and `internal/save` import nothing of the game.
+
 ### 3. Keep the quality bar high
 
-- Add or update unit tests when you add features or fix bugs. The rules of the road live in the `road` package (with the timing, each character's run of courses and the auto player in `internal/engine`) and are fully testable without a window; `scenario_test.go` plays whole screens through a scripted input.
+- Add or update unit tests when you add features or fix bugs. The rules of the road live in the `road` package (with the timing, each character's run of courses and the auto player in `internal/engine`) and are fully testable without a window; `internal/game/scenario_test.go` plays whole screens through a scripted input.
 - Keep the game working on Linux, macOS and Windows; CI tests all three.
 - Keep comments in English.
 
