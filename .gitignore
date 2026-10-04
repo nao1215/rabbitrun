@@ -30,3 +30,6 @@ __pycache__/
 
 # Local exports
 /README.pdf
+
+# atago run state (last failed scenarios)
+/.atago/

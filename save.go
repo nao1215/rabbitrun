@@ -60,13 +60,16 @@ func savePath() string {
 }
 
 // resetSave starts the save data over (the --reset-save option): the save file is moved
-// aside to save.json.bak next to it.
-func resetSave() error {
+// aside to save.json.bak next to it. It reports whether there was a save file to move.
+func resetSave() (bool, error) {
 	p := savePath()
-	if err := os.Rename(p, p+".bak"); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return err
+	if err := os.Rename(p, p+".bak"); err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return false, nil
+		}
+		return false, err
 	}
-	return nil
+	return true, nil
 }
 
 func loadSave() {
@@ -101,6 +104,11 @@ var saveDirty bool
 // illustrations, shows new poses and records the run), and each change wrote the file.
 func markSave() { saveDirty = true }
 
+// saveReadOnly keeps the save data from being written. It is set for --capture and
+// --record-demo: their scripted runs clear courses and reach the ending, which would
+// otherwise unlock illustrations and characters in the player's own save.
+var saveReadOnly bool
+
 // flushSave writes the save data if it changed. Game.Update calls it after every frame,
 // and it is called again on a scene change and when the game exits, so nothing is lost.
 func flushSave() {
@@ -108,6 +116,9 @@ func flushSave() {
 		return
 	}
 	saveDirty = false
+	if saveReadOnly {
+		return
+	}
 	writeSave()
 }
 

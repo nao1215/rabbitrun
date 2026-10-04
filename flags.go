@@ -37,7 +37,7 @@ var recordPath = flag.String("record-demo", "", "play a demo by itself and save 
 var recordChar = flag.String("record-char", "", "character `ID` of the demo recording")
 
 // recordStage starts the demo recording at a later stage (1 for the first).
-var recordStage = flag.Int("record-stage", 1, "stage the demo recording starts at")
+var recordStage = flag.Int("record-stage", 1, "stage the demo recording starts at, from 1 to 4")
 
 // recordSeconds is how long the demo recording lasts.
 var recordSeconds = flag.Int("record-seconds", 60, "length of the demo recording in seconds")

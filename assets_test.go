@@ -332,8 +332,12 @@ func TestResetSaveStartsOverAndKeepsABackup(t *testing.T) {
 	progress(heroID).Cleared = true
 	save.ExtraFound = true
 	writeSave()
-	if err := resetSave(); err != nil {
+	moved, err := resetSave()
+	if err != nil {
 		t.Fatal(err)
+	}
+	if !moved {
+		t.Fatal("resetSave reported no save to move although one was written")
 	}
 	save = &SaveData{Characters: map[string]*CharProgress{}}
 	loadSave()

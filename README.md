@@ -4,6 +4,7 @@
 [![reviewdog](https://github.com/nao1215/rabbitrun/actions/workflows/reviewdog.yml/badge.svg)](https://github.com/nao1215/rabbitrun/actions/workflows/reviewdog.yml)
 [![Release Smoke](https://github.com/nao1215/rabbitrun/actions/workflows/release-smoke.yml/badge.svg)](https://github.com/nao1215/rabbitrun/actions/workflows/release-smoke.yml)
 ![Coverage](https://raw.githubusercontent.com/nao1215/octocovs-central-repo/main/badges/nao1215/rabbitrun/coverage.svg)
+[![tested with atago](https://img.shields.io/badge/tested%20with-atago-7c3aed?logo=data:image/svg%2Bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTMuNiA0LjIgMTEuOSAxMmwtOC4zIDcuOC0xLjktMi4yTDcuOSAxMiAxLjcgNi40eiIvPjxyZWN0IGZpbGw9IiNmZmYiIHg9IjEyLjYiIHk9IjE3LjIiIHdpZHRoPSI5LjciIGhlaWdodD0iMi44IiByeD0iMS40Ii8%2BPC9zdmc%2B&logoColor=white)](https://github.com/nao1215/atago)
 [![Go Reference](https://pkg.go.dev/badge/github.com/nao1215/rabbitrun.svg)](https://pkg.go.dev/github.com/nao1215/rabbitrun)
 ![GitHub](https://img.shields.io/github/license/nao1215/rabbitrun)
 [![GitHub Release](https://img.shields.io/github/v/release/nao1215/rabbitrun)](https://github.com/nao1215/rabbitrun/releases)
@@ -85,9 +86,14 @@ Choose PLAY on the title screen, pick a character, and the run starts. GALLERY s
 | `-V`, `--version` | Print the version and exit. |
 | `--debug` | Unlock every character, portrait and illustration for this run. The save data is not changed. |
 | `--reset-save` | Delete the save data and exit without starting the game. The old save is kept next to it as `save.json.bak`. |
-| `--capture DIR` | Save a screenshot of every screen to `DIR` and exit. |
+| `--capture DIR` | Save a screenshot of every screen to `DIR` and exit. The save data is not changed. |
 | `--bgm-wav DIR` | Write each background music arrangement to `DIR` as WAV and exit. |
-| `--record-demo FILE` | Let the game play by itself and save it as a video to `FILE` (needs ffmpeg). |
+| `--record-demo FILE` | Let the game play by itself and save it as a video to `FILE` (needs ffmpeg). The save data is not changed. |
+| `--record-char ID` | The character of the demo recording (`gyal` by default). |
+| `--record-stage N` | The stage the demo recording starts at, from 1 to 4. |
+| `--record-seconds N` | The length of the demo recording in seconds (60 by default). |
+
+A mistake in the options, such as an unknown option, a stray argument or two of `--capture`, `--bgm-wav`, `--reset-save` and `--record-demo` at once, exits with status 2 before the game opens. A failure while doing the job, such as a directory that cannot be written, exits with status 1.
 
 ## How to install
 
