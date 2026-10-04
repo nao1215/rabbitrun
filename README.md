@@ -57,7 +57,7 @@ Your character stands beside the road and reacts to the run: she relaxes on a wi
 | <img src="./doc/img/faces/cute.png" width="64" alt="cute"> | 48 | 15 + α (17) |
 | <img src="./doc/img/faces/gyal.png" width="64" alt="gyaru"> | 74 | 15 + α (17) |
 | <img src="./doc/img/faces/street.png" width="64" alt="Taisho"> | 26 | 15 + α (17) |
-| <img src="./doc/img/faces/secret.png" width="64" alt="secret"> | 18 | 15 + α (17) |
+| <img src="./doc/img/faces/secret.png" width="64" alt="secret"> | 24 | 15 + α (17) |
 
 ## How to play
 
