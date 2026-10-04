@@ -291,3 +291,21 @@ func TestUnknownCharacterRunsTheMixedRoad(t *testing.T) {
 		t.Fatal("a character without a table has themes")
 	}
 }
+
+// TestCoolStartsWithASpareHammer checks the hammers each run starts with: the cool girl,
+// whose roads are the hardest of the regular four, one more than road.StartBombs on both
+// sides, and every other character road.StartBombs.
+func TestCoolStartsWithASpareHammer(t *testing.T) {
+	t.Parallel()
+	for _, id := range append(runIDs(), "nobody") {
+		want := road.StartBombs
+		if id == "cool" {
+			want = road.StartBombs + 1
+		}
+		for _, extra := range []bool{false, true} {
+			if got := NewRun(id, extra).G.Bombs; got != want {
+				t.Errorf("%s (extra %v) starts with %d hammers, want %d", id, extra, got, want)
+			}
+		}
+	}
+}

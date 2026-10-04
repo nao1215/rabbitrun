@@ -26,3 +26,4 @@ All notable changes to this project are documented in this file. The format is b
 
 ### Fixed
 - `--debug` no longer writes the save data: a run with it saved the secret character as announced, so when the four regular characters later cleared for real the title never brought her in. Saves already marked that way by `--debug` show her arrival once she is earned.
+- The cool girl starts her runs with two hammers instead of one: her roads are the hardest of the four regular characters.

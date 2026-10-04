@@ -69,6 +69,13 @@ var courseThemes = map[string][2][GameCourses]road.Theme{
 // gyaru and the secret bunny a little faster, the soft cute road at the usual speed.
 var charSpeed = map[string]float64{"cool": 1.02, "cute": 1, "gyal": 1.06, "street": 1, "bunny": 1.08}
 
+// charHammers is how many hammers a character starts her run with when it is not
+// road.StartBombs. The cool girl's roads (gates, stepping gates, slaloms and a checkerboard,
+// all testing the aim) are the hardest of the four regular characters, so she starts with
+// one hammer more, on both sides: a spare for the first stages instead of a pickup placed
+// on her road, which would have changed the roads every game has learned.
+var charHammers = map[string]int{"cool": road.StartBombs + 1}
+
 // frontHardFrom is the course from which the regular side is as tight as the extra stages
 // (the second half of a run). The extra stages are tight from the first course, and faster.
 const frontHardFrom = 7
@@ -92,6 +99,9 @@ func NewRun(id string, extra bool) *Engine {
 		p.Speed *= f
 	}
 	e := newEngineWith(roadSeedFor(id), GameCourses, p)
+	if n, ok := charHammers[id]; ok {
+		e.G.Bombs = min(n, road.MaxBombs)
+	}
 	e.G.Themes = themesFor(id, extra)
 	e.G.Hard = extra
 	if !extra {
