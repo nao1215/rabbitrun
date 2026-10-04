@@ -2,6 +2,7 @@ package assets
 
 import (
 	"image"
+	"io/fs"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -25,7 +26,7 @@ func UI(name string) *ebiten.Image {
 		d = <-ch
 		delete(uiPending, name)
 	} else {
-		d = decodeUI(name)
+		d = decodeUI(root, name)
 	}
 	var img *ebiten.Image
 	if d.err == nil {
@@ -43,9 +44,10 @@ type decodedUI struct {
 	err error
 }
 
-// decodeUI decodes ui/<name> as UI uploads it. It may run on any goroutine.
-func decodeUI(name string) decodedUI {
-	img, err := Decode(root, "ui/"+name)
+// decodeUI decodes ui/<name> of fsys as UI uploads it. It may run on any goroutine, so it
+// takes the assets directory instead of reading root, which Use may change meanwhile.
+func decodeUI(fsys fs.FS, name string) decodedUI {
+	img, err := Decode(fsys, "ui/"+name)
 	if err != nil {
 		return decodedUI{err: err}
 	}
@@ -69,6 +71,7 @@ func PrefetchUI(names ...string) {
 		}
 		ch := make(chan decodedUI, 1)
 		uiPending[name] = ch
-		go func() { ch <- decodeUI(name) }()
+		fsys := root
+		go func() { ch <- decodeUI(fsys, name) }()
 	}
 }
