@@ -6,6 +6,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"github.com/nao1215/rabbitrun/internal/input"
 	"github.com/nao1215/rabbitrun/road"
 )
 
@@ -45,16 +46,16 @@ func TestMissMenu(t *testing.T) {
 		lives := s.eng.G.Lives
 		missOn(t, g, s, screen)
 		// down to GIVE UP and back up: the menu has two buttons
-		playDrawn(t, g, screen, press(ActDown))
+		playDrawn(t, g, screen, press(input.Down))
 		if s.missSel != 1 {
 			t.Fatalf("on button %d after down, want GIVE UP", s.missSel)
 		}
-		playDrawn(t, g, screen, press(ActUp, ActConfirm))
+		playDrawn(t, g, screen, press(input.Up, input.Confirm))
 		if s.countdown == 0 {
 			t.Fatal("RETRY did not start the countdown")
 		}
 		// a press of pause during the countdown does not pause the miss screen
-		playDrawn(t, g, screen, press(ActPause))
+		playDrawn(t, g, screen, press(input.Pause))
 		if s.paused {
 			t.Fatal("paused during the countdown")
 		}
@@ -78,7 +79,7 @@ func TestMissMenu(t *testing.T) {
 		g, screen := newDrawScenario(t, nil)
 		s := startRun(t, g)
 		missOn(t, g, s, screen)
-		playDrawn(t, g, screen, press(ActDown, ActConfirm))
+		playDrawn(t, g, screen, press(input.Down, input.Confirm))
 		if !s.eng.Over() || s.allClear {
 			t.Fatalf("over %v, all clear %v after GIVE UP", s.eng.Over(), s.allClear)
 		}
@@ -126,7 +127,7 @@ func TestGameOverMenu(t *testing.T) {
 	}{
 		{
 			name:  "RETRY starts a new run with her getting back up",
-			input: press(ActConfirm),
+			input: press(input.Confirm),
 			check: func(t *testing.T, g *Game, over *PlayScene) {
 				t.Helper()
 				s := playOf(t, g)
@@ -141,7 +142,7 @@ func TestGameOverMenu(t *testing.T) {
 		},
 		{
 			name:  "SELECT goes to the select screen",
-			input: press(ActDown, ActConfirm),
+			input: press(input.Down, input.Confirm),
 			check: func(t *testing.T, g *Game, _ *PlayScene) {
 				t.Helper()
 				if s, ok := g.scene.(*CharSelectScene); !ok || s.mode != modePlay {
@@ -151,7 +152,7 @@ func TestGameOverMenu(t *testing.T) {
 		},
 		{
 			name:  "TITLE goes back to the title",
-			input: press(ActUp, ActConfirm),
+			input: press(input.Up, input.Confirm),
 			check: func(t *testing.T, g *Game, _ *PlayScene) {
 				t.Helper()
 				titleOf(t, g)
@@ -166,7 +167,7 @@ func TestGameOverMenu(t *testing.T) {
 			wallAcross(s)
 			playUntil(t, g, screen, 5*60, s.eng.Over)
 			// a press before the curtain is down does nothing
-			playDrawn(t, g, screen, press(ActConfirm))
+			playDrawn(t, g, screen, press(input.Confirm))
 			if g.scene != s {
 				t.Fatalf("the game over menu took a press before the curtain was down (%T)", g.scene)
 			}
@@ -201,8 +202,8 @@ func TestPauseMenu(t *testing.T) {
 	t.Run("cancel and pause both resume", func(t *testing.T) {
 		g, screen := newDrawScenario(t, nil)
 		s := startRun(t, g)
-		for _, a := range []Action{ActCancel, ActPause} {
-			playDrawn(t, g, screen, press(ActPause))
+		for _, a := range []input.Action{input.Cancel, input.Pause} {
+			playDrawn(t, g, screen, press(input.Pause))
 			if !s.paused {
 				t.Fatal("pause did not pause")
 			}
@@ -222,7 +223,7 @@ func TestPauseMenu(t *testing.T) {
 		g, screen := newDrawScenario(t, nil)
 		s := startRun(t, g)
 		playDrawn(t, g, screen, wait(60))
-		playDrawn(t, g, screen, press(ActPause, ActDown, ActConfirm))
+		playDrawn(t, g, screen, press(input.Pause, input.Down, input.Confirm))
 		p := playOf(t, g)
 		if p == s || !p.showing || p.char != s.char {
 			t.Fatalf("new run %v, show %v: RESET did not start over", p != s, p.showing)
@@ -244,12 +245,12 @@ func TestEndingGoesBackToTitle(t *testing.T) { //nolint:paralleltest // shares t
 	allClearScene(g)
 	s := playOf(t, g)
 	playUntil(t, g, screen, 10*60, func() bool { return s.allClear })
-	playDrawn(t, g, screen, press(ActConfirm))
+	playDrawn(t, g, screen, press(input.Confirm))
 	if g.scene != s {
 		t.Fatal("the ending took a press before its picture was in")
 	}
 	playDrawn(t, g, screen, wait(endWordsAt+endBandFrames))
-	playDrawn(t, g, screen, press(ActConfirm))
+	playDrawn(t, g, screen, press(input.Confirm))
 	titleOf(t, g)
 	if p := reloadSave(t).Characters[heroID]; p == nil || !p.Cleared {
 		t.Errorf("the clear was not saved: %+v", p)
@@ -280,10 +281,10 @@ func TestEndingWithoutIllustration(t *testing.T) { //nolint:paralleltest // shar
 //
 //nolint:paralleltest // shares the save data and the characters
 func TestSteering(t *testing.T) {
-	hold := func(a Action, n int) []scriptFrame {
+	hold := func(a input.Action, n int) []scriptFrame {
 		out := make([]scriptFrame, n)
 		for i := range out {
-			out[i].held = []Action{a}
+			out[i].held = []input.Action{a}
 		}
 		return out
 	}
@@ -292,12 +293,12 @@ func TestSteering(t *testing.T) {
 		s := startRun(t, g)
 		s.eng.G.Safe = 1 << 30 // walls pass through
 		x := s.eng.G.X
-		playDrawn(t, g, screen, hold(ActRight, 20))
+		playDrawn(t, g, screen, hold(input.Right, 20))
 		if s.eng.G.X <= x {
 			t.Errorf("x went from %v to %v holding right", x, s.eng.G.X)
 		}
 		x = s.eng.G.X
-		playDrawn(t, g, screen, hold(ActLeft, 20))
+		playDrawn(t, g, screen, hold(input.Left, 20))
 		if s.eng.G.X >= x {
 			t.Errorf("x went from %v to %v holding left", x, s.eng.G.X)
 		}
@@ -306,7 +307,7 @@ func TestSteering(t *testing.T) {
 		g, screen := newDrawScenario(t, nil)
 		s := startRun(t, g)
 		s.eng.G.Safe = 1 << 30
-		playDrawn(t, g, screen, hold(ActUp, 30))
+		playDrawn(t, g, screen, hold(input.Up, 30))
 		if s.eng.Boost <= 1 {
 			t.Errorf("boost %v after holding up", s.eng.Boost)
 		}
@@ -320,7 +321,7 @@ func TestSteering(t *testing.T) {
 			}
 		}
 		hammers := s.eng.G.Bombs
-		playDrawn(t, g, screen, press(ActConfirm))
+		playDrawn(t, g, screen, press(input.Confirm))
 		if s.eng.G.Bombs != hammers-1 || s.cutin == 0 {
 			t.Fatalf("hammers %d -> %d, cut-in %d", hammers, s.eng.G.Bombs, s.cutin)
 		}
@@ -334,7 +335,7 @@ func TestSteering(t *testing.T) {
 		}
 		// with the stock empty, another press swings nothing
 		s.eng.G.Bombs = 0
-		playDrawn(t, g, screen, press(ActConfirm))
+		playDrawn(t, g, screen, press(input.Confirm))
 		if s.cutin != 0 {
 			t.Error("a hammer swung with none in stock")
 		}

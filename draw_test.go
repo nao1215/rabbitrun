@@ -42,7 +42,7 @@ func newDrawScenario(t *testing.T, prepare func()) (*Game, *ebiten.Image) {
 // playDrawn is play that also draws the screen every drawEvery frames and on the last.
 func playDrawn(t *testing.T, g *Game, screen *ebiten.Image, frames []scriptFrame) {
 	t.Helper()
-	g.in.script = &script{frames: frames}
+	g.in.SetScript(&script{frames: frames})
 	for f := range frames {
 		if err := g.Update(); err != nil {
 			t.Fatalf("the game ended: %v", err)
@@ -56,7 +56,7 @@ func playDrawn(t *testing.T, g *Game, screen *ebiten.Image, frames []scriptFrame
 // playUntil runs the game, drawing it, until done reports true; it fails after limit frames.
 func playUntil(t *testing.T, g *Game, screen *ebiten.Image, limit int, done func() bool) {
 	t.Helper()
-	g.in.script = &script{}
+	g.in.SetScript(&script{})
 	for f := 0; !done(); f++ {
 		if f >= limit {
 			t.Fatalf("not done after %d frames (on %T)", limit, g.scene)

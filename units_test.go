@@ -172,24 +172,6 @@ func TestRecorderTakesEveryOtherUpdate(t *testing.T) {
 	}
 }
 
-// TestKeyboardPollingWithNothingPressed reads the real keyboard and pads (no script)
-// with no key down: no action is held and nothing is typed.
-func TestKeyboardPollingWithNothingPressed(t *testing.T) { //nolint:paralleltest // reads ebiten's input state
-	var in Input
-	in.Update()
-	for a := Action(0); a < actionCount; a++ {
-		if in.Held(a) || in.Pressed(a) {
-			t.Errorf("action %d is held with no key down", a)
-		}
-	}
-	if c := in.Chars(); len(c) != 0 {
-		t.Errorf("typed %q with no key down", string(c))
-	}
-	if in.Side() != 0 {
-		t.Errorf("side %d with no key down", in.Side())
-	}
-}
-
 // TestBeatBounce squashes her to the beat only in a cheerful mood while lively music plays.
 func TestBeatBounce(t *testing.T) { //nolint:paralleltest // swaps the music's beat
 	old := beatPhase

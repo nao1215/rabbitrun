@@ -3,6 +3,7 @@ package main
 import (
 	"testing"
 
+	"github.com/nao1215/rabbitrun/internal/input"
 	"github.com/nao1215/rabbitrun/internal/sound"
 	"github.com/nao1215/rabbitrun/road"
 )
@@ -56,7 +57,7 @@ func TestPauseKeyDoesNothingOnTheMissScreen(t *testing.T) { //nolint:paralleltes
 	if !s.eng.G.Missed {
 		t.Fatal("no miss")
 	}
-	g.in.held[ActPause] = true // Esc on the miss screen
+	pressNow(&g.in, input.Pause) // Esc on the miss screen
 	s.Update(g)
 	if s.paused {
 		t.Fatal("the pause menu opened behind the miss screen")

@@ -5,12 +5,14 @@ import (
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
+
+	"github.com/nao1215/rabbitrun/internal/input"
 )
 
 // openGallery goes from the title to the gallery, drawing it.
 func openGallery(t *testing.T, g *Game, screen *ebiten.Image) *GalleryScene {
 	t.Helper()
-	playDrawn(t, g, screen, press(ActDown, ActConfirm))
+	playDrawn(t, g, screen, press(input.Down, input.Confirm))
 	s, ok := g.scene.(*GalleryScene)
 	if !ok {
 		t.Fatalf("not in the gallery: %T", g.scene)
@@ -32,12 +34,12 @@ func TestGalleryGrid(t *testing.T) { //nolint:paralleltest // shares the save da
 		input []scriptFrame
 		want  int
 	}{
-		{press(ActLeft), 0},
-		{press(ActRight), 1},
-		{press(ActDown), 1 + galleryCols},
-		{press(ActUp), 1},
-		{press(ActUp), 1},
-		{press(ActLeft, ActLeft), 0},
+		{press(input.Left), 0},
+		{press(input.Right), 1},
+		{press(input.Down), 1 + galleryCols},
+		{press(input.Up), 1},
+		{press(input.Up), 1},
+		{press(input.Left, input.Left), 0},
 	}
 	for i, tc := range cases {
 		playDrawn(t, g, screen, tc.input)
@@ -45,9 +47,9 @@ func TestGalleryGrid(t *testing.T) { //nolint:paralleltest // shares the save da
 			t.Fatalf("step %d: on tile %d, want %d", i, s.sel, tc.want)
 		}
 	}
-	down := make([]Action, (n-1)/galleryCols+1)
+	down := make([]input.Action, (n-1)/galleryCols+1)
 	for i := range down {
-		down[i] = ActDown
+		down[i] = input.Down
 	}
 	playDrawn(t, g, screen, press(down...))
 	if s.sel/galleryCols != (n-1)/galleryCols {
@@ -97,7 +99,7 @@ func TestGalleryTilesAreMade(t *testing.T) { //nolint:paralleltest // shares the
 	s.loading = nil
 	playDrawn(t, g, screen, wait(2)) // the portrait's tile is asked for
 	s.sel = want[1]
-	g.in.script = &script{}
+	g.in.SetScript(&script{})
 	deadline := time.Now().Add(30 * time.Second)
 	for items[want[0]].e.tile == nil || items[want[1]].e.tile == nil {
 		if time.Now().After(deadline) {
@@ -130,30 +132,30 @@ func TestGalleryViewer(t *testing.T) { //nolint:paralleltest // shares the save 
 		s.open[i] = i != 1
 	}
 
-	playDrawn(t, g, screen, press(ActRight, ActConfirm))
+	playDrawn(t, g, screen, press(input.Right, input.Confirm))
 	if s.viewing {
 		t.Fatal("a locked tile opened")
 	}
-	playDrawn(t, g, screen, press(ActLeft, ActConfirm))
+	playDrawn(t, g, screen, press(input.Left, input.Confirm))
 	if !s.viewing || s.sel != 0 {
 		t.Fatalf("viewing %v on %d, want the first entry open", s.viewing, s.sel)
 	}
-	playDrawn(t, g, screen, press(ActRight))
+	playDrawn(t, g, screen, press(input.Right))
 	if s.sel != 2 {
 		t.Errorf("stepped to %d, want 2 (past the locked entry)", s.sel)
 	}
-	playDrawn(t, g, screen, press(ActLeft))
+	playDrawn(t, g, screen, press(input.Left))
 	if s.sel != 0 {
 		t.Errorf("stepped back to %d, want 0", s.sel)
 	}
-	playDrawn(t, g, screen, press(ActLeft))
+	playDrawn(t, g, screen, press(input.Left))
 	if s.sel != n-1 {
 		t.Errorf("stepped back from the first to %d, want the last (%d)", s.sel, n-1)
 	}
 	if !s.items()[s.sel].cg {
 		t.Errorf("the last entry is not an illustration")
 	}
-	playDrawn(t, g, screen, press(ActCancel))
+	playDrawn(t, g, screen, press(input.Cancel))
 	if s.viewing {
 		t.Error("cancel did not close the picture")
 	}
@@ -173,16 +175,16 @@ func TestGalleryTabs(t *testing.T) { //nolint:paralleltest // shares the save da
 	})
 	s := openGallery(t, g, screen)
 	first := s.charIdx
-	playDrawn(t, g, screen, press(ActRight, ActTabNext))
+	playDrawn(t, g, screen, press(input.Right, input.TabNext))
 	if s.charIdx == first || s.sel != 0 {
 		t.Fatalf("on character %d, tile %d after the next tab", s.charIdx, s.sel)
 	}
-	playDrawn(t, g, screen, press(ActTabPrev))
+	playDrawn(t, g, screen, press(input.TabPrev))
 	if s.charIdx != first {
 		t.Fatalf("on character %d after back, want %d", s.charIdx, first)
 	}
 	for range characters {
-		playDrawn(t, g, screen, press(ActTabPrev))
+		playDrawn(t, g, screen, press(input.TabPrev))
 	}
 	if s.charIdx != first {
 		t.Errorf("going around came back to %d, want %d", s.charIdx, first)
@@ -196,7 +198,7 @@ func TestGalleryDebugUnlocksEverything(t *testing.T) { //nolint:paralleltest // 
 	old := *debugMode
 	*debugMode = true
 	t.Cleanup(func() { *debugMode = old })
-	play(t, g, press(ActDown, ActConfirm)) // not drawn: that would decode every tile
+	play(t, g, press(input.Down, input.Confirm)) // not drawn: that would decode every tile
 	s, ok := g.scene.(*GalleryScene)
 	if !ok {
 		t.Fatalf("not in the gallery: %T", g.scene)

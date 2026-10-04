@@ -9,6 +9,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	flag "github.com/spf13/pflag"
 
+	"github.com/nao1215/rabbitrun/internal/input"
 	"github.com/nao1215/rabbitrun/internal/save"
 	"github.com/nao1215/rabbitrun/internal/sound"
 )
@@ -25,7 +26,7 @@ type Scene interface {
 }
 
 type Game struct {
-	in    Input
+	in    input.Input
 	scene Scene
 	frame int
 	bg    *background

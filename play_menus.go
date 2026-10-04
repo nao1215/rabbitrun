@@ -8,6 +8,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 
+	"github.com/nao1215/rabbitrun/internal/input"
 	"github.com/nao1215/rabbitrun/internal/sound"
 )
 
@@ -47,11 +48,11 @@ func (s *PlayScene) updateMiss(g *Game) {
 		s.countdown = countdownFrames
 		return
 	}
-	if g.in.Repeat(ActUp) || g.in.Repeat(ActDown) {
+	if g.in.Repeat(input.Up) || g.in.Repeat(input.Down) {
 		s.missSel = 1 - s.missSel
 		sound.Play(sound.Move)
 	}
-	if g.in.Pressed(ActConfirm) {
+	if g.in.Pressed(input.Confirm) {
 		sound.Play(sound.Confirm)
 		if s.missSel == 0 {
 			s.countdown = countdownFrames
@@ -70,9 +71,9 @@ var overItems = []string{"RETRY", "SELECT", itemTitle}
 const itemTitle = "TITLE"
 
 func (s *PlayScene) updatePause(g *Game) {
-	s.pauseSel = g.in.menuNav(s.pauseSel, len(pauseItems), ActUp, ActDown)
-	resume := g.in.Pressed(ActCancel) || g.in.Pressed(ActPause)
-	if g.in.Pressed(ActConfirm) {
+	s.pauseSel = menuNav(&g.in, s.pauseSel, len(pauseItems), input.Up, input.Down)
+	resume := g.in.Pressed(input.Cancel) || g.in.Pressed(input.Pause)
+	if g.in.Pressed(input.Confirm) {
 		sound.Play(sound.Confirm)
 		switch s.pauseSel {
 		case 0:
@@ -106,14 +107,14 @@ func (s *PlayScene) updateGameOver(g *Game) {
 	}
 	if s.allClear {
 		// the ending has one way on: back to the title (where what the clear opened shows)
-		if g.in.Pressed(ActConfirm) {
+		if g.in.Pressed(input.Confirm) {
 			sound.Play(sound.Confirm)
 			g.SetScene(newTitleScene())
 		}
 		return
 	}
-	s.overSel = g.in.menuNav(s.overSel, len(overItems), ActUp, ActDown)
-	if g.in.Pressed(ActConfirm) {
+	s.overSel = menuNav(&g.in, s.overSel, len(overItems), input.Up, input.Down)
+	if g.in.Pressed(input.Confirm) {
 		sound.Play(sound.Confirm)
 		switch s.overSel {
 		case 0:

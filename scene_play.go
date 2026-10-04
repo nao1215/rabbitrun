@@ -8,6 +8,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"github.com/nao1215/rabbitrun/internal/input"
 	"github.com/nao1215/rabbitrun/internal/save"
 	"github.com/nao1215/rabbitrun/internal/sound"
 	"github.com/nao1215/rabbitrun/road"
@@ -206,7 +207,7 @@ func (s *PlayScene) Update(g *Game) {
 		return
 	}
 	// no pause on the miss screen: it is a menu of its own (the pause menu came up behind it)
-	if g.in.Pressed(ActPause) && !s.eng.G.Missed && s.countdown == 0 {
+	if g.in.Pressed(input.Pause) && !s.eng.G.Missed && s.countdown == 0 {
 		s.paused = true
 		s.pauseSel = 0
 		sound.Play(sound.Pause)
@@ -264,7 +265,7 @@ func (s *PlayScene) Update(g *Game) {
 			s.holdFrames++
 			e.Move(float64(dir) * e.SlideSpeed(s.holdFrames) / 60)
 		}
-		if g.in.Pressed(ActConfirm) && s.cutin == 0 { // Space or Enter, the A button on a pad
+		if g.in.Pressed(input.Confirm) && s.cutin == 0 { // Space or Enter, the A button on a pad
 			s.useHammer()
 			if s.cutin > 0 {
 				// the road holds from this frame on: a step now moved the sweets a row away
@@ -274,7 +275,7 @@ func (s *PlayScene) Update(g *Game) {
 				return
 			}
 		}
-		accel = g.in.Held(ActUp) // speeds the road up for good
+		accel = g.in.Held(input.Up) // speeds the road up for good
 	}
 	e.Tick(accel)
 	s.handleEvents()

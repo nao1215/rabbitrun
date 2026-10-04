@@ -3,6 +3,7 @@ package main
 import (
 	"testing"
 
+	"github.com/nao1215/rabbitrun/internal/input"
 	"github.com/nao1215/rabbitrun/internal/save"
 	"github.com/nao1215/rabbitrun/internal/sound"
 )
@@ -77,7 +78,7 @@ func TestTitleBringsInANewCharacterOnce(t *testing.T) { //nolint:paralleltest //
 	for range revealWordsAt + 30 {
 		s.Update(g)
 	}
-	g.in.held[ActConfirm] = true
+	pressNow(&g.in, input.Confirm)
 	s.Update(g)
 	if s.reveal >= 0 || !store.Data.Announced[secret] {
 		t.Fatal("a press did not go on to the usual title")
@@ -122,7 +123,7 @@ func TestTitleTellsTheWordOnlyAfterTheSecretCharacterClears(t *testing.T) { //no
 	for range wordWait + 5 {
 		s.Update(g)
 	}
-	g.in.held[ActConfirm] = true
+	pressNow(&g.in, input.Confirm)
 	s.Update(g)
 	if s.word || !store.Data.WordTold || newTitleScene().word {
 		t.Fatal("the word is told once, and a press goes on")

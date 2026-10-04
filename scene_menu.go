@@ -8,6 +8,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 
+	"github.com/nao1215/rabbitrun/internal/input"
 	"github.com/nao1215/rabbitrun/internal/sound"
 )
 
@@ -94,7 +95,7 @@ func (s *TitleScene) Update(g *Game) {
 		if s.revealFrame == revealWordsAt {
 			sound.Play(sound.Unlock)
 		}
-		if s.revealFrame > revealWordsAt+20 && g.in.Pressed(ActConfirm) {
+		if s.revealFrame > revealWordsAt+20 && g.in.Pressed(input.Confirm) {
 			sound.Play(sound.Confirm)
 			markAnnounced(characters[s.reveal].ID)
 			s.reveal = -1
@@ -106,7 +107,7 @@ func (s *TitleScene) Update(g *Game) {
 		if s.wordFrame == 1 {
 			sound.Play(sound.Unlock)
 		}
-		if s.wordFrame > wordWait && g.in.Pressed(ActConfirm) {
+		if s.wordFrame > wordWait && g.in.Pressed(input.Confirm) {
 			sound.Play(sound.Confirm)
 			store.Data.WordTold = true
 			store.Mark()
@@ -119,8 +120,8 @@ func (s *TitleScene) Update(g *Game) {
 		s.sel = 0 // the letters typed also moved the menu
 		sound.Play(sound.Unlock)
 	}
-	s.sel = g.in.menuNav(s.sel, len(titleItems), ActUp, ActDown)
-	if g.in.Pressed(ActConfirm) {
+	s.sel = menuNav(&g.in, s.sel, len(titleItems), input.Up, input.Down)
+	if g.in.Pressed(input.Confirm) {
 		sound.Play(sound.Confirm)
 		switch s.sel {
 		case 0:
@@ -307,20 +308,20 @@ func (s *CharSelectScene) Update(g *Game) {
 	bg.set(popYellow)
 	bg.setImage("select")
 	n := len(characters)
-	s.sel = g.in.menuNav(s.sel, n, ActLeft, ActRight)
+	s.sel = menuNav(&g.in, s.sel, n, input.Left, input.Right)
 	if c := characters[s.sel]; s.mode == modePlay && !c.locked() {
 		// her usual pose and the cut-in, decoded while she is chosen: play's first frame
 		// waited 30 to 40 ms for the pose otherwise (the rest decode as play starts)
 		prefetchImgs([]*ImageEntry{c.Expression(ExprNormal), c.Cutin})
 	}
-	if g.in.Pressed(ActCancel) {
+	if g.in.Pressed(input.Cancel) {
 		sound.Play(sound.Cancel)
 		sound.StopBGM()
 		s.leave()
 		g.SetScene(newTitleScene())
 		return
 	}
-	if g.in.Pressed(ActConfirm) {
+	if g.in.Pressed(input.Confirm) {
 		c := characters[s.sel]
 		if c.locked() {
 			sound.Play(sound.Denied)
@@ -441,4 +442,18 @@ func (s *CharSelectScene) Draw(screen *ebiten.Image) {
 		}
 		screen.DrawImage(img, op)
 	}
+}
+
+// menuNav moves the selection sel of a menu of n items with key repeat: prev steps it back
+// and next forward, wrapping around at the ends, each step with a click.
+func menuNav(in *input.Input, sel, n int, prev, next input.Action) int {
+	if in.Repeat(prev) {
+		sel = (sel + n - 1) % n
+		sound.Play(sound.Move)
+	}
+	if in.Repeat(next) {
+		sel = (sel + 1) % n
+		sound.Play(sound.Move)
+	}
+	return sel
 }

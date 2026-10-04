@@ -4,26 +4,27 @@ import (
 	"os"
 	"testing"
 
+	"github.com/nao1215/rabbitrun/internal/input"
 	"github.com/nao1215/rabbitrun/internal/save"
 	"github.com/nao1215/rabbitrun/internal/sound"
 	"github.com/nao1215/rabbitrun/road"
 )
 
 // The scenario tests play the whole game the way a player does: a script stands in for
-// the keyboard (Input.script), and Game.Update runs frame by frame from the title.
+// the keyboard (input.Input.SetScript), and Game.Update runs frame by frame from the title.
 
-// script is an inputScript that plays its frames in order, and then nothing.
+// script is an input.Script that plays its frames in order, and then nothing.
 type script struct {
 	frames []scriptFrame
 }
 
 // scriptFrame is one frame of a script: the actions held and the letters typed.
 type scriptFrame struct {
-	held  []Action
+	held  []input.Action
 	typed string
 }
 
-func (s *script) frame() (held [actionCount]bool, typed []rune) {
+func (s *script) Frame() (held [input.NumActions]bool, typed []rune) {
 	if len(s.frames) == 0 {
 		return held, nil
 	}
@@ -35,12 +36,18 @@ func (s *script) frame() (held [actionCount]bool, typed []rune) {
 	return held, []rune(f.typed)
 }
 
+// pressNow presses a on in for one frame, as the player does just now.
+func pressNow(in *input.Input, a input.Action) {
+	in.SetScript(&script{frames: []scriptFrame{{held: []input.Action{a}}}})
+	in.Update()
+}
+
 // press presses each action in turn, letting go for a frame after each, so every one is a
 // fresh press (and a step of a menu).
-func press(actions ...Action) []scriptFrame {
+func press(actions ...input.Action) []scriptFrame {
 	out := make([]scriptFrame, 0, 2*len(actions))
 	for _, a := range actions {
-		out = append(out, scriptFrame{held: []Action{a}}, scriptFrame{})
+		out = append(out, scriptFrame{held: []input.Action{a}}, scriptFrame{})
 	}
 	return out
 }
@@ -97,14 +104,14 @@ func newScenarioWith(t *testing.T, chars []*Character, prepare func()) *Game {
 	}
 	bg = newBackground()
 	g := &Game{bg: bg, scene: newTitleScene()}
-	g.in.script = &script{}
+	g.in.SetScript(&script{})
 	return g
 }
 
 // play runs the frames of the script on g.
 func play(t *testing.T, g *Game, frames []scriptFrame) {
 	t.Helper()
-	g.in.script = &script{frames: frames}
+	g.in.SetScript(&script{frames: frames})
 	for range frames {
 		if err := g.Update(); err != nil {
 			t.Fatalf("the game ended: %v", err)
@@ -142,9 +149,9 @@ func charIndex(t *testing.T, id string) int {
 func toChar(t *testing.T, id string) []scriptFrame {
 	t.Helper()
 	n := (charIndex(t, id) - defaultCharIndex() + len(characters)) % len(characters)
-	right := make([]Action, n)
+	right := make([]input.Action, n)
 	for i := range right {
-		right[i] = ActRight
+		right[i] = input.Right
 	}
 	return press(right...)
 }
@@ -199,7 +206,7 @@ func TestScenarioMenus(t *testing.T) {
 	}{
 		{
 			name:  "play opens the select screen on the main character",
-			input: func(*testing.T) []scriptFrame { return press(ActConfirm) },
+			input: func(*testing.T) []scriptFrame { return press(input.Confirm) },
 			check: func(t *testing.T, g *Game) {
 				t.Helper()
 				s, ok := g.scene.(*CharSelectScene)
@@ -210,7 +217,7 @@ func TestScenarioMenus(t *testing.T) {
 		},
 		{
 			name:  "cancel on the select screen goes back to the title",
-			input: func(*testing.T) []scriptFrame { return press(ActConfirm, ActCancel) },
+			input: func(*testing.T) []scriptFrame { return press(input.Confirm, input.Cancel) },
 			check: func(t *testing.T, g *Game) {
 				t.Helper()
 				titleOf(t, g)
@@ -220,7 +227,7 @@ func TestScenarioMenus(t *testing.T) {
 			name: "a run starts on the chosen character",
 			input: func(t *testing.T) []scriptFrame {
 				t.Helper()
-				return steps(press(ActConfirm), toChar(t, otherID()), press(ActConfirm))
+				return steps(press(input.Confirm), toChar(t, otherID()), press(input.Confirm))
 			},
 			check: func(t *testing.T, g *Game) {
 				t.Helper()
@@ -230,8 +237,10 @@ func TestScenarioMenus(t *testing.T) {
 			},
 		},
 		{
-			name:  "pause holds the run",
-			input: func(*testing.T) []scriptFrame { return steps(press(ActConfirm, ActConfirm), intro(), press(ActPause)) },
+			name: "pause holds the run",
+			input: func(*testing.T) []scriptFrame {
+				return steps(press(input.Confirm, input.Confirm), intro(), press(input.Pause))
+			},
 			check: func(t *testing.T, g *Game) {
 				t.Helper()
 				s := playOf(t, g)
@@ -245,7 +254,7 @@ func TestScenarioMenus(t *testing.T) {
 		{
 			name: "continue goes on with the run",
 			input: func(*testing.T) []scriptFrame {
-				return steps(press(ActConfirm, ActConfirm), intro(), press(ActPause, ActConfirm))
+				return steps(press(input.Confirm, input.Confirm), intro(), press(input.Pause, input.Confirm))
 			},
 			check: func(t *testing.T, g *Game) {
 				t.Helper()
@@ -257,7 +266,7 @@ func TestScenarioMenus(t *testing.T) {
 		{
 			name: "TITLE on the pause menu goes back to the title",
 			input: func(*testing.T) []scriptFrame {
-				return steps(press(ActConfirm, ActConfirm), intro(), press(ActPause, ActDown, ActDown, ActConfirm))
+				return steps(press(input.Confirm, input.Confirm), intro(), press(input.Pause, input.Down, input.Down, input.Confirm))
 			},
 			check: func(t *testing.T, g *Game) {
 				t.Helper()
@@ -271,7 +280,7 @@ func TestScenarioMenus(t *testing.T) {
 		},
 		{
 			name:  "the menu wraps around from the top",
-			input: func(*testing.T) []scriptFrame { return press(ActUp) },
+			input: func(*testing.T) []scriptFrame { return press(input.Up) },
 			check: func(t *testing.T, g *Game) {
 				t.Helper()
 				if s := titleOf(t, g); titleItems[s.sel] != "EXIT" {
@@ -281,13 +290,13 @@ func TestScenarioMenus(t *testing.T) {
 		},
 		{
 			name:  "the gallery and back",
-			input: func(*testing.T) []scriptFrame { return press(ActDown, ActConfirm) },
+			input: func(*testing.T) []scriptFrame { return press(input.Down, input.Confirm) },
 			check: func(t *testing.T, g *Game) {
 				t.Helper()
 				if _, ok := g.scene.(*GalleryScene); !ok {
 					t.Fatalf("not in the gallery: %T", g.scene)
 				}
-				play(t, g, press(ActCancel))
+				play(t, g, press(input.Cancel))
 				titleOf(t, g)
 			},
 		},
@@ -339,7 +348,7 @@ func TestScenarioSecretWord(t *testing.T) {
 				progress(secretID()).Cleared = true
 				store.Data.Announced = map[string]bool{secretID(): true}
 			},
-			input:     steps(wait(wordWait+1), press(ActConfirm), typeText(secretWord)),
+			input:     steps(wait(wordWait+1), press(input.Confirm), typeText(secretWord)),
 			wantFound: true, wantExtra: true,
 		},
 	}
@@ -362,7 +371,7 @@ func TestScenarioSecretWord(t *testing.T) {
 			}
 			if tc.wantExtra {
 				// the run started now is on the extra stages
-				play(t, g, press(ActConfirm, ActConfirm))
+				play(t, g, press(input.Confirm, input.Confirm))
 				if !playOf(t, g).eng.G.Hard {
 					t.Error("the run is not on the extra stages")
 				}
@@ -397,7 +406,7 @@ func TestScenarioSecretCharacter(t *testing.T) {
 			name: "locked on a new save",
 			input: func(t *testing.T) []scriptFrame {
 				t.Helper()
-				return steps(press(ActConfirm), toChar(t, ""), press(ActConfirm))
+				return steps(press(input.Confirm), toChar(t, ""), press(input.Confirm))
 			},
 		},
 		{
@@ -408,7 +417,7 @@ func TestScenarioSecretCharacter(t *testing.T) {
 			},
 			input: func(t *testing.T) []scriptFrame {
 				t.Helper()
-				return steps(press(ActConfirm), toChar(t, ""), press(ActConfirm))
+				return steps(press(input.Confirm), toChar(t, ""), press(input.Confirm))
 			},
 		},
 		{
@@ -416,7 +425,7 @@ func TestScenarioSecretCharacter(t *testing.T) {
 			prepare: clearRegulars,
 			input: func(t *testing.T) []scriptFrame {
 				t.Helper()
-				return steps(wait(revealWordsAt+21), press(ActConfirm, ActConfirm), toChar(t, ""), press(ActConfirm))
+				return steps(wait(revealWordsAt+21), press(input.Confirm, input.Confirm), toChar(t, ""), press(input.Confirm))
 			},
 			playable: true,
 		},
@@ -451,9 +460,9 @@ func TestScenarioGallerySkipsLockedCharacters(t *testing.T) { //nolint:parallelt
 	if secretID() == "" {
 		t.Skip("no secret character")
 	}
-	play(t, g, press(ActDown, ActConfirm))
+	play(t, g, press(input.Down, input.Confirm))
 	for range 2 * len(characters) {
-		play(t, g, press(ActTabNext))
+		play(t, g, press(input.TabNext))
 		if s, ok := g.scene.(*GalleryScene); !ok || s.char().Secret {
 			t.Fatalf("got %T on a locked character", g.scene)
 		}
@@ -475,10 +484,10 @@ func TestScenarioAutoplayClearsACourseAndUnlocksItsIllustration(t *testing.T) { 
 		t.Fatal("the illustration is open in the gallery before it was earned")
 	}
 
-	play(t, g, press(ActConfirm, ActConfirm))
+	play(t, g, press(input.Confirm, input.Confirm))
 	s := playOf(t, g)
 	s.auto = &autoPlayer{careful: true}
-	g.in.script = &script{}
+	g.in.SetScript(&script{})
 	for f := 0; s.eng.Level() < 2; f++ {
 		if f > 60*30 {
 			t.Fatalf("the first course is not done after 30 seconds (on %s)", s.eng.Progress())
@@ -501,7 +510,7 @@ func TestScenarioAutoplayClearsACourseAndUnlocksItsIllustration(t *testing.T) { 
 	}
 
 	s.auto = nil
-	play(t, g, press(ActPause, ActDown, ActDown, ActConfirm))
+	play(t, g, press(input.Pause, input.Down, input.Down, input.Confirm))
 	if open := galleryOpen(t, g, first); !open {
 		t.Error("the illustration is still locked in the gallery")
 	}
@@ -512,7 +521,7 @@ func TestScenarioAutoplayClearsACourseAndUnlocksItsIllustration(t *testing.T) { 
 func galleryOpen(t *testing.T, g *Game, id string) bool {
 	t.Helper()
 	titleOf(t, g)
-	play(t, g, press(ActDown, ActConfirm))
+	play(t, g, press(input.Down, input.Confirm))
 	s, ok := g.scene.(*GalleryScene)
 	if !ok {
 		t.Fatalf("not in the gallery: %T", g.scene)
@@ -521,7 +530,7 @@ func galleryOpen(t *testing.T, g *Game, id string) bool {
 		if s.char().ID == heroID {
 			break
 		}
-		play(t, g, press(ActTabNext))
+		play(t, g, press(input.TabNext))
 	}
 	found, open := false, false
 	for i, it := range s.items() {
@@ -532,7 +541,7 @@ func galleryOpen(t *testing.T, g *Game, id string) bool {
 	if !found {
 		t.Fatalf("the gallery of %s does not list %s", s.char().ID, id)
 	}
-	play(t, g, press(ActCancel))
+	play(t, g, press(input.Cancel))
 	titleOf(t, g)
 	return open
 }

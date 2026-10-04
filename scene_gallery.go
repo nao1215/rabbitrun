@@ -10,6 +10,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/colorm"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 
+	"github.com/nao1215/rabbitrun/internal/input"
 	"github.com/nao1215/rabbitrun/internal/sound"
 	"github.com/nao1215/rabbitrun/road"
 )
@@ -127,10 +128,10 @@ func (s *GalleryScene) Update(g *Game) {
 	if s.viewing {
 		// step to the previous or next unlocked entry
 		step := 0
-		if g.in.Repeat(ActLeft) {
+		if g.in.Repeat(input.Left) {
 			step = -1
 		}
-		if g.in.Repeat(ActRight) {
+		if g.in.Repeat(input.Right) {
 			step = 1
 		}
 		if step != 0 {
@@ -144,7 +145,7 @@ func (s *GalleryScene) Update(g *Game) {
 				}
 			}
 		}
-		if g.in.Pressed(ActCancel) || g.in.Pressed(ActConfirm) {
+		if g.in.Pressed(input.Cancel) || g.in.Pressed(input.Confirm) {
 			s.releaseViewed(items)
 			s.viewing = false
 			sound.Play(sound.Cancel)
@@ -152,7 +153,7 @@ func (s *GalleryScene) Update(g *Game) {
 		return
 	}
 	// switch characters
-	if d := boolInt(g.in.Pressed(ActTabNext)) - boolInt(g.in.Pressed(ActTabPrev)); d != 0 {
+	if d := boolInt(g.in.Pressed(input.TabNext)) - boolInt(g.in.Pressed(input.TabPrev)); d != 0 {
 		// Skip characters that are still locked.
 		n := len(characters)
 		for range n {
@@ -166,16 +167,16 @@ func (s *GalleryScene) Update(g *Game) {
 		return
 	}
 	old := s.sel
-	if g.in.Repeat(ActLeft) && s.sel > 0 {
+	if g.in.Repeat(input.Left) && s.sel > 0 {
 		s.sel--
 	}
-	if g.in.Repeat(ActRight) && s.sel < n-1 {
+	if g.in.Repeat(input.Right) && s.sel < n-1 {
 		s.sel++
 	}
-	if g.in.Repeat(ActUp) && s.sel >= galleryCols {
+	if g.in.Repeat(input.Up) && s.sel >= galleryCols {
 		s.sel -= galleryCols
 	}
-	if g.in.Repeat(ActDown) && s.sel+galleryCols < n {
+	if g.in.Repeat(input.Down) && s.sel+galleryCols < n {
 		s.sel += galleryCols
 	}
 	if s.sel != old {
@@ -192,7 +193,7 @@ func (s *GalleryScene) Update(g *Game) {
 	}
 	s.scroll = float64(first) * (tileH + tileGap)
 	s.scrollView += (s.scroll - s.scrollView) * 0.25
-	if g.in.Pressed(ActConfirm) {
+	if g.in.Pressed(input.Confirm) {
 		if s.open[s.sel] {
 			s.viewing = true
 			sound.Play(sound.Confirm)
@@ -200,7 +201,7 @@ func (s *GalleryScene) Update(g *Game) {
 			sound.Play(sound.Denied)
 		}
 	}
-	if g.in.Pressed(ActCancel) {
+	if g.in.Pressed(input.Cancel) {
 		sound.Play(sound.Cancel)
 		g.SetScene(newTitleScene())
 	}
