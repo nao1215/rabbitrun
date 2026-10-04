@@ -107,6 +107,28 @@ func TestMissMenu(t *testing.T) {
 	})
 }
 
+func TestDemoSwingsTheHammerOnce(t *testing.T) { //nolint:paralleltest // shares the save data and the characters
+	g, screen := newDrawScenario(t, nil)
+	s := startRun(t, g)
+	s.auto = &engine.AutoPlayer{}
+	bombs := s.eng.G.Bombs
+	playUntil(t, g, screen, 30*60, func() bool { return s.demoSwung })
+	if s.cutin == 0 {
+		t.Error("the demo swung its hammer without the cut-in")
+	}
+	if s.eng.G.Bombs != bombs-1 {
+		t.Errorf("%d hammers after the demo's swing, want %d", s.eng.G.Bombs, bombs-1)
+	}
+	for range cutinFrames + demoHammerFrame {
+		if err := g.Update(); err != nil {
+			t.Fatalf("the game ended: %v", err)
+		}
+	}
+	if s.eng.G.Bombs != bombs-1 {
+		t.Errorf("the demo swung again: %d hammers, want %d", s.eng.G.Bombs, bombs-1)
+	}
+}
+
 // hasPopup reports whether a popup of s starts with prefix.
 func hasPopup(s *playScene, prefix string) bool {
 	for _, p := range s.popups {

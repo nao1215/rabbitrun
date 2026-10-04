@@ -27,6 +27,10 @@ const (
 	boardY   = 70.0 // y of the top row of the road
 	readyFr  = 90   // duration of READY / GO
 	goFrames = 35   // the last frames of READY, which show GO
+	// demoHammerFrame is when a self-playing demo swings its hammer (about 4 seconds in).
+	demoHammerFrame = 240
+	// demoHammerWalls is how many wall blocks must be on the screen for the demo's swing.
+	demoHammerWalls = 40
 
 	// boardMidX is the middle of the road across.
 	boardMidX = boardX + cell*boardW/2
@@ -55,6 +59,7 @@ type playScene struct {
 	eng         *engine.Engine
 	prog        *save.CharProgress
 	auto        *engine.AutoPlayer // when set, the game plays itself (demo)
+	demoSwung   bool               // the demo has swung its hammer
 
 	frame    int
 	ready    int
@@ -258,6 +263,17 @@ func (s *playScene) Update(g *Game) {
 	accel := false
 	if s.auto != nil {
 		s.auto.Step(e)
+		// the demo shows off the hammer once, a few seconds into the run, when there are
+		// walls on the screen to smash
+		if !s.demoSwung && s.frame >= demoHammerFrame && s.cutin == 0 && wallsOnScreen(e.G) >= demoHammerWalls {
+			s.demoSwung = true
+			s.useHammer()
+			if s.cutin > 0 {
+				s.handleEvents()
+				s.updateExpression()
+				return
+			}
+		}
 	} else {
 		// Sideways moves are smooth: she slides while a direction is held, slowly at
 		// first and faster the longer it is held (SlideSpeed).
@@ -288,6 +304,19 @@ func (s *playScene) Update(g *Game) {
 		s.onGameOver()
 	}
 	s.updateExpression()
+}
+
+// wallsOnScreen counts the wall blocks of the road on the screen.
+func wallsOnScreen(g *road.Game) int {
+	n := 0
+	for _, row := range g.Rows {
+		for _, c := range row {
+			if c.Wall != 0 {
+				n++
+			}
+		}
+	}
+	return n
 }
 
 func (s *playScene) handleEvents() {
