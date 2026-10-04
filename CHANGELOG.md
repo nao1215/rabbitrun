@@ -6,7 +6,7 @@ All notable changes to this project are documented in this file. The format is b
 
 ### Added
 - Rabbit Run: a portrait (720x900) road runner built with Ebitengine. A bunny hops up a road of gummy blocks; slide her left and right, pick up macarons and stay off the walls. A run is four stages of four courses, about three minutes.
-- Course themes: every course has one of twenty-one themes (a winding narrow road, wide swings from side to side, slaloms, gates, pillars that step across the road, lanes, a checkerboard, a funnel and more). Each character runs roads of her own, the same every time, and a long straight run ends with a block to dodge.
+- Course themes: every course has one of twenty-nine themes (a winding narrow road, wide swings from side to side, slaloms, gates, pillars that step across the road, lanes, a checkerboard, a funnel and more). Each character runs roads of her own, the same every time, and a long straight run ends with a block to dodge.
 - Macarons that add up to extra lives (every 100), some laid in lines along the way, and vaults with an extra life that only the hammer opens.
 - Bonus courses: one course in each stage after the first is walled with blocks of every candy color, with a wider road, twice the sweets and a feast of macarons.
 - The hammer: a squeaky toy hammer that smashes every wall on the screen, with a cut-in of the character.
@@ -23,9 +23,15 @@ All notable changes to this project are documented in this file. The format is b
 - End-to-end tests of the built binary with [atago](https://github.com/nao1215/atago) (`make e2e`), run by CI on Linux, macOS and Windows.
 - Release archives and Linux packages for Linux, macOS and Windows (amd64 and arm64), with a cosign-signed checksum file, an SBOM per archive, GitHub build provenance and the license texts of the linked Go modules under `THIRD_PARTY_LICENSES/`.
 - A Homebrew cask in nao1215/tap (`brew install --cask nao1215/tap/rabbitrun`).
+- Eight course themes built around one idea each that can be read well ahead, with their macarons, hammers and extra lives laid as part of the design (one of them a fork whose hard lane pays off), spread over every character's runs.
+- Difficulty and fun scores for every course, measured on the road itself (narrow rows, sideways slides, rests, blocks to aim past, speed, help; sweets, items, rewards off the easy line, feasts, how much the road repeats), with tests that keep the runs harder from left to right on the character select screen, the extra side harder than the regular side course by course, every run harder stage by stage, every stage fun enough and no theme twice in a row.
+
+### Changed
+- The characters' courses and road speeds were retuned to those scores: the cool girl's runs are now the easiest and the bunny girl's the hardest, and the checkerboards stay where they were.
+- The comb leaves out one tooth where its teeth change walls, and scattered blocks keep clear of a block of the two rows before, so neither asks for a dash of two cells on a fast road.
 
 ### Fixed
 - `--debug` no longer writes the save data: a run with it saved the secret character as announced, so when the four regular characters later cleared for real the title never brought her in. Saves already marked that way by `--debug` show her arrival once she is earned.
 - The bunny no longer drops back from a wall she slides into from the side: the road kept scrolling for the frame of the miss and could jump back a row.
 - The checkerboard courses (the cool girl's, the gyaru's and the bunny girl's) leave out a block now and then, so there is a spot to stand still in instead of a step aside for every row of blocks, and each lays a hammer as its checker rows begin and an extra life halfway through.
-- The cool girl finds one more hammer on her road early in the first stage: her roads are the hardest of the four regular characters.
+- The cool girl, the one to start with, finds one more hammer on her road early in the first stage.

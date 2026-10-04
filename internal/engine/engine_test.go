@@ -293,7 +293,7 @@ func TestUnknownCharacterRunsTheMixedRoad(t *testing.T) {
 }
 
 // TestCoolFindsASpareHammer checks that every run starts with road.StartBombs hammers and
-// that the cool girl, whose roads are the hardest of the regular four, finds one more
+// that the cool girl, the one to start with (her roads are the easiest), finds one more
 // hammer on her first stage than her road would otherwise have.
 func TestCoolFindsASpareHammer(t *testing.T) {
 	t.Parallel()
