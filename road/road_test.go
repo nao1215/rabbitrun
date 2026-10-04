@@ -889,3 +889,35 @@ func TestStartAtIsTheRoadOfPlay(t *testing.T) {
 		t.Fatalf("past the end: level %d, stage %d, course %d", g.Level, g.Stage, g.Course)
 	}
 }
+
+// TestStepsToNextCourseCountsDownToTheNextLevel checks that StepsToNextCourse tells when
+// the next course begins: Level goes up on exactly that step, all through a short game,
+// and it reports -1 on the open road after the last course.
+func TestStepsToNextCourseCountsDownToTheNextLevel(t *testing.T) {
+	t.Parallel()
+	g := New(7)
+	g.TotalCourses = 3
+	g.CourseRowsFor = func(level int) int { return 20 + level }
+	g.Safe = 1 << 30
+	for steps := 0; !g.AllClear; steps++ {
+		if steps > 1000 {
+			t.Fatal("no all clear after 1000 steps")
+		}
+		n, lv := g.StepsToNextCourse(), g.Level
+		if n < 0 {
+			if lv != g.TotalCourses+1 {
+				t.Fatalf("-1 on course %d, before the open road after the last", lv)
+			}
+			g.Step()
+			continue
+		}
+		for i := 1; i < n; i++ {
+			if g.Step(); g.Level != lv {
+				t.Fatalf("course %d after %d of %d steps from course %d", g.Level, i, n, lv)
+			}
+		}
+		if g.Step(); g.Level != lv+1 {
+			t.Fatalf("course %d after the %d steps from course %d, want %d", g.Level, n, lv, lv+1)
+		}
+	}
+}

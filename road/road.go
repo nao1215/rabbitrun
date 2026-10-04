@@ -994,6 +994,16 @@ func (g *Game) nextCourse() {
 	}
 }
 
+// StepsToNextCourse is how many more steps the road takes before the next course begins
+// (and Level goes up), or -1 when no course follows: the open road after the last one, or
+// the all clear.
+func (g *Game) StepsToNextCourse() int {
+	if g.finishing || g.AllClear {
+		return -1
+	}
+	return g.lenOf(g.Level) - g.courseRow
+}
+
 // finishRows is how many rows of open road come after the last course before the all
 // clear: the walls ahead of her when it is built (the screen above her) get behind her.
 const finishRows = PlayerRow + 3
