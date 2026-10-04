@@ -25,58 +25,77 @@ const (
 	tLane  = road.ThemeLanes
 	tWobb  = road.ThemeWobble
 	tMix   = road.ThemeMixed
+	tFork  = road.ThemeFork
+	tTrail = road.ThemeTrail
+	tRoom  = road.ThemeRooms
+	tJar   = road.ThemeJar
+	tHall  = road.ThemeHammerHall
+	tAlc   = road.ThemeAlcoves
+	tDoor  = road.ThemeDoors
+	tWave  = road.ThemeWave
 )
 
 // courseThemes is the theme of each of a character's 16 courses, on the regular side and
 // on the extra stages. Each character's roads have a character of their own: most of her
 // courses come from a few themes that suit her, with a few others between them.
 //
-//   - cool: roads that test the aim (gates, stepping gates, slaloms, pillars), with swings
-//     and scattered blocks between them; the corridor only on the extra stages: six
-//     courses of gates a side and a corridor made her roads plainly the hardest
-//   - cute: soft curves (snakes, swings, wobbles, funnels, diamonds)
-//   - gyal: busy, restless roads (scattered blocks, chicanes, pillars, stairs, slaloms; one
-//     checkers course a side: three of them were too much)
-//   - street: regular patterns, like a kimono's (combs, lanes, splits, hourglasses, stairs)
-//   - bunny: the hardest of every kind
+// The runs get harder from left to right in the order of the character select screen
+// (the cool girl's are the easiest, the bunny girl's the hardest), the extra side of each
+// is harder than her regular side course by course, and each run gets harder stage by
+// stage. The tests in difficulty_test.go score every course on its road and hold the
+// tables to that; change a table and they tell you what moved.
 //
-// A run opens with the warm-up and ends on the mixed road; the courses get tight from
-// road.Game.HardFrom on (every course on the extra stages, see NewRun).
+//   - cool: clear, readable roads (lanes, the fork, the trail, rooms, doors, diamonds,
+//     gates and pillars), the checkerboard only on stage 4 of the regular side
+//   - cute: soft curves (the trail, swings, wobbles, funnels, snakes) with the jar and the
+//     alcoves for sweets
+//   - gyal: busy, restless roads (scattered blocks, chicanes, pillars, slaloms, stairs), the
+//     jar, the alcoves and the hammer hall; one checkers course a side
+//   - street: regular patterns, like a kimono's (combs, lanes, splits, hourglasses, stairs,
+//     stepping gates), with doors, the wave and rooms
+//   - bunny: the hardest of every kind (corridors, stepping gates, chicanes, snakes, stairs),
+//     with the fork, the wave and the hammer hall, and the most checkers
+//
+// No theme comes twice in a row. A run opens with the warm-up and ends on the mixed road;
+// the courses get tight from road.Game.HardFrom on (every course on the extra stages, see
+// NewRun).
 var courseThemes = map[string][2][GameCourses]road.Theme{
 	coolID: {
-		{tWarm, tGate, tSlal, tPill, tSwing, tHour, tStep, tSwing, tSlal, tSnake, tPill, tRain, tCheck, tEdge, tGate, tMix},
-		{tWarm, tSlal, tStep, tCorr, tGate, tEdge, tDiam, tSwing, tPill, tGate, tSwing, tChic, tStep, tRain, tPill, tMix},
+		{tWarm, tLane, tFork, tTrail, tSwing, tTrail, tPill, tDiam, tGate, tRoom, tStep, tLane, tCheck, tFork, tSwing, tMix},
+		{tWarm, tFork, tGate, tRoom, tDiam, tGate, tPill, tWave, tSwing, tPill, tStep, tDoor, tTrail, tStep, tDoor, tMix},
 	},
 	"cute": {
-		{tWarm, tSwing, tSnake, tDiam, tWobb, tFunn, tPill, tSwing, tSnake, tDiam, tWobb, tLane, tFunn, tSnake, tSwing, tMix},
-		{tWarm, tSnake, tWobb, tFunn, tSwing, tDiam, tHour, tSnake, tWobb, tFunn, tSwing, tChic, tDiam, tSnake, tWobb, tMix},
+		{tWarm, tDiam, tAlc, tTrail, tFunn, tSnake, tJar, tSwing, tHour, tSwing, tHour, tTrail, tWobb, tAlc, tJar, tMix},
+		{tWarm, tWobb, tAlc, tTrail, tJar, tSnake, tFunn, tSwing, tWobb, tSnake, tSwing, tJar, tTrail, tHour, tDiam, tMix},
 	},
 	"gyal": {
-		{tWarm, tPill, tRain, tCheck, tSwing, tChic, tRain, tStair, tSlal, tPill, tChic, tSlal, tRain, tStair, tPill, tMix},
-		{tWarm, tRain, tCheck, tPill, tChic, tStair, tEdge, tRain, tSlal, tChic, tStair, tStep, tRain, tPill, tChic, tMix},
+		{tWarm, tJar, tRain, tCheck, tChic, tJar, tSwing, tRain, tAlc, tChic, tPill, tStair, tAlc, tPill, tHall, tMix},
+		{tWarm, tAlc, tCheck, tHall, tPill, tJar, tSlal, tRain, tHall, tChic, tStair, tJar, tAlc, tSlal, tPill, tMix},
 	},
 	"street": {
-		{tWarm, tLane, tSplit, tComb, tHour, tStair, tGate, tLane, tComb, tSplit, tHour, tFunn, tComb, tStair, tHour, tMix},
-		{tWarm, tSplit, tComb, tLane, tHour, tStair, tCorr, tComb, tSplit, tHour, tLane, tStep, tComb, tStair, tHour, tMix},
+		{tWarm, tStair, tLane, tHour, tLane, tSplit, tDoor, tComb, tDoor, tHour, tWave, tComb, tSplit, tCorr, tWave, tMix},
+		{tWarm, tCorr, tStep, tStair, tRoom, tDoor, tStair, tStep, tLane, tWave, tCorr, tComb, tDoor, tComb, tWave, tMix},
 	},
 	"bunny": {
-		{tWarm, tHour, tChic, tCheck, tCorr, tStep, tEdge, tChic, tCheck, tHour, tCorr, tStep, tEdge, tChic, tCheck, tMix},
-		{tWarm, tCheck, tCorr, tEdge, tStep, tChic, tHour, tCorr, tEdge, tStep, tChic, tCheck, tHour, tEdge, tCorr, tMix},
+		{tWarm, tHall, tSnake, tCheck, tCorr, tStep, tSnake, tFork, tCheck, tWave, tFork, tChic, tStair, tWave, tCheck, tMix},
+		{tWarm, tCheck, tChic, tHall, tWave, tStep, tStair, tFork, tSnake, tCorr, tSnake, tCheck, tGate, tEdge, tGate, tMix},
 	},
 }
 
-// charSpeed is how much faster than the others each character's road runs: the restless
-// gyaru and the secret bunny a little faster, the soft cute road at the usual speed.
-var charSpeed = map[string]float64{coolID: 1.02, "cute": 1, "gyal": 1.06, "street": 1, "bunny": 1.08}
+// charSpeed is how much faster than the usual road each character's road runs: a little
+// slower for the cool girl on the left of the select screen, faster to the right (the
+// bunny girl's at most 1.08: faster, the careful auto player no longer cleared her mixed
+// last course with the whole speed-up held).
+var charSpeed = map[string]float64{coolID: 0.96, "cute": 1, "gyal": 1.04, "street": 1.06, "bunny": 1.08}
 
 // coolID is the cool girl's character id.
 const coolID = "cool"
 
 // extraHammerRow is the row of the first stage on which a character finds one more
-// hammer on her road. The cool girl's roads (gates, stepping gates, slaloms and a
-// checkerboard, all testing the aim) are the hardest of the four regular characters, so a
-// spare hammer lies on her way early, just after the opening trail of sweets. It is placed
-// on the road rather than given at the start (the user's choice).
+// hammer on her road. The cool girl, on the left of the select screen, has the easiest
+// roads and is the one to start with, so a spare hammer lies on her way early, just after
+// the opening trail of sweets: a first look at the hammer. It is placed on the road rather
+// than given at the start (the user's choice).
 var extraHammerRow = map[string]int{coolID: 40}
 
 // frontHardFrom is the course from which the regular side is as tight as the extra stages

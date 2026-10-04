@@ -153,6 +153,9 @@ type Game struct {
 	// ExtraHammerRow, when not 0, lays one more hammer on the first stage, on this row of
 	// the stage (a character whose roads are harder gets it on her way).
 	ExtraHammerRow int
+	// themeRow: the row being built has the theme's blocks (it is past the rows that settle
+	// the road into the theme)
+	themeRow bool
 }
 
 // Tuning.
@@ -329,6 +332,7 @@ func (g *Game) difficulty() int { return max(0, g.Level-1) / 2 }
 func (g *Game) buildRow(withThings bool) Row {
 	reach, last := g.reach, g.lastRow
 	g.sinceTrap++
+	g.themeRow = false
 	row := g.buildRoad(withThings)
 	g.hold = max(0, g.hold-1)
 	if withThings && !g.finishing && !g.AllClear {
@@ -360,8 +364,8 @@ const trapRun = 10
 // cells she could be on and the row before this one; the block goes in only with open
 // cells on both sides of it and if the road can still be followed.
 func (g *Game) trap(row Row, reach [W]bool, last Row) Row {
-	if g.section != sectionNone {
-		return row // not in a vault or a feast
+	if g.section != sectionNone || g.themeRow && g.theme().designed() {
+		return row // not in a vault or a feast, nor in the shape of a designed theme
 	}
 	open, best := 0, -1
 	for x := range W {
@@ -759,6 +763,8 @@ func (g *Game) addThings(row Row, left, right int) Row {
 		thing = SweetBomb
 	case g.Stage == 1 && g.ExtraHammerRow > 0 && g.stageRow == g.ExtraHammerRow:
 		thing = SweetBomb
+	case g.themeRow && g.theme().designed():
+		// a designed theme lays its own sweets (below), and none at random
 	case g.rng.Float64() < p.SweetsRate*bonusSweets(g.Bonus()):
 		switch r := g.rng.Float64(); {
 		case r < p.OneUpRate && g.Lives < MaxLives:
@@ -771,6 +777,11 @@ func (g *Game) addThings(row Row, left, right int) Row {
 	}
 	if thing != SweetNone {
 		g.place(&row, left, right, thing)
+	}
+	if g.themeRow && g.theme().designed() {
+		g.pathLeft = 0
+		g.designSweets(&row, g.theme(), g.courseRow, left, right)
+		return row
 	}
 	g.pathLine(&row, left, right)
 	return row
