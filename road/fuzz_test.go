@@ -77,9 +77,13 @@ func FuzzRetriesKeepWhatWasTaken(f *testing.F) {
 		g := NewWith(uint64(setup[1])+1, Standard)
 		g.TotalCourses = 16
 		g.Hard = setup[2]&1 == 1
+		var all []Theme
+		for th := range themeCount {
+			all = append(all, th)
+		}
 		g.Themes = make([]Theme, g.TotalCourses)
 		for i := range g.Themes {
-			g.Themes[i] = Theme((int(setup[0]) + i*int(setup[2]|1)) % int(themeCount))
+			g.Themes[i] = all[(int(setup[0])+i*int(setup[2]|1))%len(all)]
 		}
 		picked := map[takenKey]bool{}
 		for i, b := range ops {

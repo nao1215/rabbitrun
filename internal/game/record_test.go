@@ -19,18 +19,20 @@ import (
 const fakeFFmpegEnv = "RABBITRUN_FAKE_FFMPEG"
 
 func fakeFFmpeg(mode string) {
-	switch mode {
-	case "close":
-		_ = os.Stdin.Close()
+	if mode == "close" {
+		if err := os.Stdin.Close(); err != nil {
+			os.Exit(2)
+		}
 		time.Sleep(300 * time.Millisecond)
 		os.Exit(0)
-	case "exit7":
-		_, _ = io.Copy(io.Discard, os.Stdin)
-		os.Exit(7)
-	default:
-		_, _ = io.Copy(io.Discard, os.Stdin)
-		os.Exit(0)
 	}
+	if _, err := io.Copy(io.Discard, os.Stdin); err != nil {
+		os.Exit(2)
+	}
+	if mode == "exit7" {
+		os.Exit(7)
+	}
+	os.Exit(0)
 }
 
 // openFakeRecorder starts a recording of seconds seconds into the fake ffmpeg mode.
