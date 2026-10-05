@@ -26,6 +26,7 @@ All notable changes to this project are documented in this file. The format is b
 - The gallery_cg screenshot of `--capture` on a fresh save now shows an illustration enlarged. The gallery opened on the first character, who had earned none in the scripted run, so it showed the grid.
 - A sweet put in a dent in the wall on a course with a theme now has the dent open on the row after it too, as on the other courses, so she has two rows to dart in for it and out again. The dent was one row deep there and the next row walled it off, a notch that an extra life or a hammer (which go to the dents twice as often) could hardly be taken from without a miss. It is one cell more of road on most courses of every run; the rest of each road is the same, except on course 7 of the gyal girl's extra side, where a few of the blocks that follow the dent come in other places.
 - The words that pop up over the road (FROM 2-1 after a retry, 1UP, STAGE 2, BONUS!) now wait with the road while the game is paused. Their time ran on behind the pause menu, so after a pause during READY the retry no longer told where it started.
+- A sweet lying on the cell a retry puts her on is now hers at once, as a sweet that comes into her row where she stands. Nothing took it until she moved, so standing still let it go by and broke the streak of sweets.
 
 ## [0.1.0] - 2026-10-04
 

@@ -1396,6 +1396,9 @@ func (g *Game) Restart() bool {
 	g.X = g.openColumn(oldX)
 	g.SideRowBehind = true // the road starts again with its last row just come in
 	g.Events = append(g.Events, Event{Kind: EventRestart})
+	// a sweet on the cell she is put on is hers, as one that comes into her row where she
+	// stands (Step): nothing took it until she moved, so standing still let it go by
+	g.pick()
 	return true
 }
 

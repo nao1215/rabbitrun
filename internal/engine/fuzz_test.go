@@ -116,8 +116,15 @@ func checkStep(t *testing.T, e *Engine, op byte, b before, ok bool, step int) {
 			}
 			return
 		}
-		// one life used, back RewindRows rows (into the course before at most), at its own speed
-		if g.Lives != b.lives-1 || g.Missed || g.Over || g.Level != b.rewind || g.Level > b.level || g.Level < b.level-1 {
+		// one life used, back RewindRows rows (into the course before at most), at its own speed;
+		// a sweet on the cell she is put on is hers at once, and it can give a life back
+		gained := 0
+		for _, ev := range e.Events {
+			if ev.Kind == road.EventOneUp {
+				gained++
+			}
+		}
+		if g.Lives != min(road.MaxLives, b.lives-1+gained) || g.Missed || g.Over || g.Level != b.rewind || g.Level > b.level || g.Level < b.level-1 {
 			t.Fatalf("step %d: RETRY from level %d (rewind %d) with %d lives: level %d, %d lives, missed %v",
 				step, b.level, b.rewind, b.lives, g.Level, g.Lives, g.Missed)
 		}

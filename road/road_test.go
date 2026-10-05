@@ -1020,3 +1020,28 @@ func TestADentIsTwoRowsDeepOnAThemedCourse(t *testing.T) {
 		t.Fatal("no dent with a sweet on a themed course was built")
 	}
 }
+
+// TestRetryTakesTheSweetUnderHer starts a retry where a sweet lies on the cell she is put
+// on, and she stands still: she takes it, as she takes a sweet that comes into her row
+// where she stands. Nothing took it until she moved, so standing still let it go by.
+func TestRetryTakesTheSweetUnderHer(t *testing.T) {
+	t.Parallel()
+	g := NewWith(1, Profile{Speed: 1, MaxWidth: 5})
+	g.X = 5.5 // beside the trail of sweets down the middle that opens the game
+	for range 32 {
+		g.Step()
+	}
+	g.X, g.Missed = 4.5, true // a miss on the trail
+	sweets := g.Sweets
+	g.Restart()
+	lo, hi := span(g.X)
+	for c := lo; c <= hi; c++ {
+		if g.Rows[PlayerRow][c].Sweet != SweetNone {
+			t.Errorf("a sweet lies under her as the retry starts (column %d), not taken", c)
+		}
+	}
+	g.Step() // she stands still
+	if g.Sweets != sweets+2 {
+		t.Errorf("standing still took %d sweets of the trail over the retry, want 2 (the one under her and the next)", g.Sweets-sweets)
+	}
+}
