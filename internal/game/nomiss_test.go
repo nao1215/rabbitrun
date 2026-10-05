@@ -257,7 +257,7 @@ func TestNewRunStartsWithoutMisses(t *testing.T) { //nolint:paralleltest // shar
 	if s.misses != 1 {
 		t.Fatalf("misses %d after one miss", s.misses)
 	}
-	for _, next := range []*playScene{newRetryScene(s.char), newRunScene(s.char), newPlayScene(s.char)} {
+	for _, next := range []*playScene{newRetryScene(s.char, ""), newRunScene(s.char), newPlayScene(s.char)} {
 		if next.misses != 0 || next.courses != 0 {
 			t.Errorf("a new run starts with %d misses and %d courses", next.misses, next.courses)
 		}
