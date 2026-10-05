@@ -44,32 +44,54 @@ func unlockedAfter(n, illustrations int) int {
 	return min(illustrations, (n*illustrations+engine.GameCourses-2)/(engine.GameCourses-1))
 }
 
+// courseBuilt runs when the last row of course n (counting from 1 over the whole game) has
+// come in at the top of the road and the next course begins there (road.EventCourse): the
+// newest illustration earned by course n shows behind the road, with the sound of an
+// unlock for a new one. They are earned only when she has run course n to its end
+// (courseClear): saved here, a miss on the rest of the course kept them.
+func (s *playScene) courseBuilt(n int) {
+	cgs := playCGs(s.char)
+	for i := range unlockedAfter(n, len(cgs)) {
+		if cg := &cgs[i]; !s.prog.UnlockedCG[cg.ID] && cg.HasImage() {
+			sound.Play(sound.Unlock)
+		}
+	}
+	s.showEarned(n)
+}
+
+// clearReached earns the illustrations of the courses she has run to the end: the courses
+// before the one of her row (road.Game.PlayerLevel). The courses before the first frame are
+// not hers to earn (a screenshot or a recording starts later in the run).
+func (s *playScene) clearReached() {
+	n := s.eng.G.PlayerLevel() - 1
+	if s.cleared < 0 {
+		s.cleared = n
+	}
+	for s.cleared < n {
+		s.cleared++
+		s.courseClear(s.cleared)
+	}
+}
+
 // courseClear runs when course n (counting from 1 over the whole game) is done: the
 // illustrations earned by then are unlocked, and the newest becomes the background of
 // the next course.
 func (s *playScene) courseClear(n int) {
 	cgs := playCGs(s.char)
-	upto := unlockedAfter(n, len(cgs))
-	if upto == 0 {
-		return
-	}
-	for i := range upto {
-		cg := &cgs[i]
-		if !s.prog.UnlockedCG[cg.ID] {
-			s.prog.UnlockedCG[cg.ID] = true
+	for i := range unlockedAfter(n, len(cgs)) {
+		if id := cgs[i].ID; !s.prog.UnlockedCG[id] {
+			s.prog.UnlockedCG[id] = true
 			store.Mark()
-			if cg.HasImage() {
-				sound.Play(sound.Unlock)
-			}
 		}
 	}
-	// the newest illustration shows behind the road (the newest that is drawn yet: some
-	// are still being made)
-	for i := upto - 1; i >= 0; i-- {
-		if cg := &cgs[i]; cg.HasImage() {
-			s.setStageCG(cg)
-			break
-		}
+	s.showEarned(n)
+}
+
+// showEarned shows behind the road the newest illustration earned once n courses are
+// cleared (the newest that is drawn yet: some are still being made).
+func (s *playScene) showEarned(n int) {
+	if cg := s.stageCGAfter(n); cg != nil {
+		s.setStageCG(cg)
 	}
 }
 
@@ -77,6 +99,7 @@ func (s *playScene) courseClear(n int) {
 func (s *playScene) allClearNow() {
 	s.allClear = true
 	s.overFrame = 0
+	s.courseClear(engine.GameCourses) // the last walls are behind her
 	s.commitRun()
 	sound.StopBGM()
 	sound.Play(sound.Unlock)

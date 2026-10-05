@@ -241,6 +241,29 @@ func TestBombClearsTheWallsAndKeepsTheSweets(t *testing.T) {
 	}
 }
 
+// TestPlayerLevelFollowsHerRow runs a game through its first course: the course of her row
+// goes up when the first row of the next course comes down to it: PlayerRow+2 steps after
+// Level went up, as the last row of the course came in above the screen (Ahead).
+func TestPlayerLevelFollowsHerRow(t *testing.T) {
+	t.Parallel()
+	g := New(3)
+	g.TotalCourses = 4
+	g.Safe = 1 << 30
+	at := -1
+	for s := 1; s < 1000 && g.PlayerLevel() == 1; s++ {
+		g.Step()
+		if at < 0 && g.Level == 2 {
+			at = s
+		}
+		if g.PlayerLevel() == 2 && s-at != PlayerRow+2 {
+			t.Fatalf("her row is on course 2 %d steps after Level went up, want %d", s-at, PlayerRow+2)
+		}
+	}
+	if at < 0 || g.PlayerLevel() != 2 {
+		t.Fatalf("course 2 began on step %d, her row on course %d", at, g.PlayerLevel())
+	}
+}
+
 // TestNoHammerAfterAMiss swings a hammer on the stopped road of a miss: it is refused, and
 // the stock and the walls stay for the retry.
 func TestNoHammerAfterAMiss(t *testing.T) {

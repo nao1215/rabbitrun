@@ -11,6 +11,7 @@ All notable changes to this project are documented in this file. The format is b
 - Pressing the hammer on the frame she slides into a wall no longer uses up a hammer: the miss stopped the road, the hammer was gone from the stock with nothing to show for it, and its cut-in played after the retry over walls that were still there.
 - On a gamepad, pressing Start again on the pause menu now resumes the run whichever item is chosen; with RESET or TITLE chosen it threw the run away, since Start is also a confirm button.
 - RETRY after a game over now opens the new run on the game over pose she was down in. It picked one at random, so she changed pose as the run began, and a pose shown only there stayed locked in the gallery.
+- A course's illustration is now earned when she runs the course to its end. It was saved as soon as the course's last row came in at the top of the road, so a miss on the last rows of the course (a game over, or a retry back into it) still left it open in the gallery.
 
 ## [0.1.0] - 2026-10-04
 

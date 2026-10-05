@@ -1307,6 +1307,12 @@ func (g *Game) rewindTo() (level, rows int) {
 	return level, max(0, rows)
 }
 
+// PlayerLevel is the course (Level) of the row she is on. Level is the course of the row being
+// built at the top of the road, so it goes up as the last row of a course comes in there,
+// and she runs the rest of that course (PlayerRow+2 rows) before PlayerLevel goes up. It is
+// the last course plus one on the open road after it, and 1 on the open rows of a game's start.
+func (g *Game) PlayerLevel() int { return max(1, g.ids[PlayerRow].level) }
+
 // RewindLevel is the course (Level) a retry would start on.
 func (g *Game) RewindLevel() int {
 	level, _ := g.rewindTo()

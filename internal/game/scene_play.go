@@ -130,6 +130,10 @@ type playScene struct {
 	allClear  bool
 	endLayer  *ebiten.Image // the ending's portrait, when there is no illustration
 	committed bool          // whether this run was recorded in the progress (commitRun)
+	// cleared is the courses of the run she has run to the end (clearReached; -1 before the
+	// first frame of play): their illustrations are earned. A retry going back into a course
+	// does not take them away.
+	cleared int
 	// artFor is the course (negative: the course a retry goes back to) whose next
 	// illustration prefetchArt has started decoding; prefetched are the illustrations it
 	// started, freed with the scene.
@@ -177,6 +181,7 @@ func newPlayScene(c *character.Character) *playScene {
 		ready: readyFr,
 		expr:  character.ExprNormal, prevExpr: character.ExprNormal, exprID: character.ExprNormal, prevID: character.ExprNormal, exprFade: 1,
 		popFrame: -1,
+		cleared:  -1,
 	}
 	releasePortraitsExcept(c)
 	s.portraits = portraitEntries(c)
@@ -319,6 +324,7 @@ func (s *playScene) Update(g *Game) {
 	}
 	e.Tick(accel)
 	s.handleEvents()
+	s.clearReached()
 	s.readRoad()
 	if e.Over() {
 		s.onGameOver()
@@ -383,7 +389,7 @@ func (s *playScene) handleEvents() {
 			}
 		case road.EventCourse:
 			courses++
-			s.courseClear(e.G.Level - 1)
+			s.courseBuilt(e.G.Level - 1)
 			if e.G.Bonus() {
 				s.popups = append(s.popups, popup{text: "BONUS!", timer: 120})
 			}
