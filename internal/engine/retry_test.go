@@ -43,7 +43,9 @@ func TestRetryShowsTheRoadOfBefore(t *testing.T) {
 				for y := range after { // what she took at the edge stays taken
 					before[y][0].Sweet, after[y][0].Sweet = 0, 0
 				}
-				before[road.PlayerRow][g.Col()].Sweet = 0 // a sweet on the cell she is put on is hers at once
+				for _, y := range []int{road.PlayerRow, road.PlayerRow + 1} { // a sweet on the cell she is put on (and beside her body) is hers at once
+					before[y][g.Col()].Sweet, after[y][g.Col()].Sweet = 0, 0
+				}
 				for y := range after {
 					if after[y] != before[y] {
 						t.Errorf("%s/%s, a miss %d rows in (course %d): row %d of the screen was %v, after the retry %v", id, side(extra), missAt, g.Level, y, before[y], after[y])

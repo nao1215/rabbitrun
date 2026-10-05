@@ -84,3 +84,40 @@ func TestCaptureEnlargesAnIllustration(t *testing.T) {
 		t.Errorf("gallery_cg shows the grid of %s, want an illustration enlarged", s.char().ID)
 	}
 }
+
+// TestCaptureTitlesShowTheTitle captures on a save with a secret character's arrival and
+// the secret word still to be told: the title and title_group screenshots show the title
+// (and the group picture), not the arrival or the word. The title scene told what was due
+// first, so on the player's own save those screenshots showed the arrival.
+//
+//nolint:paralleltest // shares the save data and the characters
+func TestCaptureTitlesShowTheTitle(t *testing.T) {
+	g, screen := newDrawScenario(t, func() {
+		for _, c := range characters {
+			progress(c.ID).Cleared = true // the secret one too: the word is due
+		}
+	})
+	if s := newTitleScene(); s.reveal < 0 || !s.word {
+		t.Fatalf("the save has nothing due on the title (reveal %d, word %v)", s.reveal, s.word)
+	}
+	store.ReadOnly = true
+	for _, st := range captureSteps {
+		if st.name != "title" && st.name != "title_group" {
+			continue
+		}
+		st.setup(g)
+		for range st.wait {
+			if err := g.Update(); err != nil {
+				t.Fatal(err)
+			}
+			g.Draw(screen)
+		}
+		s := titleOf(t, g)
+		if s.reveal >= 0 || s.word {
+			t.Errorf("%s shows what is due on the title (reveal %d, word %v), not the title", st.name, s.reveal, s.word)
+		}
+		if s.group != (st.name == "title_group") {
+			t.Errorf("%s: group picture %v", st.name, s.group)
+		}
+	}
+}

@@ -28,6 +28,7 @@ All notable changes to this project are documented in this file. The format is b
 - The words that pop up over the road (FROM 2-1 after a retry, 1UP, STAGE 2, BONUS!) now wait with the road while the game is paused. Their time ran on behind the pause menu, so after a pause during READY the retry no longer told where it started.
 - A sweet lying on the cell a retry puts her on is now hers at once, as a sweet that comes into her row where she stands. Nothing took it until she moved, so standing still let it go by and broke the streak of sweets.
 - A sweet that has just gone by her row can still be taken while it is beside her body, until the next row is halfway down onto her, as a wall there still stops her from the side. It was let go of as soon as its row left hers, so sliding into a sweet drawn right beside her took nothing and broke the streak of sweets.
+- The title and title_group screenshots of `--capture` now show the title even when the save has a secret character's arrival or the secret word still to tell. They showed the arrival instead.
 
 ## [0.1.0] - 2026-10-04
 
