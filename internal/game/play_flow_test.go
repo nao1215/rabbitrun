@@ -208,7 +208,7 @@ func TestGameOverMenu(t *testing.T) {
 // gets up from her game over pose with her comeback pose.
 func TestRetryGetsBackUp(t *testing.T) { //nolint:paralleltest // shares the save data and the characters
 	g, screen := newDrawScenario(t, nil)
-	s := newRetryScene(characters[defaultCharIndex()])
+	s := newRetryScene(characters[defaultCharIndex()], "")
 	g.SetScene(s)
 	playUntil(t, g, screen, readyFr+10, func() bool { return s.ready == 0 })
 	if s.comeback != 0 {
@@ -216,6 +216,44 @@ func TestRetryGetsBackUp(t *testing.T) { //nolint:paralleltest // shares the sav
 	}
 	if s.expr == character.ExprGameOver {
 		t.Error("she is still down after READY")
+	}
+}
+
+// TestRetryKeepsHerGameOverPose picks RETRY on the game over of every character with more
+// than one game over pose, a few times each: the new run opens on the pose she was down in.
+// It picked one of them at random, without noting it as seen, so a pose shown there could
+// stay locked in the gallery.
+func TestRetryKeepsHerGameOverPose(t *testing.T) { //nolint:paralleltest // shares the save data and the characters
+	g := newScenario(t, nil)
+	tried := 0
+	for _, c := range characters {
+		if len(c.Variants(character.ExprGameOver)) < 2 || locked(c) {
+			continue
+		}
+		tried++
+		for range 8 {
+			over := newPlayScene(c)
+			over.ready = 0
+			g.SetScene(over)
+			over.eng.G.Lives = 0
+			wallAcross(over)
+			for f := 0; !over.eng.Over(); f++ {
+				if f > 5*60 {
+					t.Fatal("no game over")
+				}
+				play(t, g, wait(1))
+			}
+			play(t, g, wait(curtainStart+curtainFrames+10))
+			down := over.exprID
+			play(t, g, press(input.Confirm))
+			s := playOf(t, g)
+			if s == over || s.exprID != down || !s.prog.SeenExpr[s.exprID] {
+				t.Fatalf("%s: down in %s, the retry opens in %s (seen %v)", c.ID, down, s.exprID, s.prog.SeenExpr[s.exprID])
+			}
+		}
+	}
+	if tried == 0 {
+		t.Skip("no character has more than one game over pose")
 	}
 }
 

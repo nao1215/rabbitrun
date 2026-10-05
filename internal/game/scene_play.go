@@ -141,11 +141,23 @@ type playScene struct {
 }
 
 // newRetryScene starts a new run after a game over: the character is still down in her
-// game over pose and gets back up with a fist pump while READY is shown.
-func newRetryScene(c *character.Character) *playScene {
+// game over pose (down, the one the game over showed) and gets back up with a fist pump while
+// READY is shown. It picked a game over pose at random, so she changed pose as the run
+// began, and a pose shown only there was never noted as seen and stayed locked in the gallery.
+func newRetryScene(c *character.Character, down string) *playScene {
 	s := newPlayScene(c)
-	s.expr, s.exprID = character.ExprGameOver, s.pickVariant(character.ExprGameOver)
+	id := s.pickVariant(character.ExprGameOver)
+	for _, v := range c.Variants(character.ExprGameOver) {
+		if v.ID == down {
+			id = down
+		}
+	}
+	s.expr, s.exprID = character.ExprGameOver, id
 	s.prevExpr, s.prevID = s.expr, s.exprID
+	if !s.prog.SeenExpr[id] {
+		s.prog.SeenExpr[id] = true
+		store.Mark()
+	}
 	s.comeback = comebackDelay
 	return s
 }

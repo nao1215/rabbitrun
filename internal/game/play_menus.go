@@ -121,7 +121,7 @@ func (s *playScene) updateGameOver(g *Game) {
 		sound.Play(sound.Confirm)
 		switch s.overSel {
 		case 0:
-			g.SetScene(newRetryScene(s.char))
+			g.SetScene(newRetryScene(s.char, s.exprID))
 		case 1:
 			g.SetScene(newCharSelectScene(modePlay))
 		case 2:

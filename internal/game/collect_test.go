@@ -122,7 +122,7 @@ func TestReadyPosesAreEarnedInPlay(t *testing.T) { //nolint:paralleltest // shar
 // retry she springs back up (comeback) as before.
 func TestRetryStillGetsBackUpDuringREADY(t *testing.T) { //nolint:paralleltest // shares the save data and the characters
 	g := newScenario(t, nil)
-	g.SetScene(newRetryScene(characters[defaultCharIndex()]))
+	g.SetScene(newRetryScene(characters[defaultCharIndex()], ""))
 	s := playOf(t, g)
 	play(t, g, wait(comebackDelay+20))
 	if s.expr != character.ExprComeback {
