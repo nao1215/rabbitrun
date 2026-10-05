@@ -24,6 +24,7 @@ All notable changes to this project are documented in this file. The format is b
 - Alt+Enter now only switches the window to fullscreen and back. Enter is also the confirm key and the press went on to the screen: on EXIT it closed the game, on RESET it threw the run away, and in play it swung a hammer.
 - A crash on the last life now plays the game over jingle once. The crash and the game over each played it on the same frame, two at once and twice as loud.
 - The gallery_cg screenshot of `--capture` on a fresh save now shows an illustration enlarged. The gallery opened on the first character, who had earned none in the scripted run, so it showed the grid.
+- A sweet put in a dent in the wall on a course with a theme now has the dent open on the row after it too, as on the other courses, so she has two rows to dart in for it and out again. The dent was one row deep there and the next row walled it off, a notch that an extra life or a hammer (which go to the dents twice as often) could hardly be taken from without a miss. It is one cell more of road on most courses of every run; the rest of each road is the same, except on course 7 of the gyal girl's extra side, where a few of the blocks that follow the dent come in other places.
 
 ## [0.1.0] - 2026-10-04
 

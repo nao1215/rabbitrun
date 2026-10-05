@@ -122,6 +122,7 @@ type Game struct {
 	taken     map[takenKey]bool
 	alcove    int // column of a dent being carved into the wall (-1: none)
 	alcoveFor int // rows the dent still runs
+	dentRow   int // the row of the course a dent was put in with a sweet (place)
 	Profile   Profile
 	// TotalCourses is how many courses the game has (0: it goes on without end). Stages
 	// have four courses; a short last stage has what is left (the hardest colors).
@@ -256,7 +257,7 @@ func (g *Game) buildFirstRow() {
 	shapeOf(f).restore(g)
 	g.src, g.rng = f.src, f.rng
 	g.section, g.sectionLeft, g.sectionRow = f.section, f.sectionLeft, f.sectionRow
-	g.sinceObs, g.alcove, g.alcoveFor, g.dir = f.sinceObs, f.alcove, f.alcoveFor, f.dir
+	g.sinceObs, g.alcove, g.alcoveFor, g.dentRow, g.dir = f.sinceObs, f.alcove, f.alcoveFor, f.dentRow, f.dir
 	g.vaultAt, g.feastAt, g.helpLaid, g.designFrom, g.hallHammerAt = f.vaultAt, f.feastAt, f.helpLaid, f.designFrom, f.hallHammerAt
 	g.themeRow, g.feastRow, g.figure = f.themeRow, f.feastRow, f.figure
 	g.courseRow = f.courseRow
@@ -609,6 +610,14 @@ func (g *Game) buildRoad(withThings bool) Row {
 	}
 	if withThings && g.themed(vaultDue) {
 		row, left, right := g.buildThemedRow()
+		// A dent put in with a sweet on the row before (place) carries on for its second
+		// row here too: it was left one row deep, and the sweet in it (often an extra life
+		// or a hammer) lay in a notch the next row walled off. Its count is left as it was,
+		// as before: taken down, the course would roll its later dents and sweets again,
+		// and every themed course would change.
+		if g.alcoveFor > 0 && g.dentRow == g.courseRow-1 {
+			g.openDent(&row, left, right)
+		}
 		g.updateReach(row)
 		g.lastRow = row
 		g.sinceObs = 0
@@ -790,9 +799,7 @@ func (g *Game) buildRoad(withThings bool) Row {
 	// A dent in the wall carries on for its second row.
 	if g.alcoveFor > 0 {
 		g.alcoveFor--
-		if g.alcove >= 0 && g.alcove < W && (g.alcove == left-1 || g.alcove == right+1) {
-			row[g.alcove].Wall = 0
-		}
+		g.openDent(&row, left, right)
 	}
 	g.updateReach(row)
 	g.lastRow = row
@@ -800,6 +807,14 @@ func (g *Game) buildRoad(withThings bool) Row {
 		return row
 	}
 	return g.addThings(row, left, right)
+}
+
+// openDent carves the dent in the wall (g.alcove) into row, the row of road between left
+// and right being built, while the road still runs beside it.
+func (g *Game) openDent(row *Row, left, right int) {
+	if g.alcove >= 0 && g.alcove < W && (g.alcove == left-1 || g.alcove == right+1) {
+		row[g.alcove].Wall = 0
+	}
 }
 
 // addThings puts the sweets (and the stage's hammer) on a row of road between left and right.
@@ -937,7 +952,7 @@ func (g *Game) place(row *Row, left, right int, thing int8) {
 		if x >= 0 && x < W {
 			row[x].Wall = 0
 			row[x].Sweet = thing
-			g.alcove, g.alcoveFor = x, 1 // the dent is two rows deep, so it can be reached
+			g.alcove, g.alcoveFor, g.dentRow = x, 1, g.courseRow // the dent is two rows deep, so it can be reached
 			return
 		}
 	}

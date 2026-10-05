@@ -959,3 +959,64 @@ func TestStepsToNextCourseCountsDownToTheNextLevel(t *testing.T) {
 		}
 	}
 }
+
+// TestADentIsTwoRowsDeepOnAThemedCourse builds courses of every theme and checks the dents
+// that a sweet is put in (place): while the road still runs beside it, the dent is open on
+// the row after it too, so she has two rows to dart in for the sweet and out again. On a
+// row of a course's theme the second row was never carved, so the sweet (often an extra
+// life or a hammer, which go to the dents twice as often) lay in a notch one row deep that
+// the next row walled off.
+func TestADentIsTwoRowsDeepOnAThemedCourse(t *testing.T) {
+	t.Parallel()
+	p := Profile{Speed: 1, MaxWidth: 5, Narrowing: 2, Wander: 0.16, Mixed: true, Pillars: 0.07, Gates: 0.05, SweetsRate: 0.16, OneUpRate: 0.03}
+	dents := 0
+	for th := range themeCount {
+		if th == ThemeAlcoves || th == ThemeMixed {
+			continue // its dents are its own (designSweets); a mixed course is not themed
+		}
+		for _, hard := range []bool{false, true} {
+			for seed := range uint64(8) {
+				g := NewWith(seed, p)
+				g.TotalCourses = 16
+				g.Hard = hard
+				g.Themes = make([]Theme, 16)
+				for i := range g.Themes {
+					g.Themes[i] = th
+				}
+				for level := 1; level <= 16; level++ {
+					g.Level = level
+					g.Stage, g.Course = (level-1)/Courses+1, (level-1)%Courses
+					g.startCourse()
+					g.courseRow = 0
+					for range 45 {
+						before := g.alcoveFor
+						row := g.buildRow(true)
+						g.courseRow++
+						x := g.alcove
+						if before != 0 || g.alcoveFor != 1 || x < 0 || x >= W || row[x].Sweet == SweetNone || !g.themed(false) {
+							continue
+						}
+						side := 1 // the road is on this side of the dent
+						if l := max(x-1, 0); l < x && row[l].Wall == 0 {
+							side = -1
+						}
+						next := g.buildRow(true)
+						g.courseRow++
+						if in := x + side; in < 0 || in >= W || next[in].Wall != 0 || g.alcove != x || g.sinceTrap == 0 {
+							// the road has moved away from the dent (and a new one may be beside
+							// it), or a long straight run ended with a block there (trap)
+							continue
+						}
+						dents++
+						if next[x].Wall != 0 {
+							t.Errorf("theme %d hard %v seed %d course %d row %d: the dent at column %d with sweet %d is one row deep", th, hard, seed, level, g.courseRow-2, x, row[x].Sweet)
+						}
+					}
+				}
+			}
+		}
+	}
+	if dents == 0 {
+		t.Fatal("no dent with a sweet on a themed course was built")
+	}
+}

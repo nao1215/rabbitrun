@@ -42,17 +42,21 @@ func roadFingerprint(id string, extra bool) string {
 // -run TestTheIdleRuleLeavesTheOtherCoursesAlone -v prints them. The gyal girl's two hammer
 // hall courses that come to their theme late (course 15 of the regular side, course 4 of the
 // extra side) have changed since: their first hall waits for its hammer, which was missing.
+// And a dent put in the wall with a sweet on a row of a course's theme is now open on its
+// second row too, as everywhere else: one cell more of road where it was left one row deep
+// (a cell or two a course, on most courses of every run; on course 7 of the gyal girl's
+// extra side a few of the blocks after it come in other places).
 var untouchedRoads = map[string]string{
-	"bunny/extra":    "ba5773aef7dfe952",
-	"bunny/regular":  "726042867466fdd8",
-	"cool/extra":     "67dcb28eeec11acd",
-	"cool/regular":   "7ddbc7fedc12709c",
-	"cute/extra":     "73e34999d3efd466",
-	"cute/regular":   "b6d20d13ed6d0280",
-	"gyal/extra":     "56a0562ec89ea160",
-	"gyal/regular":   "3533ea5088b0971a",
-	"street/extra":   "005b12405871dab5",
-	"street/regular": "b3a5de622cb5face",
+	"bunny/extra":    "3a186398d8ead2fc",
+	"bunny/regular":  "e5b4446b3f069d33",
+	"cool/extra":     "f7f228f33607333c",
+	"cool/regular":   "fa06b6e49acc934c",
+	"cute/extra":     "49a2e3664a433657",
+	"cute/regular":   "234549d6e7db621e",
+	"gyal/extra":     "9e52c63a5579614e",
+	"gyal/regular":   "9994cd6d45b3992f",
+	"street/extra":   "465cde3b1190762a",
+	"street/regular": "ee076e79bb3a9516",
 }
 
 // TestTheIdleRuleLeavesTheOtherCoursesAlone checks that the courses the idle rule does not
