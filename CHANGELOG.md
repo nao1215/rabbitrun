@@ -17,6 +17,7 @@ All notable changes to this project are documented in this file. The format is b
 - A course's illustration is now earned when she runs the course to its end. It was saved as soon as the course's last row came in at the top of the road, so a miss on the last rows of the course (a game over, or a retry back into it) still left it open in the gallery.
 - A switch turned off on the command line (such as `--reset-save=false` or `--record-extra=false`) is no longer taken as asked for: `--reset-save=false --capture DIR` was refused as two jobs at once, and `--record-extra=false` without `--record-demo` was refused too.
 - A save file the game cannot read is no longer lost: one it cannot make sense of (a stray character after the data) is kept as `save.json.broken` before the next save, and one it cannot open is left as it is. The game started on empty progress and its first save replaced the file for good.
+- Holding up (the speed-up) into the miss, the game over or the pause menu no longer runs the choice up and down by key repeat: letting go left it anywhere, so after a miss with up held a press of Enter could GIVE UP the run. A held key now counts again once it has come up.
 
 ## [0.1.0] - 2026-10-04
 

@@ -26,7 +26,9 @@ var missItems = []string{"RETRY", "GIVE UP"}
 
 // updateMiss runs the screen after a miss.
 func (s *playScene) updateMiss(g *Game) {
-	s.missFrame++
+	if s.missFrame++; s.missFrame == 1 {
+		g.in.Release(menuKeys...) // up held for the speed-up does not run down the menu
+	}
 	s.updateExpression()
 	if s.countdown > 0 {
 		s.countdown--
@@ -67,6 +69,11 @@ func (s *playScene) updateMiss(g *Game) {
 	}
 }
 
+// menuKeys are the keys a menu over the road lets go of as it comes up (input.Release):
+// held on the road, up is the speed-up, and its key repeat ran the choice up and down by
+// itself, so letting go left it anywhere (on GIVE UP, a press of Enter ended the run).
+var menuKeys = []input.Action{input.Up, input.Down}
+
 var pauseItems = []string{"CONTINUE", "RESET", itemTitle}
 var overItems = []string{"RETRY", "SELECT", itemTitle}
 
@@ -102,7 +109,9 @@ func (s *playScene) updatePause(g *Game) {
 }
 
 func (s *playScene) updateGameOver(g *Game) {
-	s.overFrame++
+	if s.overFrame++; s.overFrame == 1 {
+		g.in.Release(menuKeys...) // up held for the speed-up does not run down the menu
+	}
 	wait := endInputAt
 	if !s.allClear {
 		wait = curtainStart + curtainFrames + 10 // the menu takes input once the curtain is down

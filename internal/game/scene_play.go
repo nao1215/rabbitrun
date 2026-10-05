@@ -247,6 +247,7 @@ func (s *playScene) Update(g *Game) {
 	if g.in.Pressed(input.Pause) && !s.eng.G.Missed && s.countdown == 0 {
 		s.paused = true
 		s.pauseSel = 0
+		g.in.Release(menuKeys...) // up held for the speed-up does not run down the menu
 		sound.Play(sound.Pause)
 		sound.PauseBGM(true)
 		return

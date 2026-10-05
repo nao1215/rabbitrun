@@ -149,3 +149,35 @@ func TestScriptStandsInForThePlayer(t *testing.T) {
 		t.Fatal("the press was still held after the script ran out")
 	}
 }
+
+// heldScript holds the same actions every frame.
+type heldScript struct{ held [NumActions]bool }
+
+func (s *heldScript) Frame() ([NumActions]bool, []rune) { return s.held, nil }
+
+// TestReleaseWaitsForTheKeyToComeUp lets go of a held key: it is not held, pressed or
+// repeated while it stays down, and a new press after it comes up counts again.
+func TestReleaseWaitsForTheKeyToComeUp(t *testing.T) {
+	t.Parallel()
+	var in Input
+	s := &heldScript{}
+	s.held[Up] = true
+	in.SetScript(s)
+	for range 30 {
+		in.Update()
+	}
+	in.Release(Up, Down) // Down is not held: nothing to let go of
+	for f := range 60 {
+		if in.Held(Up) || in.Pressed(Up) || in.Repeat(Up) {
+			t.Fatalf("up counts %d frames after it was let go of, still held down", f)
+		}
+		in.Update()
+	}
+	s.held[Up] = false
+	in.Update()
+	s.held[Up], s.held[Down] = true, true
+	in.Update()
+	if !in.Pressed(Up) || !in.Repeat(Up) || !in.Pressed(Down) {
+		t.Fatal("a new press after the key came up does not count")
+	}
+}
