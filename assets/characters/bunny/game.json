@@ -9,11 +9,6 @@
       "label": "ふつう"
     },
     {
-      "id": "normal_2",
-      "state": "normal",
-      "label": "ふつう2"
-    },
-    {
       "id": "normal_3",
       "state": "normal",
       "label": "ふつう3"
@@ -422,6 +417,11 @@
       "id": "comeback_2",
       "state": "comeback",
       "label": "やるぞ2"
+    },
+    {
+      "id": "normal_2",
+      "state": "normal",
+      "label": "ふつう2"
     }
   ],
   "cgs": [
