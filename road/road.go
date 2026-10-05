@@ -1286,11 +1286,13 @@ func (g *Game) GiveUp() {
 const RewindRows = 10
 
 // rewindTo is where a retry starts: the course (Level) and the rows of it built by then,
-// RewindRows before now (into the course before, when this one is younger than that).
+// RewindRows before now (into the course before, when this one is younger than that). On the
+// open road after the last course it is the last course, and the rows past its end are rows
+// of the open road (see Restart).
 func (g *Game) rewindTo() (level, rows int) {
 	if g.finishing { // on the open road after the last course: back into the last course
 		level := g.Level - 1
-		return level, max(0, min(g.lenOf(level), g.lenOf(level)+g.courseRow-RewindRows))
+		return level, max(0, g.lenOf(level)+g.courseRow-RewindRows)
 	}
 	level, rows = g.Level, g.courseRow-RewindRows
 	for rows < 0 && level > 1 {
@@ -1351,7 +1353,20 @@ func (g *Game) Restart() bool {
 	if level > 1 {
 		build(level-1, g.lenOf(level-1))
 	}
-	build(level, rows)
+	build(level, min(rows, g.lenOf(level)))
+	if open := rows - g.lenOf(level); open >= 0 {
+		// back on the open road after the last course (a miss on its last walls): it comes
+		// in again as nextCourse began it, and the all clear is as far away as it was then.
+		// Built as rows of the last course, a row of walls that was never there came in and
+		// the open road started over.
+		g.Level++
+		g.courseRow = 0
+		g.finishing, g.finishLeft = true, finishRows
+		for ; g.courseRow < open; g.courseRow++ {
+			g.pushRow()
+			g.finishLeft--
+		}
+	}
 	g.X = g.openColumn(oldX)
 	g.SideRowBehind = true // the road starts again with its last row just come in
 	g.Events = append(g.Events, Event{Kind: EventRestart})
