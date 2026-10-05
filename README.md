@@ -83,6 +83,10 @@ Choose PLAY on the title screen, pick a character, and the run starts. GALLERY s
 
 ## How to install
 
+### Download from itch.io
+
+Rabbit Run is also published on [itch.io](https://nao1215.itch.io/rabbit-run).
+
 ### Use "go install"
 
 ```shell
