@@ -396,8 +396,10 @@ func (s *playScene) handleEvents() {
 			s.react(character.ExprNervous, 50, rankHint)
 		case road.EventCrash:
 			s.misses++
-			sound.Play(sound.GameOver)
+			// the last life: the game over plays the jingle (onGameOver), so it is not
+			// played twice at once
 			if !e.Over() {
+				sound.Play(sound.GameOver)
 				s.react(character.ExprCrying, missFrames-5, rankPerfect) // a miss: she cries until the restart
 			}
 		case road.EventCourse:

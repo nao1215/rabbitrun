@@ -22,6 +22,7 @@ All notable changes to this project are documented in this file. The format is b
 - RETRY after a miss now gets her back up in her comeback pose as the road starts again. The crying of the miss still counted as showing, so the comeback was turned away and the READY pose came instead.
 - The walls a hammer smashes now stand while its cut-in plays and then break row by row. They vanished as the hammer was swung and came back whole when the breaking began.
 - Alt+Enter now only switches the window to fullscreen and back. Enter is also the confirm key and the press went on to the screen: on EXIT it closed the game, on RESET it threw the run away, and in play it swung a hammer.
+- A crash on the last life now plays the game over jingle once. The crash and the game over each played it on the same frame, two at once and twice as loud.
 
 ## [0.1.0] - 2026-10-04
 

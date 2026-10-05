@@ -9,6 +9,7 @@ import (
 	"github.com/nao1215/rabbitrun/internal/character"
 	"github.com/nao1215/rabbitrun/internal/engine"
 	"github.com/nao1215/rabbitrun/internal/input"
+	"github.com/nao1215/rabbitrun/internal/sound"
 	"github.com/nao1215/rabbitrun/road"
 )
 
@@ -479,6 +480,32 @@ func TestHammeredWallsStandThroughTheCutIn(t *testing.T) {
 	for y := range road.Rows + 1 {
 		if s.wallAt(0, y) != 0 {
 			t.Fatalf("row %d still has a wall after the breaking", y)
+		}
+	}
+}
+
+// TestCrashPlaysItsJingleOnce runs into a wall with a life left and with none: either way
+// the game over jingle plays once. On the last life the crash played it and the game over
+// played it again on the same frame, two at once, twice as loud.
+//
+//nolint:paralleltest // shares the save data and the characters
+func TestCrashPlaysItsJingleOnce(t *testing.T) {
+	for _, lives := range []int{2, 0} {
+		g, screen := newDrawScenario(t, nil)
+		s := startRun(t, g)
+		s.eng.G.Lives = lives
+		jingles := 0
+		sound.Listen(func(e sound.Effect) {
+			if e == sound.GameOver {
+				jingles++
+			}
+		})
+		t.Cleanup(func() { sound.Listen(nil) })
+		wallAcross(s)
+		playUntil(t, g, screen, 5*60, func() bool { return s.eng.G.Missed || s.eng.Over() })
+		playDrawn(t, g, screen, wait(30))
+		if jingles != 1 {
+			t.Errorf("with %d lives left the crash played the game over jingle %d times, want once", lives, jingles)
 		}
 	}
 }

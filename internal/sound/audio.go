@@ -361,8 +361,18 @@ var muted bool
 // SetMuted silences the music and the sound effects from now on (or lets them play).
 func SetMuted(m bool) { muted = m }
 
+// heard, when set, is told of every effect Play is asked for, muted or not (Listen).
+var heard func(Effect)
+
+// Listen calls f with every sound effect the game plays from now on, also while the sound
+// is muted (nil stops it): the tests listen to what the game plays with it.
+func Listen(f func(Effect)) { heard = f }
+
 // Play plays the sound effect id.
 func Play(id Effect) {
+	if heard != nil {
+		heard(id)
+	}
 	if audioCtx == nil || muted {
 		return
 	}
