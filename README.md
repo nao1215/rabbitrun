@@ -53,11 +53,11 @@ Your character stands beside the road and reacts to the run: she relaxes on a wi
 
 | Character | Portraits | Illustrations |
 | :---: | :---: | :---: |
-| <img src="./doc/img/faces/cool.png" width="64" alt="cool"> | 40 | 16 + α (18) |
+| <img src="./doc/img/faces/cool.png" width="64" alt="cool"> | 47 | 16 + α (18) |
 | <img src="./doc/img/faces/cute.png" width="64" alt="cute"> | 48 | 16 + α (18) |
 | <img src="./doc/img/faces/gyal.png" width="64" alt="gyaru"> | 74 | 16 + α (18) |
-| <img src="./doc/img/faces/street.png" width="64" alt="Taisho"> | 40 | 16 + α (18) |
-| <img src="./doc/img/faces/secret.png" width="64" alt="secret"> | 40 | 16 + α (18) |
+| <img src="./doc/img/faces/street.png" width="64" alt="Taisho"> | 48 | 16 + α (18) |
+| <img src="./doc/img/faces/secret.png" width="64" alt="secret"> | 47 | 16 + α (18) |
 
 ## How to play
 
