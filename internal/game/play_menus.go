@@ -33,7 +33,9 @@ func (s *playScene) updateMiss(g *Game) {
 		if s.countdown == countdownFrames/2 {
 			sound.Play(sound.Cancel) // the life goes
 		}
+		stage := s.eng.G.Stage // a retry can go back into the stage before
 		if s.countdown == 0 && s.eng.Restart() {
+			s.bestStage = max(s.bestStage, stage)
 			s.missFrame = 0
 			s.ready = readyFr
 			s.popups = append(s.popups, popup{text: "FROM " + s.eng.Progress(), timer: 120})

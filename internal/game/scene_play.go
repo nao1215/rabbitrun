@@ -130,6 +130,9 @@ type playScene struct {
 	allClear  bool
 	endLayer  *ebiten.Image // the ending's portrait, when there is no illustration
 	committed bool          // whether this run was recorded in the progress (commitRun)
+	// bestStage is the furthest stage of the run before its retries: a retry can go back
+	// into the stage before, and the run was recorded as reaching only that one
+	bestStage int
 	// cleared is the courses of the run she has run to the end (clearReached; -1 before the
 	// first frame of play): their illustrations are earned. A retry going back into a course
 	// does not take them away.
@@ -473,7 +476,7 @@ func (s *playScene) commitRun() {
 		return
 	}
 	s.committed = true
-	s.prog.BestStage = max(s.prog.BestStage, s.eng.G.Stage)
+	s.prog.BestStage = max(s.prog.BestStage, s.bestStage, s.eng.G.Stage)
 	s.prog.PlaySeconds += s.eng.PlayFrames / 60
 	store.Mark()
 }

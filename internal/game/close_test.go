@@ -73,6 +73,29 @@ func TestCloseRecordsTheRunInPlay(t *testing.T) {
 	}
 }
 
+// TestARetryBackIntoTheStageBeforeKeepsTheStageReached reaches the second stage, misses on its
+// first rows and retries back into the last course of the first stage, and quits there: the
+// run is recorded as reaching the second stage. It was recorded with the stage of the retry.
+//
+//nolint:paralleltest // shares the save data and the characters
+func TestARetryBackIntoTheStageBeforeKeepsTheStageReached(t *testing.T) {
+	g := newScenario(t, nil)
+	s := runOnStage2(t, g)
+	wallAcross(s)
+	for i := 0; i < 600 && !s.eng.G.Missed; i++ {
+		play(t, g, wait(1))
+	}
+	play(t, g, steps(wait(missFrames), press(input.Confirm), wait(countdownFrames)))
+	if s.eng.G.Missed || s.eng.G.Stage != 1 {
+		t.Fatalf("missed %v, the retry on stage %d: want it back on stage 1", s.eng.G.Missed, s.eng.G.Stage)
+	}
+	play(t, g, press(input.Pause, input.Down, input.Down, input.Confirm))
+	titleOf(t, g)
+	if p := reloadSave(t).Characters[heroID]; p == nil || p.BestStage != 2 {
+		t.Fatalf("saved %+v, want stage 2 reached", p)
+	}
+}
+
 // TestCloseAfterGameOverCountsTheRunOnce: a run already recorded at its game over (or at its
 // ending) is not counted again when the window is closed on its menu.
 //
