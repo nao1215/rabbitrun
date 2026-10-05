@@ -11,10 +11,13 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/nao1215/rabbitrun/internal/game"
+	"github.com/nao1215/rabbitrun/internal/save"
 )
 
 func main() {
@@ -33,10 +36,16 @@ func run(scenario string) (err error) {
 		return err
 	}
 	defer func() { err = errors.Join(err, os.RemoveAll(dir)) }()
-	for _, k := range []string{"XDG_CONFIG_HOME", "HOME"} {
+	// the user's config directory on every system (os.UserConfigDir): XDG_CONFIG_HOME on
+	// Linux and the BSDs, HOME on macOS, AppData on Windows, where the player's own save was
+	// written over
+	for _, k := range []string{"XDG_CONFIG_HOME", "HOME", "AppData"} {
 		if err := os.Setenv(k, dir); err != nil {
 			return err
 		}
+	}
+	if !strings.HasPrefix(save.Path(), dir+string(os.PathSeparator)) {
+		return fmt.Errorf("the save would be %s, outside the run's own directory %s", save.Path(), dir)
 	}
 	if err := game.Load(os.DirFS("assets")); err != nil {
 		return err
