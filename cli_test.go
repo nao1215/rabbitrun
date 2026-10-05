@@ -39,16 +39,16 @@ func demoArgs(args ...string) []string {
 
 //nolint:paralleltest // parses into the package-level flags
 func TestCheckArgs(t *testing.T) {
-	const shots = "shots"
+	const shots, capture = "shots", "--capture"
 	tests := []struct {
 		name string
 		args []string
 		want string // a part of the error; empty when the command line is fine
 	}{
 		{"no options start the game", nil, ""},
-		{"one exit mode", []string{"--capture", shots}, ""},
+		{"one exit mode", []string{capture, shots}, ""},
 		{"a demo with its options", demoArgs("--record-char", "cute", "--record-stage", "4", "--record-seconds", "1"), ""},
-		{"debug goes with an exit mode", []string{"--debug", "--capture", shots}, ""},
+		{"debug goes with an exit mode", []string{"--debug", capture, shots}, ""},
 		{"a forgotten option name", []string{shots}, `unexpected argument "shots"`},
 		{"an empty directory", []string{"--capture="}, "--capture needs a non-empty value"},
 		{"an empty video path", []string{"--record-demo="}, "--record-demo needs a non-empty value"},
@@ -59,6 +59,10 @@ func TestCheckArgs(t *testing.T) {
 		{"a stage past the last", demoArgs("--record-stage", "5"), "--record-stage must be from 1 to 4, got 5"},
 		{"no seconds", demoArgs("--record-seconds", "0"), "--record-seconds must be 1 or more, got 0"},
 		{"negative seconds", demoArgs("--record-seconds=-3"), "--record-seconds must be 1 or more, got -3"},
+		// a switch turned off is not asked for: it does nothing, so it cannot clash
+		{"reset turned off goes with an exit mode", []string{"--reset-save=false", capture, shots}, ""},
+		{"extra turned off without a demo", []string{"--record-extra=false"}, ""},
+		{"reset turned on still clashes", []string{"--reset-save=true", capture, shots}, "--capture and --reset-save cannot be used together"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

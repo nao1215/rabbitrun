@@ -15,6 +15,7 @@ All notable changes to this project are documented in this file. The format is b
 - On a gamepad, pressing Start again on the pause menu now resumes the run whichever item is chosen; with RESET or TITLE chosen it threw the run away, since Start is also a confirm button.
 - RETRY after a game over now opens the new run on the game over pose she was down in. It picked one at random, so she changed pose as the run began, and a pose shown only there stayed locked in the gallery.
 - A course's illustration is now earned when she runs the course to its end. It was saved as soon as the course's last row came in at the top of the road, so a miss on the last rows of the course (a game over, or a retry back into it) still left it open in the gallery.
+- A switch turned off on the command line (such as `--reset-save=false` or `--record-extra=false`) is no longer taken as asked for: `--reset-save=false --capture DIR` was refused as two jobs at once, and `--record-extra=false` without `--record-demo` was refused too.
 
 ## [0.1.0] - 2026-10-04
 

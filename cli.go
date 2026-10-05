@@ -55,7 +55,7 @@ func checkArgs(fs *flag.FlagSet) error {
 	}
 	var modes []string
 	for _, name := range exitModes {
-		if !fs.Changed(name) {
+		if !asked(fs, name) {
 			continue
 		}
 		modes = append(modes, "--"+name)
@@ -68,7 +68,7 @@ func checkArgs(fs *flag.FlagSet) error {
 	}
 	if !fs.Changed("record-demo") {
 		for _, name := range recordOptions {
-			if fs.Changed(name) {
+			if asked(fs, name) {
 				return usageErrorf("--%s only works with --record-demo FILE", name)
 			}
 		}
@@ -81,6 +81,17 @@ func checkArgs(fs *flag.FlagSet) error {
 		return usageErrorf("--record-seconds must be 1 or more, got %d", *recordSeconds)
 	}
 	return nil
+}
+
+// asked reports whether the option name was given on the command line fs and asks for
+// something: a switch turned off (--reset-save=false) does nothing, so it neither clashes
+// with an exit mode nor needs --record-demo.
+func asked(fs *flag.FlagSet, name string) bool {
+	if !fs.Changed(name) {
+		return false
+	}
+	v := fs.Lookup(name).Value
+	return v.Type() != "bool" || v.String() == "true"
 }
 
 // checkRecordChar checks that id (from --record-char) is one of the character IDs ids; an
