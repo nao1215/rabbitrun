@@ -1134,7 +1134,7 @@ func (g *Game) sideRow() int {
 // bunny: from now on she is judged against it from the side too, and if she stands in
 // one of its walls, it is a miss (it has come down over her ears and head).
 func (g *Game) ReachHalfway() {
-	g.SideRowBehind = false
+	g.passBy()
 	if !g.Over && !g.Missed && g.Safe == 0 && g.blocked(g.X) {
 		g.crash()
 	}
@@ -1173,17 +1173,7 @@ func (g *Game) Step() {
 	if g.Over || g.Missed {
 		return
 	}
-	// a sweet that scrolls past the player is missed
-	for _, c := range g.Rows[PlayerRow] {
-		switch c.Sweet {
-		case SweetNone, SweetBomb:
-		case SweetOneUp: // an extra life let go by: told, but the streak of sweets holds
-			g.Events = append(g.Events, Event{Kind: EventMiss, Sweet: c.Sweet})
-		default:
-			g.Streak = 0
-			g.Events = append(g.Events, Event{Kind: EventMiss, Sweet: c.Sweet})
-		}
-	}
+	g.passBy() // the row beside her body, if halfway did not come for it
 	g.pushRow()
 	g.Distance++
 	g.SideRowBehind = true
@@ -1205,23 +1195,48 @@ func (g *Game) Step() {
 	}
 }
 
-// pick collects the sweets the player covers.
-func (g *Game) pick() {
-	lo, hi := span(g.X)
-	for col := lo; col <= hi; col++ {
-		g.pickAt(col)
+// passBy lets go of the sweets left in the row beside her body as it goes by (halfway
+// down the next row, or as the road steps on before that): a sweet is missed once it has
+// gone by her body, not as soon as its row has left hers. Told then, sliding into a sweet
+// still beside her body took nothing.
+func (g *Game) passBy() {
+	if !g.SideRowBehind || PlayerRow+1 >= Rows {
+		return
+	}
+	g.SideRowBehind = false
+	for _, c := range g.Rows[PlayerRow+1] {
+		switch c.Sweet {
+		case SweetNone, SweetBomb:
+		case SweetOneUp: // an extra life let go by: told, but the streak of sweets holds
+			g.Events = append(g.Events, Event{Kind: EventMiss, Sweet: c.Sweet})
+		default:
+			g.Streak = 0
+			g.Events = append(g.Events, Event{Kind: EventMiss, Sweet: c.Sweet})
+		}
 	}
 }
 
-func (g *Game) pickAt(col int) {
-	c := &g.Rows[PlayerRow][col]
+// pick collects the sweets the player covers: in her row, and in the row beside her body
+// until it has gone by (the row of her side, see sideRow).
+func (g *Game) pick() {
+	lo, hi := span(g.X)
+	for col := lo; col <= hi; col++ {
+		g.pickAt(PlayerRow, col)
+		if g.SideRowBehind && PlayerRow+1 < Rows {
+			g.pickAt(PlayerRow+1, col)
+		}
+	}
+}
+
+func (g *Game) pickAt(row, col int) {
+	c := &g.Rows[row][col]
 	if c.Sweet == 0 {
 		return
 	}
 	if g.taken == nil {
 		g.taken = map[takenKey]bool{}
 	}
-	g.taken[takenKey{g.ids[PlayerRow], col}] = true
+	g.taken[takenKey{g.ids[row], col}] = true
 	switch c.Sweet {
 	case SweetOneUp:
 		g.Lives = min(MaxLives, g.Lives+1)

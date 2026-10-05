@@ -140,10 +140,12 @@ func TestPickingUpSweetsBuildsAStreak(t *testing.T) {
 			t.Fatalf("streak %d after %d sweets", g.Streak, i+1)
 		}
 	}
-	// a sweet beside the player scrolls past: the streak ends
+	// a sweet beside the player scrolls past (by her body, halfway down the next row): the
+	// streak ends
 	g.Rows[PlayerRow] = Row{}
 	g.Rows[PlayerRow][(g.Col()+2)%W].Sweet = SweetCandy
 	g.Step()
+	g.ReachHalfway()
 	if g.Streak != 0 {
 		t.Fatalf("streak %d after a miss", g.Streak)
 	}
@@ -1032,7 +1034,6 @@ func TestRetryTakesTheSweetUnderHer(t *testing.T) {
 		g.Step()
 	}
 	g.X, g.Missed = 4.5, true // a miss on the trail
-	sweets := g.Sweets
 	g.Restart()
 	lo, hi := span(g.X)
 	for c := lo; c <= hi; c++ {
@@ -1041,7 +1042,51 @@ func TestRetryTakesTheSweetUnderHer(t *testing.T) {
 		}
 	}
 	g.Step() // she stands still
-	if g.Sweets != sweets+2 {
-		t.Errorf("standing still took %d sweets of the trail over the retry, want 2 (the one under her and the next)", g.Sweets-sweets)
+	if g.Streak == 0 {
+		t.Errorf("standing still on the trail of sweets after the retry broke the streak (events %+v)", g.Events)
+	}
+}
+
+// TestASweetBesideHerBodyCanStillBeTaken slides her into a sweet of the row that has just
+// gone by her row, while it is still beside her body (the first half of the next row's
+// time, when that row is drawn mostly above her and a wall in the row gone by stops her
+// from the side, see sideRow): she takes it. The sweet was told as let go of as soon as
+// its row left hers, so sliding into it in the picture took nothing, and the streak of
+// sweets was already broken. Once the row is past her body (ReachHalfway) a sweet left in
+// it is let go of, as before.
+func TestASweetBesideHerBodyCanStillBeTaken(t *testing.T) {
+	t.Parallel()
+	setup := func() *Game {
+		g := New(1)
+		g.Rows, g.Ahead, g.Safe = [Rows]Row{}, Row{}, 0
+		g.X, g.Streak = 4.84, 3 // covers column 4 only
+		g.Rows[PlayerRow][5].Sweet = SweetCandy
+		g.Step()
+		g.Events = g.Events[:0]
+		return g
+	}
+	g := setup()
+	g.Move(0.06) // into column 5, before the halfway point
+	if g.Sweets != 1 || g.Streak != 4 || g.Rows[PlayerRow+1][5].Sweet != SweetNone {
+		t.Errorf("sliding into the sweet beside her body: %d sweets, streak %d, the sweet still there: %v", g.Sweets, g.Streak, g.Rows[PlayerRow+1][5].Sweet != SweetNone)
+	}
+	for _, ev := range g.Events {
+		if ev.Kind == EventMiss {
+			t.Errorf("the sweet she took was told as let go of: %+v", g.Events)
+		}
+	}
+
+	g = setup()
+	g.ReachHalfway() // past her body: let go of
+	missed := false
+	for _, ev := range g.Events {
+		missed = missed || ev.Kind == EventMiss
+	}
+	if !missed || g.Streak != 0 {
+		t.Errorf("the sweet that went by her body was not let go of (events %+v, streak %d)", g.Events, g.Streak)
+	}
+	g.Move(0.06)
+	if g.Sweets != 0 {
+		t.Error("a sweet let go of was taken after all")
 	}
 }
