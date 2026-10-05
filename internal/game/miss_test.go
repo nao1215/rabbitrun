@@ -157,3 +157,35 @@ func TestPauseKeyDoesNothingOnTheMissScreen(t *testing.T) { //nolint:paralleltes
 		t.Fatal("the pause menu opened behind the miss screen")
 	}
 }
+
+// TestHammerOnTheFrameOfASideMissIsNotSwung slides her into a wall beside her and presses
+// the hammer on the same frame. The slide is a miss and the road stops, so the hammer is not
+// swung: it was taken from the stock with the road already stopped, the walls of the stopped
+// road were cleared, and its cut-in played after the retry over the road built again.
+//
+//nolint:paralleltest // shares the save data and the characters
+func TestHammerOnTheFrameOfASideMissIsNotSwung(t *testing.T) {
+	g := newScenario(t, nil)
+	s := startRun(t, g)
+	e := s.eng
+	for y := range road.Rows { // an open road but for the wall beside her
+		e.G.Rows[y] = road.Row{}
+	}
+	e.G.Rows[road.PlayerRow][3].Wall = road.CourseColors[0]
+	e.G.Rows[road.PlayerRow+1][3].Wall = road.CourseColors[0]
+	e.G.X = 4 + road.Half + 0.01
+	hammers := e.G.Bombs
+	if hammers == 0 {
+		t.Fatal("no hammer in stock at the start")
+	}
+	play(t, g, []scriptFrame{{held: []input.Action{input.Left, input.Confirm}}})
+	if !e.G.Missed {
+		t.Fatalf("no miss on the wall beside her (x %v)", e.G.X)
+	}
+	if e.G.Bombs != hammers || s.cutin != 0 {
+		t.Errorf("after the miss: %d hammers (had %d), cut-in %d frames", e.G.Bombs, hammers, s.cutin)
+	}
+	if e.G.Rows[road.PlayerRow][3].Wall == 0 {
+		t.Error("the wall she ran into was cleared on the stopped road")
+	}
+}

@@ -241,6 +241,21 @@ func TestBombClearsTheWallsAndKeepsTheSweets(t *testing.T) {
 	}
 }
 
+// TestNoHammerAfterAMiss swings a hammer on the stopped road of a miss: it is refused, and
+// the stock and the walls stay for the retry.
+func TestNoHammerAfterAMiss(t *testing.T) {
+	t.Parallel()
+	g := New(2)
+	g.Rows[PlayerRow][0].Wall = 1
+	g.crash()
+	if !g.Missed {
+		t.Fatal("no miss")
+	}
+	if g.UseBomb() || g.Bombs != StartBombs || g.Rows[PlayerRow][0].Wall == 0 {
+		t.Fatalf("a hammer swung after the miss: %d left, wall %d", g.Bombs, g.Rows[PlayerRow][0].Wall)
+	}
+}
+
 func TestSweetsAddUpToAnExtraLife(t *testing.T) {
 	t.Parallel()
 	g := New(2)

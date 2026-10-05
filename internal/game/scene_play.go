@@ -292,7 +292,8 @@ func (s *playScene) Update(g *Game) {
 			s.holdFrames++
 			e.Move(float64(dir) * e.SlideSpeed(s.holdFrames) / 60)
 		}
-		if g.in.Pressed(input.Confirm) && s.cutin == 0 { // Space or Enter, the A button on a pad
+		// Space or Enter, the A button on a pad; not when the slide just now was a miss
+		if g.in.Pressed(input.Confirm) && s.cutin == 0 && !e.G.Missed {
 			s.useHammer()
 			if s.cutin > 0 {
 				// the road holds from this frame on: a step now moved the sweets a row away

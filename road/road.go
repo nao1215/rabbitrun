@@ -1241,9 +1241,11 @@ func (g *Game) gainHammer() {
 }
 
 // UseBomb swings a hammer from the stock: every wall on the screen (and the row about
-// to come in) is gone; the sweets stay. It reports whether there was a hammer.
+// to come in) is gone; the sweets stay. It reports whether it did: not without a hammer, and
+// not after a miss (the road has stopped for the retry, which builds it again: the hammer
+// was gone for nothing).
 func (g *Game) UseBomb() bool {
-	if g.Over || g.Bombs == 0 {
+	if g.Over || g.Missed || g.Bombs == 0 {
 		return false
 	}
 	g.Bombs--
