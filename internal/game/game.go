@@ -164,9 +164,13 @@ func (g *Game) Update() error {
 	}
 	g.frame++
 	g.in.Update()
-	if inpututil.IsKeyJustPressed(ebiten.KeyF11) ||
-		(ebiten.IsKeyPressed(ebiten.KeyAlt) && inpututil.IsKeyJustPressed(ebiten.KeyEnter)) {
-		ebiten.SetFullscreen(!ebiten.IsFullscreen())
+	if f11, altEnter := fullscreenKeys(); f11 || altEnter {
+		toggleFullscreen()
+		if altEnter {
+			// Enter is a confirm key too: the press only switches the window. It went on to
+			// the screen, choosing EXIT or RESET on a menu and swinging a hammer in play.
+			g.in.Release(input.Confirm)
+		}
 	}
 	g.bg.update()
 	if g.cap != nil {
@@ -207,3 +211,13 @@ func (g *Game) end(done bool, err error) {
 func (g *Game) Layout(_, _ int) (int, int) { return ScreenW, ScreenH }
 
 var quitRequested bool
+
+// fullscreenKeys reports whether a key that switches the window to fullscreen and back
+// was pressed this frame: F11, or Enter with Alt held. The tests press them in its place.
+var fullscreenKeys = func() (f11, altEnter bool) {
+	return inpututil.IsKeyJustPressed(ebiten.KeyF11),
+		ebiten.IsKeyPressed(ebiten.KeyAlt) && inpututil.IsKeyJustPressed(ebiten.KeyEnter)
+}
+
+// toggleFullscreen switches the window to fullscreen and back.
+var toggleFullscreen = func() { ebiten.SetFullscreen(!ebiten.IsFullscreen()) }
