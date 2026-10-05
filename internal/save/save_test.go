@@ -309,3 +309,74 @@ func TestFailedFlushIsRetried(t *testing.T) {
 		t.Fatalf("saved stage %d, want 3", got)
 	}
 }
+
+// TestUnreadableSaveIsNotWrittenOver: a save file the game cannot make sense of (a stray
+// character after the JSON) or cannot read at all is not lost when the game goes on and
+// saves. The game started on empty progress and its first save replaced the file, so
+// every character, illustration and clear in it was gone for good.
+//
+//nolint:paralleltest // uses t.Setenv
+func TestUnreadableSaveIsNotWrittenOver(t *testing.T) {
+	const old = `{"characters":{"gyal":{"cleared":true,"unlocked_cg":{"cg01":true}}}}`
+	writeOld := func(t *testing.T, raw string) {
+		t.Helper()
+		if err := os.MkdirAll(filepath.Dir(Path()), 0o750); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(Path(), []byte(raw), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Run("broken JSON is kept aside", func(t *testing.T) {
+		st := useTempConfig(t)
+		writeOld(t, old+"x")
+		st.Load()
+		st.Data.Progress("cool").Cleared = true // a run after the launch
+		st.Mark()
+		st.Flush()
+		raw, err := os.ReadFile(Path() + ".broken")
+		if err != nil {
+			t.Fatalf("the broken save was not kept: %v", err)
+		}
+		if string(raw) != old+"x" {
+			t.Errorf("kept %q, want the broken save %q", raw, old+"x")
+		}
+		if sd := readBack(t); !sd.Progress("cool").Cleared {
+			t.Error("the new progress was not saved")
+		}
+	})
+	t.Run("a file that cannot be read is left alone", func(t *testing.T) {
+		if os.Getuid() == 0 {
+			t.Skip("root reads any file")
+		}
+		st := useTempConfig(t)
+		writeOld(t, old)
+		if err := os.Chmod(Path(), 0); err != nil {
+			t.Fatal(err)
+		}
+		st.Load()
+		st.Data.Progress("cool").Cleared = true
+		st.Mark()
+		st.Flush()
+		if err := os.Chmod(Path(), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if sd := readBack(t); !sd.Progress("gyal").Cleared {
+			t.Error("the save the game could not read was written over")
+		}
+	})
+}
+
+// readBack reads the save file back, as the next launch does.
+func readBack(t *testing.T) *Data {
+	t.Helper()
+	raw, err := os.ReadFile(Path())
+	if err != nil {
+		t.Fatal(err)
+	}
+	sd := &Data{}
+	if err := Decode(sd, raw); err != nil {
+		t.Fatal(err)
+	}
+	return sd
+}

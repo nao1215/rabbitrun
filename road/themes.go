@@ -809,11 +809,13 @@ func (g *Game) designSweets(row *Row, t Theme, r, left, right int) {
 			put(jarNeckAt(r/period, neck, left, right)+neck/2, SweetCandy)
 		case p >= 2 && p <= 6 && p%2 == 0: // the patch of macarons in the field
 			for x := left + (p/2)%2; x <= right; x += 2 {
-				s := SweetCandy
-				if p == 4 && x == (left+right)/2 {
-					s = SweetMacaron
-				}
-				put(x, s)
+				put(x, SweetCandy)
+			}
+			if p == 4 {
+				// the jar's macaron, in the middle of the patch: its middle row is laid on
+				// the cells beside the middle, and the macaron meant for one of them never
+				// came (the road of a jar is seven cells wide, so the middle is never laid)
+				put((left+right)/2, SweetMacaron)
 			}
 		}
 	case ThemeHammerHall:

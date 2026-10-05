@@ -74,6 +74,21 @@ type Input struct {
 	// the game with it); typed are the letters it typed this frame.
 	script Script
 	typed  []rune
+	// stale are the actions Release let go of: held on, they count as up until the key
+	// or button comes up.
+	stale [NumActions]bool
+}
+
+// Release lets go of the actions held now: until their keys or buttons come up they are
+// not held, pressed or repeated. A menu that comes up over the road calls it, so a key
+// held for the road (up, the speed-up) does not run through the menu by key repeat.
+func (in *Input) Release(actions ...Action) {
+	for _, a := range actions {
+		if in.held[a] {
+			in.stale[a] = true
+			in.held[a], in.holdFrames[a] = false, 0
+		}
+	}
 }
 
 // Script plays the game in place of a player: each frame it gives the actions held and
@@ -98,6 +113,12 @@ func (in *Input) Update() {
 		}
 	}
 	for a := Action(0); a < NumActions; a++ {
+		if !in.held[a] {
+			in.stale[a] = false // come up: the next press counts
+		}
+		if in.stale[a] {
+			in.held[a] = false
+		}
 		if in.held[a] {
 			in.holdFrames[a]++
 		} else {

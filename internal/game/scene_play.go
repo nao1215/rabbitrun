@@ -218,6 +218,13 @@ var playArtwork = func() []string {
 func (s *playScene) Update(g *Game) {
 	s.frame++
 	defer s.updateLean() // after everything that moves her this frame
+	// The direction held is followed on every frame, also while the road waits (the pause,
+	// READY, a miss, a hammer): one let go of there and pressed again starts its slide slow,
+	// as a new press does. Followed only on the road, the new press went on from the frames
+	// held before and slid her at full speed at once.
+	if dir := g.in.Side(); dir != s.holdDir {
+		s.holdDir, s.holdFrames = dir, 0
+	}
 	character.UploadPrefetched(s.portraits, 3)
 	s.prefetchArt()
 	s.updateEffects()
@@ -247,6 +254,7 @@ func (s *playScene) Update(g *Game) {
 	if g.in.Pressed(input.Pause) && !s.eng.G.Missed && s.countdown == 0 {
 		s.paused = true
 		s.pauseSel = 0
+		g.in.Release(menuKeys...) // up held for the speed-up does not run down the menu
 		sound.Play(sound.Pause)
 		sound.PauseBGM(true)
 		return
@@ -309,11 +317,7 @@ func (s *playScene) Update(g *Game) {
 	} else {
 		// Sideways moves are smooth: she slides while a direction is held, slowly at
 		// first and faster the longer it is held (SlideSpeed).
-		dir := g.in.Side()
-		if dir != s.holdDir {
-			s.holdDir, s.holdFrames = dir, 0
-		}
-		if dir != 0 {
+		if dir := s.holdDir; dir != 0 {
 			s.holdFrames++
 			e.Move(float64(dir) * e.SlideSpeed(s.holdFrames) / 60)
 		}
@@ -392,8 +396,14 @@ func (s *playScene) handleEvents() {
 			s.react(character.ExprNervous, 50, rankHint)
 		case road.EventCrash:
 			s.misses++
-			sound.Play(sound.GameOver)
+			// the music stops, as at a game over: the jingle plays on its own, and a retry
+			// starts the song again after its READY (it played on under the miss screen and
+			// READY and was cut off there to start over)
+			sound.StopBGM()
+			// the last life: the game over plays the jingle (onGameOver), so it is not
+			// played twice at once
 			if !e.Over() {
+				sound.Play(sound.GameOver)
 				s.react(character.ExprCrying, missFrames-5, rankPerfect) // a miss: she cries until the restart
 			}
 		case road.EventCourse:
@@ -506,6 +516,9 @@ func (s *playScene) updateEffects() {
 
 	s.hop *= 0.95
 	s.landing *= 0.8
+	if s.paused {
+		return // the popups wait with the road: their time ran on behind the pause menu
+	}
 	alive := s.popups[:0]
 	for _, p := range s.popups {
 		p.timer--

@@ -140,10 +140,12 @@ func TestPickingUpSweetsBuildsAStreak(t *testing.T) {
 			t.Fatalf("streak %d after %d sweets", g.Streak, i+1)
 		}
 	}
-	// a sweet beside the player scrolls past: the streak ends
+	// a sweet beside the player scrolls past (by her body, halfway down the next row): the
+	// streak ends
 	g.Rows[PlayerRow] = Row{}
 	g.Rows[PlayerRow][(g.Col()+2)%W].Sweet = SweetCandy
 	g.Step()
+	g.ReachHalfway()
 	if g.Streak != 0 {
 		t.Fatalf("streak %d after a miss", g.Streak)
 	}
@@ -956,6 +958,171 @@ func TestStepsToNextCourseCountsDownToTheNextLevel(t *testing.T) {
 		}
 		if g.Step(); g.Level != lv+1 {
 			t.Fatalf("course %d after the %d steps from course %d, want %d", g.Level, n, lv, lv+1)
+		}
+	}
+}
+
+// TestADentIsTwoRowsDeepOnAThemedCourse builds courses of every theme and checks the dents
+// that a sweet is put in (place): while the road still runs beside it, the dent is open on
+// the row after it too, so she has two rows to dart in for the sweet and out again. On a
+// row of a course's theme the second row was never carved, so the sweet (often an extra
+// life or a hammer, which go to the dents twice as often) lay in a notch one row deep that
+// the next row walled off.
+func TestADentIsTwoRowsDeepOnAThemedCourse(t *testing.T) {
+	t.Parallel()
+	p := Profile{Speed: 1, MaxWidth: 5, Narrowing: 2, Wander: 0.16, Mixed: true, Pillars: 0.07, Gates: 0.05, SweetsRate: 0.16, OneUpRate: 0.03}
+	dents := 0
+	for th := range themeCount {
+		if th == ThemeAlcoves || th == ThemeMixed {
+			continue // its dents are its own (designSweets); a mixed course is not themed
+		}
+		for _, hard := range []bool{false, true} {
+			for seed := range uint64(8) {
+				g := NewWith(seed, p)
+				g.TotalCourses = 16
+				g.Hard = hard
+				g.Themes = make([]Theme, 16)
+				for i := range g.Themes {
+					g.Themes[i] = th
+				}
+				for level := 1; level <= 16; level++ {
+					g.Level = level
+					g.Stage, g.Course = (level-1)/Courses+1, (level-1)%Courses
+					g.startCourse()
+					g.courseRow = 0
+					for range 45 {
+						before := g.alcoveFor
+						row := g.buildRow(true)
+						g.courseRow++
+						x := g.alcove
+						if before != 0 || g.alcoveFor != 1 || x < 0 || x >= W || row[x].Sweet == SweetNone || !g.themed(false) {
+							continue
+						}
+						side := 1 // the road is on this side of the dent
+						if l := max(x-1, 0); l < x && row[l].Wall == 0 {
+							side = -1
+						}
+						next := g.buildRow(true)
+						g.courseRow++
+						if in := x + side; in < 0 || in >= W || next[in].Wall != 0 || g.alcove != x || g.sinceTrap == 0 {
+							// the road has moved away from the dent (and a new one may be beside
+							// it), or a long straight run ended with a block there (trap)
+							continue
+						}
+						dents++
+						if next[x].Wall != 0 {
+							t.Errorf("theme %d hard %v seed %d course %d row %d: the dent at column %d with sweet %d is one row deep", th, hard, seed, level, g.courseRow-2, x, row[x].Sweet)
+						}
+					}
+				}
+			}
+		}
+	}
+	if dents == 0 {
+		t.Fatal("no dent with a sweet on a themed course was built")
+	}
+}
+
+// TestRetryTakesTheSweetUnderHer starts a retry where a sweet lies on the cell she is put
+// on, and she stands still: she takes it, as she takes a sweet that comes into her row
+// where she stands. Nothing took it until she moved, so standing still let it go by.
+func TestRetryTakesTheSweetUnderHer(t *testing.T) {
+	t.Parallel()
+	g := NewWith(1, Profile{Speed: 1, MaxWidth: 5})
+	g.X = 5.5 // beside the trail of sweets down the middle that opens the game
+	for range 32 {
+		g.Step()
+	}
+	g.X, g.Missed = 4.5, true // a miss on the trail
+	g.Restart()
+	lo, hi := span(g.X)
+	for c := lo; c <= hi; c++ {
+		if g.Rows[PlayerRow][c].Sweet != SweetNone {
+			t.Errorf("a sweet lies under her as the retry starts (column %d), not taken", c)
+		}
+	}
+	g.Step() // she stands still
+	if g.Streak == 0 {
+		t.Errorf("standing still on the trail of sweets after the retry broke the streak (events %+v)", g.Events)
+	}
+}
+
+// TestASweetBesideHerBodyCanStillBeTaken slides her into a sweet of the row that has just
+// gone by her row, while it is still beside her body (the first half of the next row's
+// time, when that row is drawn mostly above her and a wall in the row gone by stops her
+// from the side, see sideRow): she takes it. The sweet was told as let go of as soon as
+// its row left hers, so sliding into it in the picture took nothing, and the streak of
+// sweets was already broken. Once the row is past her body (ReachHalfway) a sweet left in
+// it is let go of, as before.
+func TestASweetBesideHerBodyCanStillBeTaken(t *testing.T) {
+	t.Parallel()
+	setup := func() *Game {
+		g := New(1)
+		g.Rows, g.Ahead, g.Safe = [Rows]Row{}, Row{}, 0
+		g.X, g.Streak = 4.84, 3 // covers column 4 only
+		g.Rows[PlayerRow][5].Sweet = SweetCandy
+		g.Step()
+		g.Events = g.Events[:0]
+		return g
+	}
+	g := setup()
+	g.Move(0.06) // into column 5, before the halfway point
+	if g.Sweets != 1 || g.Streak != 4 || g.Rows[PlayerRow+1][5].Sweet != SweetNone {
+		t.Errorf("sliding into the sweet beside her body: %d sweets, streak %d, the sweet still there: %v", g.Sweets, g.Streak, g.Rows[PlayerRow+1][5].Sweet != SweetNone)
+	}
+	for _, ev := range g.Events {
+		if ev.Kind == EventMiss {
+			t.Errorf("the sweet she took was told as let go of: %+v", g.Events)
+		}
+	}
+
+	g = setup()
+	g.ReachHalfway() // past her body: let go of
+	missed := false
+	for _, ev := range g.Events {
+		missed = missed || ev.Kind == EventMiss
+	}
+	if !missed || g.Streak != 0 {
+		t.Errorf("the sweet that went by her body was not let go of (events %+v, streak %d)", g.Events, g.Streak)
+	}
+	g.Move(0.06)
+	if g.Sweets != 0 {
+		t.Error("a sweet let go of was taken after all")
+	}
+}
+
+// TestTheJarHoldsItsMacaron builds candy jar courses and checks that the patch of sweets
+// in the field after each neck has its macaron in the middle, the jar's prize. The patch
+// is laid every other cell, and on its middle row the cells laid were never the middle one
+// the macaron was meant for, so a jar only ever held plain candy.
+func TestTheJarHoldsItsMacaron(t *testing.T) {
+	t.Parallel()
+	p := Profile{Speed: 1, MaxWidth: 5, Narrowing: 2, Wander: 0.16, Mixed: true, Pillars: 0.07, Gates: 0.05, SweetsRate: 0.16, OneUpRate: 0.03}
+	for _, hard := range []bool{false, true} {
+		for seed := range uint64(4) {
+			g := NewWith(seed, p)
+			g.TotalCourses = 16
+			g.Hard = hard
+			g.Themes = make([]Theme, 16)
+			for i := range g.Themes {
+				g.Themes[i] = ThemeJar
+			}
+			for level := 2; level <= 16; level++ {
+				if _, vault := Vaults[level]; vault || Feasts[level] {
+					continue // their macarons are not the jar's
+				}
+				macarons := 0
+				for _, row := range buildCourse(g, level, 80) {
+					for _, c := range row {
+						if c.Sweet == SweetMacaron {
+							macarons++
+						}
+					}
+				}
+				if macarons == 0 {
+					t.Errorf("hard %v seed %d: the jars of course %d hold no macaron", hard, seed, level)
+				}
+			}
 		}
 	}
 }

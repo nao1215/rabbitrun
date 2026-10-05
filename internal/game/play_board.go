@@ -56,19 +56,7 @@ func (s *playScene) drawBoard(screen *ebiten.Image) {
 		fade = float32(math.Max(0.35, 1-float64(s.overFrame)/90))
 	}
 	// The walls are single gummy blocks, one per cell, like the old brick games.
-	wallAt := func(x, y int) int8 {
-		if x < 0 || x >= boardW || y < 0 || y > visibleRows {
-			return 1 // beyond the screen: as good as a wall
-		}
-		w := g.Ahead[x].Wall // the row coming in at the top
-		if y > 0 {
-			w = g.Rows[y-1][x].Wall
-		}
-		if s.showingWalls() || s.breaking() && !s.rowBroken(y) {
-			w = s.hammerWalls[y][x].Wall // the hammer's walls, not broken yet
-		}
-		return w
-	}
+	wallAt := s.wallAt
 	buried := func(x, y int) bool {
 		if s.showing {
 			return false // the hammer show's wall of blocks is drawn whole
@@ -131,6 +119,25 @@ func (s *playScene) drawBoard(screen *ebiten.Image) {
 	// and slides down over her while it is hers.
 	cx, footY, hop := s.bunnyPose(bx, by)
 	drawBunny(screen, cx, footY, hop, s.lean, alpha)
+}
+
+// wallAt is the wall drawn in the cell (x, y) of the road on the screen (y 0 is the row
+// coming in at the top, y 1 the top row of the road), 0 for none.
+func (s *playScene) wallAt(x, y int) int8 {
+	if x < 0 || x >= boardW || y < 0 || y > visibleRows {
+		return 1 // beyond the screen: as good as a wall
+	}
+	g := s.eng.G
+	w := g.Ahead[x].Wall // the row coming in at the top
+	if y > 0 {
+		w = g.Rows[y-1][x].Wall
+	}
+	// the hammer's walls, not broken yet: they stand through its cut-in (the road has lost
+	// them as it was swung, and they vanished there and came back to break)
+	if s.showingWalls() || s.cutin > 0 || s.breaking() && !s.rowBroken(y) {
+		w = s.hammerWalls[y][x].Wall
+	}
+	return w
 }
 
 // bunnyPose is where Draw puts the bunny on a road whose frame starts at (bx, by): her

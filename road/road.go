@@ -122,6 +122,7 @@ type Game struct {
 	taken     map[takenKey]bool
 	alcove    int // column of a dent being carved into the wall (-1: none)
 	alcoveFor int // rows the dent still runs
+	dentRow   int // the row of the course a dent was put in with a sweet (place)
 	Profile   Profile
 	// TotalCourses is how many courses the game has (0: it goes on without end). Stages
 	// have four courses; a short last stage has what is left (the hardest colors).
@@ -256,7 +257,7 @@ func (g *Game) buildFirstRow() {
 	shapeOf(f).restore(g)
 	g.src, g.rng = f.src, f.rng
 	g.section, g.sectionLeft, g.sectionRow = f.section, f.sectionLeft, f.sectionRow
-	g.sinceObs, g.alcove, g.alcoveFor, g.dir = f.sinceObs, f.alcove, f.alcoveFor, f.dir
+	g.sinceObs, g.alcove, g.alcoveFor, g.dentRow, g.dir = f.sinceObs, f.alcove, f.alcoveFor, f.dentRow, f.dir
 	g.vaultAt, g.feastAt, g.helpLaid, g.designFrom, g.hallHammerAt = f.vaultAt, f.feastAt, f.helpLaid, f.designFrom, f.hallHammerAt
 	g.themeRow, g.feastRow, g.figure = f.themeRow, f.feastRow, f.figure
 	g.courseRow = f.courseRow
@@ -609,6 +610,14 @@ func (g *Game) buildRoad(withThings bool) Row {
 	}
 	if withThings && g.themed(vaultDue) {
 		row, left, right := g.buildThemedRow()
+		// A dent put in with a sweet on the row before (place) carries on for its second
+		// row here too: it was left one row deep, and the sweet in it (often an extra life
+		// or a hammer) lay in a notch the next row walled off. Its count is left as it was,
+		// as before: taken down, the course would roll its later dents and sweets again,
+		// and every themed course would change.
+		if g.alcoveFor > 0 && g.dentRow == g.courseRow-1 {
+			g.openDent(&row, left, right)
+		}
 		g.updateReach(row)
 		g.lastRow = row
 		g.sinceObs = 0
@@ -790,9 +799,7 @@ func (g *Game) buildRoad(withThings bool) Row {
 	// A dent in the wall carries on for its second row.
 	if g.alcoveFor > 0 {
 		g.alcoveFor--
-		if g.alcove >= 0 && g.alcove < W && (g.alcove == left-1 || g.alcove == right+1) {
-			row[g.alcove].Wall = 0
-		}
+		g.openDent(&row, left, right)
 	}
 	g.updateReach(row)
 	g.lastRow = row
@@ -800,6 +807,14 @@ func (g *Game) buildRoad(withThings bool) Row {
 		return row
 	}
 	return g.addThings(row, left, right)
+}
+
+// openDent carves the dent in the wall (g.alcove) into row, the row of road between left
+// and right being built, while the road still runs beside it.
+func (g *Game) openDent(row *Row, left, right int) {
+	if g.alcove >= 0 && g.alcove < W && (g.alcove == left-1 || g.alcove == right+1) {
+		row[g.alcove].Wall = 0
+	}
 }
 
 // addThings puts the sweets (and the stage's hammer) on a row of road between left and right.
@@ -937,7 +952,7 @@ func (g *Game) place(row *Row, left, right int, thing int8) {
 		if x >= 0 && x < W {
 			row[x].Wall = 0
 			row[x].Sweet = thing
-			g.alcove, g.alcoveFor = x, 1 // the dent is two rows deep, so it can be reached
+			g.alcove, g.alcoveFor, g.dentRow = x, 1, g.courseRow // the dent is two rows deep, so it can be reached
 			return
 		}
 	}
@@ -1119,7 +1134,7 @@ func (g *Game) sideRow() int {
 // bunny: from now on she is judged against it from the side too, and if she stands in
 // one of its walls, it is a miss (it has come down over her ears and head).
 func (g *Game) ReachHalfway() {
-	g.SideRowBehind = false
+	g.passBy()
 	if !g.Over && !g.Missed && g.Safe == 0 && g.blocked(g.X) {
 		g.crash()
 	}
@@ -1158,17 +1173,7 @@ func (g *Game) Step() {
 	if g.Over || g.Missed {
 		return
 	}
-	// a sweet that scrolls past the player is missed
-	for _, c := range g.Rows[PlayerRow] {
-		switch c.Sweet {
-		case SweetNone, SweetBomb:
-		case SweetOneUp: // an extra life let go by: told, but the streak of sweets holds
-			g.Events = append(g.Events, Event{Kind: EventMiss, Sweet: c.Sweet})
-		default:
-			g.Streak = 0
-			g.Events = append(g.Events, Event{Kind: EventMiss, Sweet: c.Sweet})
-		}
-	}
+	g.passBy() // the row beside her body, if halfway did not come for it
 	g.pushRow()
 	g.Distance++
 	g.SideRowBehind = true
@@ -1190,23 +1195,48 @@ func (g *Game) Step() {
 	}
 }
 
-// pick collects the sweets the player covers.
-func (g *Game) pick() {
-	lo, hi := span(g.X)
-	for col := lo; col <= hi; col++ {
-		g.pickAt(col)
+// passBy lets go of the sweets left in the row beside her body as it goes by (halfway
+// down the next row, or as the road steps on before that): a sweet is missed once it has
+// gone by her body, not as soon as its row has left hers. Told then, sliding into a sweet
+// still beside her body took nothing.
+func (g *Game) passBy() {
+	if !g.SideRowBehind || PlayerRow+1 >= Rows {
+		return
+	}
+	g.SideRowBehind = false
+	for _, c := range g.Rows[PlayerRow+1] {
+		switch c.Sweet {
+		case SweetNone, SweetBomb:
+		case SweetOneUp: // an extra life let go by: told, but the streak of sweets holds
+			g.Events = append(g.Events, Event{Kind: EventMiss, Sweet: c.Sweet})
+		default:
+			g.Streak = 0
+			g.Events = append(g.Events, Event{Kind: EventMiss, Sweet: c.Sweet})
+		}
 	}
 }
 
-func (g *Game) pickAt(col int) {
-	c := &g.Rows[PlayerRow][col]
+// pick collects the sweets the player covers: in her row, and in the row beside her body
+// until it has gone by (the row of her side, see sideRow).
+func (g *Game) pick() {
+	lo, hi := span(g.X)
+	for col := lo; col <= hi; col++ {
+		g.pickAt(PlayerRow, col)
+		if g.SideRowBehind && PlayerRow+1 < Rows {
+			g.pickAt(PlayerRow+1, col)
+		}
+	}
+}
+
+func (g *Game) pickAt(row, col int) {
+	c := &g.Rows[row][col]
 	if c.Sweet == 0 {
 		return
 	}
 	if g.taken == nil {
 		g.taken = map[takenKey]bool{}
 	}
-	g.taken[takenKey{g.ids[PlayerRow], col}] = true
+	g.taken[takenKey{g.ids[row], col}] = true
 	switch c.Sweet {
 	case SweetOneUp:
 		g.Lives = min(MaxLives, g.Lives+1)
@@ -1381,6 +1411,9 @@ func (g *Game) Restart() bool {
 	g.X = g.openColumn(oldX)
 	g.SideRowBehind = true // the road starts again with its last row just come in
 	g.Events = append(g.Events, Event{Kind: EventRestart})
+	// a sweet on the cell she is put on is hers, as one that comes into her row where she
+	// stands (Step): nothing took it until she moved, so standing still let it go by
+	g.pick()
 	return true
 }
 

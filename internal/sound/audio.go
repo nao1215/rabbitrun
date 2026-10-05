@@ -76,12 +76,17 @@ var (
 	bgmPlayer *audio.Player
 	bgm       *musicStream
 	bgmSong   string
+	// bgmPaused is set while PauseBGM holds the music (the pause menu): it has no beat then.
+	bgmPaused bool
 )
 
 // StartBGM plays the song name (TitleSong, SelectSong, GameSong or GallerySong) from the
 // beginning.
 func StartBGM(name string) {
 	StopBGM()
+	if heardMusic != nil {
+		heardMusic(name)
+	}
 	if muted {
 		return
 	}
@@ -104,7 +109,10 @@ func StartBGM(name string) {
 
 // StopBGM stops the music.
 func StopBGM() {
-	bgmSong = ""
+	if heardMusic != nil {
+		heardMusic("")
+	}
+	bgmSong, bgm, bgmPaused = "", nil, false // stopped, the music has no beat (BeatPhase)
 	if bgmPlayer != nil {
 		bgmPlayer.PauseAndStopReading()
 		bgmPlayer = nil
@@ -113,6 +121,7 @@ func StopBGM() {
 
 // PauseBGM pauses the music, or plays it on again.
 func PauseBGM(paused bool) {
+	bgmPaused = paused
 	if bgmPlayer == nil {
 		return
 	}
@@ -127,9 +136,10 @@ func PauseBGM(paused bool) {
 func CurrentSong() string { return bgmSong }
 
 // BeatPhase returns where the music is within the current beat (0 at the beat, rising to
-// 1). ok is false while no music plays.
+// 1). ok is false while no music plays: none started, stopped, or paused. The beat ran on
+// to the clock behind the pause menu and after a miss, and her beat bounce with it.
 func BeatPhase() (phase float64, ok bool) {
-	if bgm == nil {
+	if bgm == nil || bgmPaused {
 		return 0, false
 	}
 	return bgm.beatPhase()
@@ -361,8 +371,27 @@ var muted bool
 // SetMuted silences the music and the sound effects from now on (or lets them play).
 func SetMuted(m bool) { muted = m }
 
+// heardMusic, when set, is told of every song StartBGM starts and of StopBGM (""), muted
+// or not (ListenMusic).
+var heardMusic func(song string)
+
+// ListenMusic calls f with every song the game starts from now on, and with "" when it
+// stops the music, also while the sound is muted (nil stops it): the tests listen to the
+// music with it.
+func ListenMusic(f func(song string)) { heardMusic = f }
+
+// heard, when set, is told of every effect Play is asked for, muted or not (Listen).
+var heard func(Effect)
+
+// Listen calls f with every sound effect the game plays from now on, also while the sound
+// is muted (nil stops it): the tests listen to what the game plays with it.
+func Listen(f func(Effect)) { heard = f }
+
 // Play plays the sound effect id.
 func Play(id Effect) {
+	if heard != nil {
+		heard(id)
+	}
 	if audioCtx == nil || muted {
 		return
 	}

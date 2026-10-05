@@ -43,6 +43,9 @@ func TestRetryShowsTheRoadOfBefore(t *testing.T) {
 				for y := range after { // what she took at the edge stays taken
 					before[y][0].Sweet, after[y][0].Sweet = 0, 0
 				}
+				for _, y := range []int{road.PlayerRow, road.PlayerRow + 1} { // a sweet on the cell she is put on (and beside her body) is hers at once
+					before[y][g.Col()].Sweet, after[y][g.Col()].Sweet = 0, 0
+				}
 				for y := range after {
 					if after[y] != before[y] {
 						t.Errorf("%s/%s, a miss %d rows in (course %d): row %d of the screen was %v, after the retry %v", id, side(extra), missAt, g.Level, y, before[y], after[y])
@@ -87,10 +90,12 @@ func TestRetryOnTheOpenRoadAfterTheLastCourse(t *testing.T) {
 					t.Fatalf("%s/%s, %d rows into the open road: no retry", id, side(extra), missAt-last)
 				}
 				g.Safe = 1 << 30
+				put := g.Col() // a sweet on the cell she is put on is hers at once
 				for s := missAt - road.RewindRows; ; s++ {
 					after, before := g.Rows, screens[s-1]
 					for y := range after { // what she took at the edge stays taken
 						before[y][0].Sweet, after[y][0].Sweet = 0, 0
+						before[y][put].Sweet, after[y][put].Sweet = 0, 0
 					}
 					if after != before {
 						t.Errorf("%s/%s, a miss %d rows into the open road: %d rows after the retry the screen is not the one of the run", id, side(extra), missAt-last, s-missAt+road.RewindRows)

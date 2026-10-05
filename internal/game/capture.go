@@ -127,6 +127,15 @@ func (r *recorder) finish() error {
 	return err
 }
 
+// plainTitle is the title screen without what is due on it (a secret character's arrival,
+// the secret word), on the group picture when group is set: on the player's own save the
+// title and title_group screenshots showed the arrival.
+func plainTitle(group bool) *titleScene {
+	s := newTitleScene()
+	s.reveal, s.word, s.group = -1, false, group
+	return s
+}
+
 type captureStep struct {
 	name  string
 	setup func(g *Game)
@@ -134,7 +143,7 @@ type captureStep struct {
 }
 
 var captureSteps = []captureStep{
-	{"title", func(g *Game) { g.SetScene(newTitleScene()) }, 30},
+	{"title", func(g *Game) { g.SetScene(plainTitle(false)) }, 30},
 	{"title_reveal_grey", titleRevealScene, revealColorStart + 5}, // a new character comes in grey
 	{"title_reveal", titleRevealScene, revealWordsAt + 40},
 	{"title_word", func(g *Game) {
@@ -142,7 +151,7 @@ var captureSteps = []captureStep{
 		s.reveal, s.word = -1, true
 		g.SetScene(s)
 	}, wordWait + 10}, // in her colors, with the words
-	{"title_group", func(g *Game) { s := newTitleScene(); s.group = true; g.SetScene(s) }, 30},
+	{"title_group", func(g *Game) { g.SetScene(plainTitle(true)) }, 30},
 	{"select", func(g *Game) { g.SetScene(newCharSelectScene(modePlay)) }, 40},
 	{"play", func(g *Game) {
 		s := newPlayScene(characters[defaultCharIndex()])
@@ -244,11 +253,18 @@ var captureSteps = []captureStep{
 	{"gameover", gameOverScene, 130},
 	{"gallery", func(g *Game) { g.SetScene(newGalleryScene()) }, 120},
 	{"gallery_cg", func(g *Game) {
+		// an illustration of the main character first: the scripted clears earned hers, while
+		// the gallery opens on the first character, who may have none (the screenshot then
+		// showed the grid)
 		s := newGalleryScene()
-		for i, it := range s.items() {
-			if it.cg && s.open[i] {
-				s.sel, s.viewing = i, true
-				break
+	chars:
+		for k := range characters {
+			s.charIdx = (defaultCharIndex() + k) % len(characters)
+			for i, it := range s.items() {
+				if it.cg && s.open[i] {
+					s.sel, s.viewing = i, true
+					break chars
+				}
 			}
 		}
 		g.SetScene(s)
