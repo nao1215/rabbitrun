@@ -447,3 +447,38 @@ func TestRetryAfterAMissGetsHerBackUp(t *testing.T) {
 		t.Errorf("she never got back up in her comeback pose after RETRY (showing %q)", s.expr)
 	}
 }
+
+// TestHammeredWallsStandThroughTheCutIn swings a hammer at walls on the screen: they stand
+// while the cut-in plays and then break row by row from the bottom up. The rule engine
+// takes them off the road as the hammer is swung, and the board drew the road's walls
+// during the cut-in, so they all vanished at once and came back whole when the breaking
+// began.
+//
+//nolint:paralleltest // shares the save data and the characters
+func TestHammeredWallsStandThroughTheCutIn(t *testing.T) {
+	g, screen := newDrawScenario(t, nil)
+	s := startRun(t, g)
+	for y := range road.Rows {
+		for _, x := range []int{0, 1, 7, 8} {
+			s.eng.G.Rows[y][x].Wall = road.CourseColors[0]
+		}
+	}
+	playDrawn(t, g, screen, press(input.Confirm))
+	if s.cutin == 0 {
+		t.Fatal("no hammer swung")
+	}
+	for s.cutin > 0 {
+		for y := 1; y <= road.Rows; y++ {
+			if s.wallAt(0, y) == 0 || s.wallAt(8, y) == 0 {
+				t.Fatalf("the walls of row %d are gone %d frames into the cut-in, before they break", y, cutinFrames-s.cutin)
+			}
+		}
+		playDrawn(t, g, screen, wait(1))
+	}
+	playUntil(t, g, screen, (road.Rows+2)*crumbleStep+crumbleFly, func() bool { return !s.breaking() })
+	for y := range road.Rows + 1 {
+		if s.wallAt(0, y) != 0 {
+			t.Fatalf("row %d still has a wall after the breaking", y)
+		}
+	}
+}
