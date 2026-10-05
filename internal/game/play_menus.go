@@ -74,7 +74,9 @@ const itemTitle = "TITLE"
 func (s *playScene) updatePause(g *Game) {
 	s.pauseSel = menuNav(&g.in, s.pauseSel, len(pauseItems), input.Up, input.Down)
 	resume := g.in.Pressed(input.Cancel) || g.in.Pressed(input.Pause)
-	if g.in.Pressed(input.Confirm) {
+	// the pause button resumes whatever is chosen: the Start button of a pad is a confirm
+	// button too, and pressed again on RESET or TITLE it threw the run away
+	if g.in.Pressed(input.Confirm) && !g.in.Pressed(input.Pause) {
 		sound.Play(sound.Confirm)
 		switch s.pauseSel {
 		case 0:

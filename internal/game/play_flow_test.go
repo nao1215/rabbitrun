@@ -260,6 +260,28 @@ func TestPauseMenu(t *testing.T) {
 			t.Error("the hammer show did not end")
 		}
 	})
+
+	// The Start button of a pad is both the pause button and a confirm button (input.padMap):
+	// pressed again on the pause menu it resumes, whatever is chosen. On RESET or TITLE it
+	// threw the run away.
+	t.Run("the pause button of a pad resumes on any item", func(t *testing.T) {
+		start := []scriptFrame{{held: []input.Action{input.Confirm, input.Pause}}, {}}
+		for down := 1; down < len(pauseItems); down++ {
+			g, screen := newDrawScenario(t, nil)
+			s := startRun(t, g)
+			playDrawn(t, g, screen, start)
+			if !s.paused {
+				t.Fatal("Start did not pause")
+			}
+			for range down {
+				playDrawn(t, g, screen, press(input.Down))
+			}
+			playDrawn(t, g, screen, start)
+			if g.scene != s || s.paused || s.committed {
+				t.Errorf("Start on %s: the same run %v, paused %v, recorded %v", pauseItems[down], g.scene == s, s.paused, s.committed)
+			}
+		}
+	})
 }
 
 // TestEndingGoesBackToTitle runs the last course to the end: the ending takes no press
