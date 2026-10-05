@@ -4,6 +4,8 @@ All notable changes to this project are documented in this file. The format is b
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-05
+
 ### Added
 - No-miss clear: running all sixteen courses of the regular or the extra side without a single miss earns that side's no-miss illustration of the character, shown by the ending in place of the usual picture with NO MISS! and listed in the gallery after that side's illustrations.
 
