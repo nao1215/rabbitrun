@@ -512,6 +512,9 @@ func (s *playScene) updateEffects() {
 
 	s.hop *= 0.95
 	s.landing *= 0.8
+	if s.paused {
+		return // the popups wait with the road: their time ran on behind the pause menu
+	}
 	alive := s.popups[:0]
 	for _, p := range s.popups {
 		p.timer--

@@ -509,3 +509,30 @@ func TestCrashPlaysItsJingleOnce(t *testing.T) {
 		}
 	}
 }
+
+// TestPauseHoldsThePopups pauses during the READY of a retry, for longer than the popup of
+// where it starts (FROM x-y) lasts, and goes on: the popup is still there, as the road and
+// READY are. Its time ran on behind the pause menu, so it was gone when the game went on.
+//
+//nolint:paralleltest // shares the save data and the characters
+func TestPauseHoldsThePopups(t *testing.T) {
+	g, screen := newDrawScenario(t, nil)
+	s := startRun(t, g)
+	missOn(t, g, s, screen)
+	playDrawn(t, g, screen, press(input.Confirm)) // RETRY
+	playUntil(t, g, screen, 2*countdownFrames, func() bool { return !s.eng.G.Missed })
+	if !hasPopup(s, "FROM ") {
+		t.Fatalf("no popup of where the retry starts: %+v", s.popups)
+	}
+	playDrawn(t, g, screen, press(input.Pause))
+	if !s.paused {
+		t.Fatal("not paused")
+	}
+	playDrawn(t, g, screen, steps(wait(150), press(input.Pause)))
+	if s.paused {
+		t.Fatal("still paused")
+	}
+	if !hasPopup(s, "FROM ") {
+		t.Errorf("the popup of where the retry starts ran out behind the pause menu: %+v", s.popups)
+	}
+}
