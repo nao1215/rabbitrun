@@ -45,15 +45,18 @@ func roadFingerprint(id string, extra bool) string {
 // And a dent put in the wall with a sweet on a row of a course's theme is now open on its
 // second row too, as everywhere else: one cell more of road where it was left one row deep
 // (a cell or two a course, on most courses of every run; on course 7 of the gyal girl's
-// extra side a few of the blocks after it come in other places).
+// extra side a few of the blocks after it come in other places). The candy jars have their
+// macaron, which never came: a sweet more in a jar's field (the cute girl's courses 7 and 15
+// of the regular side and 5 and 12 of the extra side, the gyal girl's course 12 of the extra
+// side, and course 2 of her regular side, which the idle rule covers).
 var untouchedRoads = map[string]string{
 	"bunny/extra":    "3a186398d8ead2fc",
 	"bunny/regular":  "e5b4446b3f069d33",
 	"cool/extra":     "f7f228f33607333c",
 	"cool/regular":   "fa06b6e49acc934c",
-	"cute/extra":     "49a2e3664a433657",
-	"cute/regular":   "234549d6e7db621e",
-	"gyal/extra":     "9e52c63a5579614e",
+	"cute/extra":     "411afea9f419794f",
+	"cute/regular":   "3d3fc9cfb97bb4ae",
+	"gyal/extra":     "b06599a5a5813b7c",
 	"gyal/regular":   "9994cd6d45b3992f",
 	"street/extra":   "465cde3b1190762a",
 	"street/regular": "ee076e79bb3a9516",

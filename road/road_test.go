@@ -1090,3 +1090,39 @@ func TestASweetBesideHerBodyCanStillBeTaken(t *testing.T) {
 		t.Error("a sweet let go of was taken after all")
 	}
 }
+
+// TestTheJarHoldsItsMacaron builds candy jar courses and checks that the patch of sweets
+// in the field after each neck has its macaron in the middle, the jar's prize. The patch
+// is laid every other cell, and on its middle row the cells laid were never the middle one
+// the macaron was meant for, so a jar only ever held plain candy.
+func TestTheJarHoldsItsMacaron(t *testing.T) {
+	t.Parallel()
+	p := Profile{Speed: 1, MaxWidth: 5, Narrowing: 2, Wander: 0.16, Mixed: true, Pillars: 0.07, Gates: 0.05, SweetsRate: 0.16, OneUpRate: 0.03}
+	for _, hard := range []bool{false, true} {
+		for seed := range uint64(4) {
+			g := NewWith(seed, p)
+			g.TotalCourses = 16
+			g.Hard = hard
+			g.Themes = make([]Theme, 16)
+			for i := range g.Themes {
+				g.Themes[i] = ThemeJar
+			}
+			for level := 2; level <= 16; level++ {
+				if _, vault := Vaults[level]; vault || Feasts[level] {
+					continue // their macarons are not the jar's
+				}
+				macarons := 0
+				for _, row := range buildCourse(g, level, 80) {
+					for _, c := range row {
+						if c.Sweet == SweetMacaron {
+							macarons++
+						}
+					}
+				}
+				if macarons == 0 {
+					t.Errorf("hard %v seed %d: the jars of course %d hold no macaron", hard, seed, level)
+				}
+			}
+		}
+	}
+}

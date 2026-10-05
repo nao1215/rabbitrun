@@ -29,6 +29,7 @@ All notable changes to this project are documented in this file. The format is b
 - A sweet lying on the cell a retry puts her on is now hers at once, as a sweet that comes into her row where she stands. Nothing took it until she moved, so standing still let it go by and broke the streak of sweets.
 - A sweet that has just gone by her row can still be taken while it is beside her body, until the next row is halfway down onto her, as a wall there still stops her from the side. It was let go of as soon as its row left hers, so sliding into a sweet drawn right beside her took nothing and broke the streak of sweets.
 - The title and title_group screenshots of `--capture` now show the title even when the save has a secret character's arrival or the secret word still to tell. They showed the arrival instead.
+- The candy jar courses now have their macaron in the middle of the patch of sweets after each neck. The patch is laid every other cell and its middle row never covered the middle, so a jar only ever held plain candy (the cute girl's courses 7 and 15 of the regular side and 5 and 12 of the extra side, and the gyal girl's course 2 of the regular side and 12 of the extra side; nothing else on those roads changes).
 
 ## [0.1.0] - 2026-10-04
 
