@@ -170,6 +170,9 @@ type Game struct {
 	// (-1: not yet): the themes laid out from there (ThemeSeconds, ThemeLesson) count their
 	// rows from it, so a vault or a feast first only pushes them along
 	designFrom int
+	// hallHammerAt is the row of the course being built where the hammer hall laid its hammer
+	// (-1: not yet; see ThemeHammerHall)
+	hallHammerAt int
 }
 
 // Tuning.
@@ -254,7 +257,7 @@ func (g *Game) buildFirstRow() {
 	g.src, g.rng = f.src, f.rng
 	g.section, g.sectionLeft, g.sectionRow = f.section, f.sectionLeft, f.sectionRow
 	g.sinceObs, g.alcove, g.alcoveFor, g.dir = f.sinceObs, f.alcove, f.alcoveFor, f.dir
-	g.vaultAt, g.feastAt, g.helpLaid, g.designFrom = f.vaultAt, f.feastAt, f.helpLaid, f.designFrom
+	g.vaultAt, g.feastAt, g.helpLaid, g.designFrom, g.hallHammerAt = f.vaultAt, f.feastAt, f.helpLaid, f.designFrom, f.hallHammerAt
 	g.themeRow, g.feastRow, g.figure = f.themeRow, f.feastRow, f.figure
 	g.courseRow = f.courseRow
 	g.Ahead, g.aheadID = f.Ahead, firstRowID
@@ -1008,7 +1011,7 @@ func (g *Game) startCourse() {
 	g.section, g.sinceObs, g.alcove, g.alcoveFor, g.dir = sectionNone, 0, -1, 0, 1
 	g.vaultAt, g.feastAt = -1, -1
 	g.helpLaid = 0
-	g.designFrom = -1
+	g.designFrom, g.hallHammerAt = -1, -1
 	if _, ok := Vaults[g.Level]; ok && g.TotalCourses > 0 {
 		g.vaultAt = specialAt
 	}
@@ -1238,9 +1241,11 @@ func (g *Game) gainHammer() {
 }
 
 // UseBomb swings a hammer from the stock: every wall on the screen (and the row about
-// to come in) is gone; the sweets stay. It reports whether there was a hammer.
+// to come in) is gone; the sweets stay. It reports whether it did: not without a hammer, and
+// not after a miss (the road has stopped for the retry, which builds it again: the hammer
+// was gone for nothing).
 func (g *Game) UseBomb() bool {
-	if g.Over || g.Bombs == 0 {
+	if g.Over || g.Missed || g.Bombs == 0 {
 		return false
 	}
 	g.Bombs--
@@ -1286,11 +1291,13 @@ func (g *Game) GiveUp() {
 const RewindRows = 10
 
 // rewindTo is where a retry starts: the course (Level) and the rows of it built by then,
-// RewindRows before now (into the course before, when this one is younger than that).
+// RewindRows before now (into the course before, when this one is younger than that). On the
+// open road after the last course it is the last course, and the rows past its end are rows
+// of the open road (see Restart).
 func (g *Game) rewindTo() (level, rows int) {
 	if g.finishing { // on the open road after the last course: back into the last course
 		level := g.Level - 1
-		return level, max(0, min(g.lenOf(level), g.lenOf(level)+g.courseRow-RewindRows))
+		return level, max(0, g.lenOf(level)+g.courseRow-RewindRows)
 	}
 	level, rows = g.Level, g.courseRow-RewindRows
 	for rows < 0 && level > 1 {
@@ -1299,6 +1306,12 @@ func (g *Game) rewindTo() (level, rows int) {
 	}
 	return level, max(0, rows)
 }
+
+// PlayerLevel is the course (Level) of the row she is on. Level is the course of the row being
+// built at the top of the road, so it goes up as the last row of a course comes in there,
+// and she runs the rest of that course (PlayerRow+2 rows) before PlayerLevel goes up. It is
+// the last course plus one on the open road after it, and 1 on the open rows of a game's start.
+func (g *Game) PlayerLevel() int { return max(1, g.ids[PlayerRow].level) }
 
 // RewindLevel is the course (Level) a retry would start on.
 func (g *Game) RewindLevel() int {
@@ -1351,7 +1364,20 @@ func (g *Game) Restart() bool {
 	if level > 1 {
 		build(level-1, g.lenOf(level-1))
 	}
-	build(level, rows)
+	build(level, min(rows, g.lenOf(level)))
+	if open := rows - g.lenOf(level); open >= 0 {
+		// back on the open road after the last course (a miss on its last walls): it comes
+		// in again as nextCourse began it, and the all clear is as far away as it was then.
+		// Built as rows of the last course, a row of walls that was never there came in and
+		// the open road started over.
+		g.Level++
+		g.courseRow = 0
+		g.finishing, g.finishLeft = true, finishRows
+		for ; g.courseRow < open; g.courseRow++ {
+			g.pushRow()
+			g.finishLeft--
+		}
+	}
 	g.X = g.openColumn(oldX)
 	g.SideRowBehind = true // the road starts again with its last row just come in
 	g.Events = append(g.Events, Event{Kind: EventRestart})

@@ -33,7 +33,9 @@ func (s *playScene) updateMiss(g *Game) {
 		if s.countdown == countdownFrames/2 {
 			sound.Play(sound.Cancel) // the life goes
 		}
+		stage := s.eng.G.Stage // a retry can go back into the stage before
 		if s.countdown == 0 && s.eng.Restart() {
+			s.bestStage = max(s.bestStage, stage)
 			s.missFrame = 0
 			s.ready = readyFr
 			s.popups = append(s.popups, popup{text: "FROM " + s.eng.Progress(), timer: 120})
@@ -74,7 +76,9 @@ const itemTitle = "TITLE"
 func (s *playScene) updatePause(g *Game) {
 	s.pauseSel = menuNav(&g.in, s.pauseSel, len(pauseItems), input.Up, input.Down)
 	resume := g.in.Pressed(input.Cancel) || g.in.Pressed(input.Pause)
-	if g.in.Pressed(input.Confirm) {
+	// the pause button resumes whatever is chosen: the Start button of a pad is a confirm
+	// button too, and pressed again on RESET or TITLE it threw the run away
+	if g.in.Pressed(input.Confirm) && !g.in.Pressed(input.Pause) {
 		sound.Play(sound.Confirm)
 		switch s.pauseSel {
 		case 0:
@@ -119,7 +123,7 @@ func (s *playScene) updateGameOver(g *Game) {
 		sound.Play(sound.Confirm)
 		switch s.overSel {
 		case 0:
-			g.SetScene(newRetryScene(s.char))
+			g.SetScene(newRetryScene(s.char, s.exprID))
 		case 1:
 			g.SetScene(newCharSelectScene(modePlay))
 		case 2:

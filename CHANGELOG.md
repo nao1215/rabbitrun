@@ -9,6 +9,12 @@ All notable changes to this project are documented in this file. The format is b
 
 ### Fixed
 - A retry now puts back exactly the road that was on the screen ten rows before the miss. On the first course it came back one row short with other macarons, so some she had already taken were there again and others were gone, and on the courses after a bonus feast or a vault in the same stage the lines of macarons and the hammer had moved.
+- A miss on the last walls of the last course no longer sends the retry further back than ten rows: it showed the end of the last course again with an extra row of walls that had never been there, and the open road to the ending started over.
+- The gyal girl's hammer hall on course 15 of the regular side and course 4 of the extra side now has its hammer before the first hall of walls. The road came to the theme too late for the row the hammer lies on (a bonus feast first, a block in the rows before the theme), and the hall came without one.
+- Pressing the hammer on the frame she slides into a wall no longer uses up a hammer: the miss stopped the road, the hammer was gone from the stock with nothing to show for it, and its cut-in played after the retry over walls that were still there.
+- On a gamepad, pressing Start again on the pause menu now resumes the run whichever item is chosen; with RESET or TITLE chosen it threw the run away, since Start is also a confirm button.
+- RETRY after a game over now opens the new run on the game over pose she was down in. It picked one at random, so she changed pose as the run began, and a pose shown only there stayed locked in the gallery.
+- A course's illustration is now earned when she runs the course to its end. It was saved as soon as the course's last row came in at the top of the road, so a miss on the last rows of the course (a game over, or a retry back into it) still left it open in the gallery.
 
 ## [0.1.0] - 2026-10-04
 

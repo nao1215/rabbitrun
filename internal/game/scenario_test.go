@@ -559,9 +559,54 @@ func TestScenarioGallerySkipsLockedCharacters(t *testing.T) { //nolint:parallelt
 	}
 }
 
+// TestScenarioAMissBeforeTheEndOfACourseEarnsNoIllustration lets the careful auto player
+// run the first course until its last row comes in at the top of the road (the next course
+// begins there: the road speeds up and its illustration shows behind it), and then runs her
+// into a wall with no life left, before she has run the rest of the course. The course is
+// not cleared, so its illustration is not earned. It was saved as soon as the last row came
+// in, and a retry from there went back into the course with the illustration earned.
+func TestScenarioAMissBeforeTheEndOfACourseEarnsNoIllustration(t *testing.T) { //nolint:paralleltest // shares the save data and the characters
+	g := newScenario(t, nil)
+	hero := characters[defaultCharIndex()]
+	cgs := hero.MainCGs()
+	if len(cgs) == 0 {
+		t.Skip("no illustration")
+	}
+	first := cgs[0].ID
+	play(t, g, press(input.Confirm, input.Confirm))
+	s := playOf(t, g)
+	s.auto = &engine.AutoPlayer{Careful: true}
+	g.in.SetScript(&script{})
+	for f := 0; s.eng.Level() < 2; f++ {
+		if f > 60*30 {
+			t.Fatalf("the first course is not built to its end after 30 seconds (on %s)", s.eng.Progress())
+		}
+		if err := g.Update(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	s.eng.G.Lives = 0
+	wallAcross(s)
+	for f := 0; !s.eng.Over(); f++ {
+		if f > 5*60 {
+			t.Fatal("no game over")
+		}
+		if err := g.Update(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if progress(hero.ID).UnlockedCG[first] {
+		t.Error("a game over before the end of the first course earned its illustration")
+	}
+	if p := reloadSave(t).Characters[hero.ID]; p != nil && p.UnlockedCG[first] {
+		t.Error("the illustration of a course not cleared was saved")
+	}
+}
+
 // TestScenarioAutoplayClearsACourseAndUnlocksItsIllustration starts a run from the title
-// and lets the careful auto player run the first course: no miss, and the course's
-// illustration is earned, saved, and open in the gallery (locked there before).
+// and lets the careful auto player run the first course to its end (the first row of the
+// next course has come down to her): no miss, and the course's illustration is earned,
+// saved, and open in the gallery (locked there before).
 func TestScenarioAutoplayClearsACourseAndUnlocksItsIllustration(t *testing.T) { //nolint:paralleltest // shares the save data and the characters
 	g := newScenario(t, nil)
 	hero := characters[defaultCharIndex()]
@@ -578,7 +623,7 @@ func TestScenarioAutoplayClearsACourseAndUnlocksItsIllustration(t *testing.T) { 
 	s := playOf(t, g)
 	s.auto = &engine.AutoPlayer{Careful: true}
 	g.in.SetScript(&script{})
-	for f := 0; s.eng.Level() < 2; f++ {
+	for f := 0; s.eng.G.PlayerLevel() < 2; f++ {
 		if f > 60*30 {
 			t.Fatalf("the first course is not done after 30 seconds (on %s)", s.eng.Progress())
 		}

@@ -208,7 +208,7 @@ func TestGameOverMenu(t *testing.T) {
 // gets up from her game over pose with her comeback pose.
 func TestRetryGetsBackUp(t *testing.T) { //nolint:paralleltest // shares the save data and the characters
 	g, screen := newDrawScenario(t, nil)
-	s := newRetryScene(characters[defaultCharIndex()])
+	s := newRetryScene(characters[defaultCharIndex()], "")
 	g.SetScene(s)
 	playUntil(t, g, screen, readyFr+10, func() bool { return s.ready == 0 })
 	if s.comeback != 0 {
@@ -216,6 +216,44 @@ func TestRetryGetsBackUp(t *testing.T) { //nolint:paralleltest // shares the sav
 	}
 	if s.expr == character.ExprGameOver {
 		t.Error("she is still down after READY")
+	}
+}
+
+// TestRetryKeepsHerGameOverPose picks RETRY on the game over of every character with more
+// than one game over pose, a few times each: the new run opens on the pose she was down in.
+// It picked one of them at random, without noting it as seen, so a pose shown there could
+// stay locked in the gallery.
+func TestRetryKeepsHerGameOverPose(t *testing.T) { //nolint:paralleltest // shares the save data and the characters
+	g := newScenario(t, nil)
+	tried := 0
+	for _, c := range characters {
+		if len(c.Variants(character.ExprGameOver)) < 2 || locked(c) {
+			continue
+		}
+		tried++
+		for range 8 {
+			over := newPlayScene(c)
+			over.ready = 0
+			g.SetScene(over)
+			over.eng.G.Lives = 0
+			wallAcross(over)
+			for f := 0; !over.eng.Over(); f++ {
+				if f > 5*60 {
+					t.Fatal("no game over")
+				}
+				play(t, g, wait(1))
+			}
+			play(t, g, wait(curtainStart+curtainFrames+10))
+			down := over.exprID
+			play(t, g, press(input.Confirm))
+			s := playOf(t, g)
+			if s == over || s.exprID != down || !s.prog.SeenExpr[s.exprID] {
+				t.Fatalf("%s: down in %s, the retry opens in %s (seen %v)", c.ID, down, s.exprID, s.prog.SeenExpr[s.exprID])
+			}
+		}
+	}
+	if tried == 0 {
+		t.Skip("no character has more than one game over pose")
 	}
 }
 
@@ -258,6 +296,28 @@ func TestPauseMenu(t *testing.T) {
 		playDrawn(t, g, screen, intro())
 		if p.showing {
 			t.Error("the hammer show did not end")
+		}
+	})
+
+	// The Start button of a pad is both the pause button and a confirm button (input.padMap):
+	// pressed again on the pause menu it resumes, whatever is chosen. On RESET or TITLE it
+	// threw the run away.
+	t.Run("the pause button of a pad resumes on any item", func(t *testing.T) {
+		start := []scriptFrame{{held: []input.Action{input.Confirm, input.Pause}}, {}}
+		for down := 1; down < len(pauseItems); down++ {
+			g, screen := newDrawScenario(t, nil)
+			s := startRun(t, g)
+			playDrawn(t, g, screen, start)
+			if !s.paused {
+				t.Fatal("Start did not pause")
+			}
+			for range down {
+				playDrawn(t, g, screen, press(input.Down))
+			}
+			playDrawn(t, g, screen, start)
+			if g.scene != s || s.paused || s.committed {
+				t.Errorf("Start on %s: the same run %v, paused %v, recorded %v", pauseItems[down], g.scene == s, s.paused, s.committed)
+			}
 		}
 	})
 }

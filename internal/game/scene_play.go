@@ -135,6 +135,13 @@ type playScene struct {
 	// no-miss clear (noMissRun). A new run (from the select screen, RESET, or RETRY after a
 	// game over) is a new scene and starts both at zero.
 	misses, courses int
+	// bestStage is the furthest stage of the run before its retries: a retry can go back
+	// into the stage before, and the run was recorded as reaching only that one
+	bestStage int
+	// cleared is the courses of the run she has run to the end (clearReached; -1 before the
+	// first frame of play): their illustrations are earned. A retry going back into a course
+	// does not take them away.
+	cleared int
 	// artFor is the course (negative: the course a retry goes back to) whose next
 	// illustration prefetchArt has started decoding; prefetched are the illustrations it
 	// started, freed with the scene.
@@ -146,11 +153,23 @@ type playScene struct {
 }
 
 // newRetryScene starts a new run after a game over: the character is still down in her
-// game over pose and gets back up with a fist pump while READY is shown.
-func newRetryScene(c *character.Character) *playScene {
+// game over pose (down, the one the game over showed) and gets back up with a fist pump while
+// READY is shown. It picked a game over pose at random, so she changed pose as the run
+// began, and a pose shown only there was never noted as seen and stayed locked in the gallery.
+func newRetryScene(c *character.Character, down string) *playScene {
 	s := newPlayScene(c)
-	s.expr, s.exprID = character.ExprGameOver, s.pickVariant(character.ExprGameOver)
+	id := s.pickVariant(character.ExprGameOver)
+	for _, v := range c.Variants(character.ExprGameOver) {
+		if v.ID == down {
+			id = down
+		}
+	}
+	s.expr, s.exprID = character.ExprGameOver, id
 	s.prevExpr, s.prevID = s.expr, s.exprID
+	if !s.prog.SeenExpr[id] {
+		s.prog.SeenExpr[id] = true
+		store.Mark()
+	}
 	s.comeback = comebackDelay
 	return s
 }
@@ -170,6 +189,7 @@ func newPlayScene(c *character.Character) *playScene {
 		ready: readyFr,
 		expr:  character.ExprNormal, prevExpr: character.ExprNormal, exprID: character.ExprNormal, prevID: character.ExprNormal, exprFade: 1,
 		popFrame: -1,
+		cleared:  -1,
 	}
 	releasePortraitsExcept(c)
 	s.portraits = portraitEntries(c)
@@ -297,7 +317,8 @@ func (s *playScene) Update(g *Game) {
 			s.holdFrames++
 			e.Move(float64(dir) * e.SlideSpeed(s.holdFrames) / 60)
 		}
-		if g.in.Pressed(input.Confirm) && s.cutin == 0 { // Space or Enter, the A button on a pad
+		// Space or Enter, the A button on a pad; not when the slide just now was a miss
+		if g.in.Pressed(input.Confirm) && s.cutin == 0 && !e.G.Missed {
 			s.useHammer()
 			if s.cutin > 0 {
 				// the road holds from this frame on: a step now moved the sweets a row away
@@ -311,6 +332,7 @@ func (s *playScene) Update(g *Game) {
 	}
 	e.Tick(accel)
 	s.handleEvents()
+	s.clearReached()
 	s.readRoad()
 	if e.Over() {
 		s.onGameOver()
@@ -377,7 +399,7 @@ func (s *playScene) handleEvents() {
 		case road.EventCourse:
 			courses++
 			s.courses++
-			s.courseClear(e.G.Level - 1)
+			s.courseBuilt(e.G.Level - 1)
 			if e.G.Bonus() {
 				s.popups = append(s.popups, popup{text: "BONUS!", timer: 120})
 			}
@@ -461,7 +483,7 @@ func (s *playScene) commitRun() {
 		return
 	}
 	s.committed = true
-	s.prog.BestStage = max(s.prog.BestStage, s.eng.G.Stage)
+	s.prog.BestStage = max(s.prog.BestStage, s.bestStage, s.eng.G.Stage)
 	s.prog.PlaySeconds += s.eng.PlayFrames / 60
 	store.Mark()
 }

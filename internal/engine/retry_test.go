@@ -53,3 +53,59 @@ func TestRetryShowsTheRoadOfBefore(t *testing.T) {
 		}
 	}
 }
+
+// TestRetryOnTheOpenRoadAfterTheLastCourse misses on every row of the open road after the
+// last course (the last walls are still coming down onto her) and checks that the retry
+// shows the screen of road.RewindRows rows before, and that the road from there is the one
+// the run had: the rest of the last walls, then the open road to the all clear.
+func TestRetryOnTheOpenRoadAfterTheLastCourse(t *testing.T) {
+	t.Parallel()
+	for _, id := range runIDs() {
+		for _, extra := range []bool{false, true} {
+			// the screens of the run, step by step, and the step on which the last course ends
+			var screens [][road.Rows]road.Row
+			last := -1
+			g := NewRun(id, extra).G
+			g.Safe = 1 << 30
+			for !g.AllClear {
+				g.X = 0.5 // in the wall at the edge: she takes (almost) nothing
+				g.Step()
+				screens = append(screens, g.Rows)
+				if last < 0 && g.Level > GameCourses {
+					last = len(screens)
+				}
+			}
+			for missAt := last; missAt < len(screens); missAt++ {
+				g := NewRun(id, extra).G
+				g.Safe = 1 << 30
+				for range missAt {
+					g.X = 0.5
+					g.Step()
+				}
+				g.Safe, g.Missed = 0, true
+				if !g.Restart() {
+					t.Fatalf("%s/%s, %d rows into the open road: no retry", id, side(extra), missAt-last)
+				}
+				g.Safe = 1 << 30
+				for s := missAt - road.RewindRows; ; s++ {
+					after, before := g.Rows, screens[s-1]
+					for y := range after { // what she took at the edge stays taken
+						before[y][0].Sweet, after[y][0].Sweet = 0, 0
+					}
+					if after != before {
+						t.Errorf("%s/%s, a miss %d rows into the open road: %d rows after the retry the screen is not the one of the run", id, side(extra), missAt-last, s-missAt+road.RewindRows)
+						break
+					}
+					if s == len(screens) || g.AllClear {
+						if s != len(screens) || !g.AllClear {
+							t.Errorf("%s/%s, a miss %d rows into the open road: the all clear came %d rows after the retry, in the run %d", id, side(extra), missAt-last, s-missAt+road.RewindRows, len(screens)-missAt+road.RewindRows)
+						}
+						break
+					}
+					g.X = 0.5
+					g.Step()
+				}
+			}
+		}
+	}
+}
