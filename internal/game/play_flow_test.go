@@ -536,3 +536,49 @@ func TestPauseHoldsThePopups(t *testing.T) {
 		t.Errorf("the popup of where the retry starts ran out behind the pause menu: %+v", s.popups)
 	}
 }
+
+// TestMusicStopsAtAMissAndStartsAfterTheRetry runs into a wall with a life left, retries,
+// and follows the music: it stops at the miss (the jingle plays on its own, as at a game
+// over), stays off through the miss screen and the READY of the retry, as at the start of
+// a run, and starts once READY is over. It played on under the jingle, the miss screen and
+// READY, and was cut off and started over from its beginning as READY ended.
+//
+//nolint:paralleltest // shares the save data and the characters
+func TestMusicStopsAtAMissAndStartsAfterTheRetry(t *testing.T) {
+	g, screen := newDrawScenario(t, nil)
+	playing := ""
+	starts := 0
+	sound.ListenMusic(func(song string) {
+		playing = song
+		if song != "" {
+			starts++
+		}
+	})
+	t.Cleanup(func() { sound.ListenMusic(nil) })
+	s := newPlayScene(characters[defaultCharIndex()]) // with READY, without the hammer show
+	g.SetScene(s)
+	playDrawn(t, g, screen, wait(readyFr+1))
+	if playing != sound.GameSong {
+		t.Fatalf("the music after READY is %q, want the game song", playing)
+	}
+	for y := range road.Rows {
+		s.eng.G.Rows[y] = road.Row{}
+	}
+	missOn(t, g, s, screen)
+	if playing != "" {
+		t.Errorf("the music plays on through the miss (%q)", playing)
+	}
+	starts = 0
+	playDrawn(t, g, screen, press(input.Confirm)) // RETRY
+	playUntil(t, g, screen, 2*countdownFrames, func() bool { return !s.eng.G.Missed })
+	for s.ready > 1 {
+		playDrawn(t, g, screen, wait(1))
+		if playing != "" {
+			t.Fatalf("the music plays during the READY of the retry (%q)", playing)
+		}
+	}
+	playDrawn(t, g, screen, wait(2))
+	if playing != sound.GameSong || starts != 1 {
+		t.Errorf("after the READY of the retry the music is %q, started %d times, want the game song once", playing, starts)
+	}
+}

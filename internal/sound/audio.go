@@ -82,6 +82,9 @@ var (
 // beginning.
 func StartBGM(name string) {
 	StopBGM()
+	if heardMusic != nil {
+		heardMusic(name)
+	}
 	if muted {
 		return
 	}
@@ -104,6 +107,9 @@ func StartBGM(name string) {
 
 // StopBGM stops the music.
 func StopBGM() {
+	if heardMusic != nil {
+		heardMusic("")
+	}
 	bgmSong = ""
 	if bgmPlayer != nil {
 		bgmPlayer.PauseAndStopReading()
@@ -360,6 +366,15 @@ var muted bool
 
 // SetMuted silences the music and the sound effects from now on (or lets them play).
 func SetMuted(m bool) { muted = m }
+
+// heardMusic, when set, is told of every song StartBGM starts and of StopBGM (""), muted
+// or not (ListenMusic).
+var heardMusic func(song string)
+
+// ListenMusic calls f with every song the game starts from now on, and with "" when it
+// stops the music, also while the sound is muted (nil stops it): the tests listen to the
+// music with it.
+func ListenMusic(f func(song string)) { heardMusic = f }
 
 // heard, when set, is told of every effect Play is asked for, muted or not (Listen).
 var heard func(Effect)

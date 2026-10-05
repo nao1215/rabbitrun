@@ -396,6 +396,10 @@ func (s *playScene) handleEvents() {
 			s.react(character.ExprNervous, 50, rankHint)
 		case road.EventCrash:
 			s.misses++
+			// the music stops, as at a game over: the jingle plays on its own, and a retry
+			// starts the song again after its READY (it played on under the miss screen and
+			// READY and was cut off there to start over)
+			sound.StopBGM()
 			// the last life: the game over plays the jingle (onGameOver), so it is not
 			// played twice at once
 			if !e.Over() {
