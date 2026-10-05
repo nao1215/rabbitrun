@@ -593,7 +593,10 @@ func jarNeckAt(k, neck, left, right int) int {
 // one every other row from row hallFrom to hallTo of the period, each with a doorway two
 // cells wide that moves one cell along from wall to wall, across the road and back
 // (hallDoors). A hammer lies in the middle of the road hallHammer rows into the first
-// period, just before the first hall; the next hall has none before it.
+// period, just before the first hall; the next hall has none before it. When the road comes
+// to the theme later than that (a feast first, or a block in the rows that turn it to the
+// theme), the hammer lies on its first row, and the walls of the first hall come only
+// hallFrom-hallHammer rows after it.
 //
 // Memorable: a hammer, then a wall of walls: smash it, or weave through and keep the hammer
 // for the next hall. Fair: each doorway overlaps the one before, so the weave is one cell
@@ -604,6 +607,12 @@ const (
 	hallTo     = 32
 	hallHammer = 8
 )
+
+// hallWaits reports whether row r of a hammer hall course is in the first hall and too soon
+// after its hammer (or before it) for the hall's walls and their sweets.
+func (g *Game) hallWaits(r int) bool {
+	return r < hallPeriod && (g.hallHammerAt < 0 || r-g.hallHammerAt < hallFrom-hallHammer)
+}
 
 // hallDoors is where the doorway of each wall of a hall is, from the left of the road.
 var hallDoors = [...]int{0, 1, 2, 3, 2, 1}
@@ -701,6 +710,9 @@ func (g *Game) designBlocks(block func(int), t Theme, r, left, right int) {
 		reach := max(0, jarClose-1-(p-field)) // how far from the neck the road is still open
 		wall(from-reach, neck+2*reach)
 	case ThemeHammerHall:
+		if g.hallWaits(r) {
+			return
+		}
 		if p := r % hallPeriod; p >= hallFrom && p < hallTo && (p-hallFrom)%2 == 0 && right-left >= 4 {
 			wall(left+hallDoors[((p-hallFrom)/2)%len(hallDoors)], 2)
 		}
@@ -733,10 +745,12 @@ func (g *Game) designBlocks(block func(int), t Theme, r, left, right int) {
 // designSweets lays the sweets and items of a designed theme on row r of the road (between
 // left and right), on open cells that have nothing on them yet.
 func (g *Game) designSweets(row *Row, t Theme, r, left, right int) {
-	put := func(x int, s int8) {
+	put := func(x int, s int8) bool {
 		if x >= 0 && x < W && row[x].Wall == 0 && row[x].Sweet == SweetNone {
 			row[x].Sweet = s
+			return true
 		}
+		return false
 	}
 	wide := right-left == 6
 	switch t {
@@ -803,11 +817,14 @@ func (g *Game) designSweets(row *Row, t Theme, r, left, right int) {
 			}
 		}
 	case ThemeHammerHall:
-		p := r % hallPeriod
-		switch {
-		case p == hallHammer && r < hallPeriod:
-			put((left+right)/2, SweetBomb)
-		case p >= hallFrom && p < hallTo && (p-hallFrom)%2 == 0:
+		// the hammer: on row hallHammer, or on the first row of the theme after it when the
+		// road came to the theme later (a feast first, or a block at the end of a long straight
+		// run as it turned to the theme); the hall came without one
+		if g.hallHammerAt < 0 && r >= hallHammer && put((left+right)/2, SweetBomb) {
+			g.hallHammerAt = r
+			return
+		}
+		if p := r % hallPeriod; !g.hallWaits(r) && p >= hallFrom && p < hallTo && (p-hallFrom)%2 == 0 {
 			put(left+hallDoors[((p-hallFrom)/2)%len(hallDoors)], SweetCandy)
 		}
 	case ThemeAlcoves:

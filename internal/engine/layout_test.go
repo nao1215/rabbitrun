@@ -83,3 +83,41 @@ func TestLessonsHaveRoomForBothPhrases(t *testing.T) {
 		}
 	}
 }
+
+// TestEveryHammerHallHasItsHammer checks the hammer hall courses of every run: a hammer lies
+// on the road before the first hall of walls. On a course where something put the theme off
+// past the row of the hammer (a feast on the bonus course, a block at the end of a long
+// straight run in the rows that turn the road to the theme), the hall came with no hammer.
+func TestEveryHammerHallHasItsHammer(t *testing.T) {
+	t.Parallel()
+	for _, id := range runIDs() {
+		for _, extra := range []bool{false, true} {
+			themes := themesFor(id, extra)
+			rows := runRows(NewRun(id, extra))
+			for i, th := range themes {
+				if th != road.ThemeHammerHall {
+					continue
+				}
+				lv := i + 1
+				hammer, hall := -1, -1
+				for r, row := range rows[lv] {
+					walls := 0
+					for _, c := range row {
+						if c.Sweet == road.SweetBomb && hammer < 0 {
+							hammer = r
+						}
+						if c.Wall != 0 {
+							walls++
+						}
+					}
+					if walls >= road.W-2 && hall < 0 { // a wall across the road but for its doorway
+						hall = r
+					}
+				}
+				if hammer < 0 || hall >= 0 && hammer > hall {
+					t.Errorf("%s/%s, course %d (the hammer hall): the hammer on row %d, the first hall on row %d", id, side(extra), lv, hammer, hall)
+				}
+			}
+		}
+	}
+}

@@ -170,6 +170,9 @@ type Game struct {
 	// (-1: not yet): the themes laid out from there (ThemeSeconds, ThemeLesson) count their
 	// rows from it, so a vault or a feast first only pushes them along
 	designFrom int
+	// hallHammerAt is the row of the course being built where the hammer hall laid its hammer
+	// (-1: not yet; see ThemeHammerHall)
+	hallHammerAt int
 }
 
 // Tuning.
@@ -254,7 +257,7 @@ func (g *Game) buildFirstRow() {
 	g.src, g.rng = f.src, f.rng
 	g.section, g.sectionLeft, g.sectionRow = f.section, f.sectionLeft, f.sectionRow
 	g.sinceObs, g.alcove, g.alcoveFor, g.dir = f.sinceObs, f.alcove, f.alcoveFor, f.dir
-	g.vaultAt, g.feastAt, g.helpLaid, g.designFrom = f.vaultAt, f.feastAt, f.helpLaid, f.designFrom
+	g.vaultAt, g.feastAt, g.helpLaid, g.designFrom, g.hallHammerAt = f.vaultAt, f.feastAt, f.helpLaid, f.designFrom, f.hallHammerAt
 	g.themeRow, g.feastRow, g.figure = f.themeRow, f.feastRow, f.figure
 	g.courseRow = f.courseRow
 	g.Ahead, g.aheadID = f.Ahead, firstRowID
@@ -1008,7 +1011,7 @@ func (g *Game) startCourse() {
 	g.section, g.sinceObs, g.alcove, g.alcoveFor, g.dir = sectionNone, 0, -1, 0, 1
 	g.vaultAt, g.feastAt = -1, -1
 	g.helpLaid = 0
-	g.designFrom = -1
+	g.designFrom, g.hallHammerAt = -1, -1
 	if _, ok := Vaults[g.Level]; ok && g.TotalCourses > 0 {
 		g.vaultAt = specialAt
 	}

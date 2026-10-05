@@ -39,7 +39,9 @@ func roadFingerprint(id string, extra bool) string {
 // untouchedRoads are the fingerprints (roadFingerprint) of the roads the idle rule leaves
 // alone, from before the rule came in: the regular side from its second stage on and every
 // stage of the extra side are exactly the roads they were. RABBITRUN_FINGERPRINT=1 go test
-// -run TestTheIdleRuleLeavesTheOtherCoursesAlone -v prints them.
+// -run TestTheIdleRuleLeavesTheOtherCoursesAlone -v prints them. The gyal girl's two hammer
+// hall courses that come to their theme late (course 15 of the regular side, course 4 of the
+// extra side) have changed since: their first hall waits for its hammer, which was missing.
 var untouchedRoads = map[string]string{
 	"bunny/extra":    "ba5773aef7dfe952",
 	"bunny/regular":  "726042867466fdd8",
@@ -47,8 +49,8 @@ var untouchedRoads = map[string]string{
 	"cool/regular":   "7ddbc7fedc12709c",
 	"cute/extra":     "73e34999d3efd466",
 	"cute/regular":   "b6d20d13ed6d0280",
-	"gyal/extra":     "30a82984ff5783e4",
-	"gyal/regular":   "f7bc64a2f9a4c161",
+	"gyal/extra":     "56a0562ec89ea160",
+	"gyal/regular":   "3533ea5088b0971a",
 	"street/extra":   "005b12405871dab5",
 	"street/regular": "b3a5de622cb5face",
 }
