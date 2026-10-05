@@ -425,3 +425,25 @@ func TestSteering(t *testing.T) {
 		}
 	})
 }
+
+// TestRetryAfterAMissGetsHerBackUp spends a life on RETRY after a miss: she gets back up
+// in her comeback pose ("let's go!") as the road starts again, not in the READY pose. The
+// crying of the miss was still counted as showing (its time stands still while the player
+// chooses), so the weaker comeback could not take its place, and READY came instead.
+//
+//nolint:paralleltest // shares the save data and the characters
+func TestRetryAfterAMissGetsHerBackUp(t *testing.T) {
+	g, screen := newDrawScenario(t, nil)
+	s := startRun(t, g)
+	missOn(t, g, s, screen)
+	playDrawn(t, g, screen, press(input.Confirm)) // RETRY
+	playUntil(t, g, screen, 2*countdownFrames, func() bool { return !s.eng.G.Missed })
+	comeback := false
+	for range readyFr {
+		play(t, g, wait(1))
+		comeback = comeback || s.expr == character.ExprComeback
+	}
+	if !comeback {
+		t.Errorf("she never got back up in her comeback pose after RETRY (showing %q)", s.expr)
+	}
+}

@@ -42,6 +42,9 @@ func (s *playScene) updateMiss(g *Game) {
 			s.ready = readyFr
 			s.popups = append(s.popups, popup{text: "FROM " + s.eng.Progress(), timer: 120})
 			s.restartBackground()
+			// the crying of the miss is over: its time stood still while the player chose,
+			// and as the stronger reaction it kept her comeback (EventRestart) out
+			s.reactTimer = 0
 			s.handleEvents()
 		}
 		return

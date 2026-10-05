@@ -19,6 +19,7 @@ All notable changes to this project are documented in this file. The format is b
 - A save file the game cannot read is no longer lost: one it cannot make sense of (a stray character after the data) is kept as `save.json.broken` before the next save, and one it cannot open is left as it is. The game started on empty progress and its first save replaced the file for good.
 - Holding up (the speed-up) into the miss, the game over or the pause menu no longer runs the choice up and down by key repeat: letting go left it anywhere, so after a miss with up held a press of Enter could GIVE UP the run. A held key now counts again once it has come up.
 - A direction let go of and pressed again while the road waits (on the pause menu, during READY, after a miss) now starts her slide slow, as every new press does. It went on from the frames held before, so a little tap after the pause slid her at full speed.
+- RETRY after a miss now gets her back up in her comeback pose as the road starts again. The crying of the miss still counted as showing, so the comeback was turned away and the READY pose came instead.
 
 ## [0.1.0] - 2026-10-04
 
