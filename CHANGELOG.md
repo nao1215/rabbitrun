@@ -7,6 +7,9 @@ All notable changes to this project are documented in this file. The format is b
 ### Added
 - No-miss clear: running all sixteen courses of the regular or the extra side without a single miss earns that side's no-miss illustration of the character, shown by the ending in place of the usual picture with NO MISS! and listed in the gallery after that side's illustrations.
 
+### Fixed
+- A retry now puts back exactly the road that was on the screen ten rows before the miss. On the first course it came back one row short with other macarons, so some she had already taken were there again and others were gone, and on the courses after a bonus feast or a vault in the same stage the lines of macarons and the hammer had moved.
+
 ## [0.1.0] - 2026-10-04
 
 ### Added

@@ -232,9 +232,33 @@ func NewWith(seed uint64, p Profile) *Game {
 	}
 	g.idle.x = g.Col() // the lazy line starts where she stands
 	g.startCourse()
-	g.aheadID = rowID{1, 0}
+	g.aheadID = firstRowID
 	g.Ahead = g.buildRow(true) // the visible rows start open
 	return g
+}
+
+// firstRowID is the id of the first row of a game. NewWith builds it before the game sets
+// its courses up (TotalCourses, Themes and so on) and before row 0 of the first course, which
+// the first Step builds: it is a row of its own, not a second row 0 (sharing the id, a sweet
+// taken from one of the two was told as taken from the other).
+var firstRowID = rowID{1, -1}
+
+// buildFirstRow builds again the first row of a game, just as NewWith built it (without the
+// setup the game did after it, and with the random numbers it took), and leaves the road
+// being built where NewWith left it: a retry on the first course builds the same road the
+// game has had from its start. Built with the setup, from row 0, the first course came out
+// one row shorter and with other sweets than the ones she had seen.
+func (g *Game) buildFirstRow() {
+	f := NewWith(g.seed, g.Profile)
+	shapeOf(f).restore(g)
+	g.src, g.rng = f.src, f.rng
+	g.section, g.sectionLeft, g.sectionRow = f.section, f.sectionLeft, f.sectionRow
+	g.sinceObs, g.alcove, g.alcoveFor, g.dir = f.sinceObs, f.alcove, f.alcoveFor, f.dir
+	g.vaultAt, g.feastAt, g.helpLaid, g.designFrom = f.vaultAt, f.feastAt, f.helpLaid, f.designFrom
+	g.themeRow, g.feastRow, g.figure = f.themeRow, f.feastRow, f.figure
+	g.courseRow = f.courseRow
+	g.Ahead, g.aheadID = f.Ahead, firstRowID
+	g.dropTaken()
 }
 
 // CourseColors are the wall colors of the four courses of a stage, from the easiest
@@ -941,12 +965,15 @@ type roadShape struct {
 	sinceTrap, hold                           int
 	pathLeft, pathX                           int
 	idle                                      idleState
+	// stageRow is the rows of the stage built before the course: rows of a feast or a vault's
+	// cage are not counted (see addThings), so it is not the length of the courses before it
+	stageRow int
 }
 
 func shapeOf(g *Game) roadShape {
 	return roadShape{center: g.center, width: g.width, targetWidth: g.targetWidth, still: g.still,
 		settle: g.settle, shifted: g.shifted, lastRow: g.lastRow, reach: g.reach, openRun: g.openRun, sinceTrap: g.sinceTrap, hold: g.hold,
-		pathLeft: g.pathLeft, pathX: g.pathX, idle: g.idle}
+		pathLeft: g.pathLeft, pathX: g.pathX, idle: g.idle, stageRow: g.stageRow}
 }
 
 func (s roadShape) restore(g *Game) {
@@ -954,6 +981,7 @@ func (s roadShape) restore(g *Game) {
 	g.shifted, g.lastRow, g.reach, g.openRun, g.sinceTrap, g.hold = s.shifted, s.lastRow, s.reach, s.openRun, s.sinceTrap, s.hold
 	g.pathLeft, g.pathX = s.pathLeft, s.pathX
 	g.idle = s.idle
+	g.stageRow = s.stageRow
 }
 
 // specialAt is the row of a course where its vault or feast starts: early, so it is all
@@ -1017,12 +1045,17 @@ func (g *Game) nextCourse() {
 		g.Events = append(g.Events, Event{Kind: EventCourse})
 		return
 	}
-	g.startCourse()
-	g.Events = append(g.Events, Event{Kind: EventCourse})
-	if g.Course == g.StageCourses() {
+	// a new stage starts counting its rows before the course begins, so the count is kept
+	// with where the course began (roadShape) and a retry starts it from there
+	newStage := g.Course == g.StageCourses()
+	if newStage {
 		g.Course = 0
 		g.Stage++
 		g.stageRow = 0
+	}
+	g.startCourse()
+	g.Events = append(g.Events, Event{Kind: EventCourse})
+	if newStage {
 		g.Events = append(g.Events, Event{Kind: EventStageClear})
 	}
 }
@@ -1305,12 +1338,13 @@ func (g *Game) Restart() bool {
 	build := func(lv, n int) {
 		g.Level = lv
 		g.Stage, g.Course = (lv-1)/Courses+1, (lv-1)%Courses
-		g.startCourse()
-		g.stageRow = 0
-		for c := (g.Stage-1)*Courses + 1; c < lv; c++ {
-			g.stageRow += g.lenOf(c)
+		g.startCourse() // the shape of the road and the stage's row count where the course began
+		g.courseRow = 0
+		if lv == 1 {
+			g.buildFirstRow()
 		}
-		for g.courseRow = 0; g.courseRow < n; g.courseRow++ {
+		// what she has taken stays taken: every row built again goes through dropTaken
+		for ; g.courseRow < n; g.courseRow++ {
 			g.pushRow()
 		}
 	}
@@ -1318,15 +1352,7 @@ func (g *Game) Restart() bool {
 		build(level-1, g.lenOf(level-1))
 	}
 	build(level, rows)
-	if level == 1 && rows == 0 {
-		g.aheadID = rowID{1, 0}
-		g.Ahead = g.buildRow(true)
-		g.courseRow = 1 // the row just built is the first of the course
-	}
 	g.X = g.openColumn(oldX)
-	// what she has taken stays taken: the rows built again went through dropTaken, the
-	// first row of a game (built above) did not
-	g.dropTaken()
 	g.SideRowBehind = true // the road starts again with its last row just come in
 	g.Events = append(g.Events, Event{Kind: EventRestart})
 	return true
