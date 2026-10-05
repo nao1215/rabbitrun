@@ -244,11 +244,18 @@ var captureSteps = []captureStep{
 	{"gameover", gameOverScene, 130},
 	{"gallery", func(g *Game) { g.SetScene(newGalleryScene()) }, 120},
 	{"gallery_cg", func(g *Game) {
+		// an illustration of the main character first: the scripted clears earned hers, while
+		// the gallery opens on the first character, who may have none (the screenshot then
+		// showed the grid)
 		s := newGalleryScene()
-		for i, it := range s.items() {
-			if it.cg && s.open[i] {
-				s.sel, s.viewing = i, true
-				break
+	chars:
+		for k := range characters {
+			s.charIdx = (defaultCharIndex() + k) % len(characters)
+			for i, it := range s.items() {
+				if it.cg && s.open[i] {
+					s.sel, s.viewing = i, true
+					break chars
+				}
 			}
 		}
 		g.SetScene(s)

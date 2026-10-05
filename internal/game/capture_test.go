@@ -52,3 +52,35 @@ func TestCaptureScenesAreOnRealCourses(t *testing.T) { //nolint:paralleltest // 
 		}
 	}
 }
+
+// TestCaptureEnlargesAnIllustration runs a whole --capture on a fresh save, as it is run
+// for the README, up to its gallery_cg screenshot: that screen shows an illustration
+// enlarged. The scripted clears earn the main character's illustrations, while the gallery
+// opened on the first character, who had none, so the screenshot showed the grid.
+//
+//nolint:paralleltest // shares the save data and the characters
+func TestCaptureEnlargesAnIllustration(t *testing.T) {
+	g, screen := newDrawScenario(t, nil)
+	store.ReadOnly = true
+	// the steps one after another as captureState runs them (without reading the screen
+	// back, which only a running game can do)
+	for _, st := range captureSteps {
+		st.setup(g)
+		for range st.wait {
+			if err := g.Update(); err != nil {
+				t.Fatalf("%s: the game ended: %v", st.name, err)
+			}
+			g.Draw(screen)
+		}
+		if st.name == "gallery_cg" {
+			break
+		}
+	}
+	s, ok := g.scene.(*galleryScene)
+	if !ok {
+		t.Fatalf("gallery_cg is on %T, want the gallery", g.scene)
+	}
+	if !s.viewing || !s.list[s.sel].cg {
+		t.Errorf("gallery_cg shows the grid of %s, want an illustration enlarged", s.char().ID)
+	}
+}
