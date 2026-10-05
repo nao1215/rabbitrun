@@ -116,6 +116,10 @@ type Store struct {
 	// failing is set while writing fails, so a failure that lasts is logged once and not
 	// on every frame Flush tries again.
 	failing bool
+	// kept is set when the save file is there but could not be read, and could not be
+	// kept aside either: writing would replace the player's progress with what this run
+	// started from, so the save is left alone.
+	kept bool
 }
 
 // NewStore returns a store holding empty save data.
@@ -124,17 +128,25 @@ func NewStore() *Store {
 }
 
 // Load reads the save file into the store. A missing file (the first launch) leaves the
-// data as it is; a broken one is logged and keeps whatever could be read.
+// data as it is; a broken one is logged, keeps whatever could be read, and is copied to
+// save.json.broken first, since the next save replaces it (the game started on empty
+// progress, and its first save threw the player's away for good). A file that cannot be
+// read at all, or cannot be kept aside, is not written over in this run.
 func (s *Store) Load() {
 	raw, err := os.ReadFile(Path())
 	if err != nil {
 		if !errors.Is(err, fs.ErrNotExist) { // no save yet is the usual first launch
-			log.Printf("cannot read save data: %v", err)
+			log.Printf("cannot read save data (it is left as it is): %v", err)
+			s.kept = true
 		}
 		return
 	}
 	if err := Decode(s.Data, raw); err != nil {
-		log.Printf("cannot read save data: %v", err)
+		log.Printf("cannot read save data (it is kept as %s.broken): %v", Path(), err)
+		if err := os.WriteFile(Path()+".broken", raw, 0o600); err != nil { //nolint:gosec // G703: next to the save file, in the user's config directory
+			log.Printf("cannot keep the broken save data (it is left as it is): %v", err)
+			s.kept = true
+		}
 	}
 }
 
@@ -151,7 +163,7 @@ func (s *Store) Flush() {
 	if !s.dirty {
 		return
 	}
-	if s.ReadOnly {
+	if s.ReadOnly || s.kept {
 		s.dirty = false
 		return
 	}
