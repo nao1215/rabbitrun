@@ -76,6 +76,8 @@ var (
 	bgmPlayer *audio.Player
 	bgm       *musicStream
 	bgmSong   string
+	// bgmPaused is set while PauseBGM holds the music (the pause menu): it has no beat then.
+	bgmPaused bool
 )
 
 // StartBGM plays the song name (TitleSong, SelectSong, GameSong or GallerySong) from the
@@ -110,7 +112,7 @@ func StopBGM() {
 	if heardMusic != nil {
 		heardMusic("")
 	}
-	bgmSong = ""
+	bgmSong, bgm, bgmPaused = "", nil, false // stopped, the music has no beat (BeatPhase)
 	if bgmPlayer != nil {
 		bgmPlayer.PauseAndStopReading()
 		bgmPlayer = nil
@@ -119,6 +121,7 @@ func StopBGM() {
 
 // PauseBGM pauses the music, or plays it on again.
 func PauseBGM(paused bool) {
+	bgmPaused = paused
 	if bgmPlayer == nil {
 		return
 	}
@@ -133,9 +136,10 @@ func PauseBGM(paused bool) {
 func CurrentSong() string { return bgmSong }
 
 // BeatPhase returns where the music is within the current beat (0 at the beat, rising to
-// 1). ok is false while no music plays.
+// 1). ok is false while no music plays: none started, stopped, or paused. The beat ran on
+// to the clock behind the pause menu and after a miss, and her beat bounce with it.
 func BeatPhase() (phase float64, ok bool) {
-	if bgm == nil {
+	if bgm == nil || bgmPaused {
 		return 0, false
 	}
 	return bgm.beatPhase()

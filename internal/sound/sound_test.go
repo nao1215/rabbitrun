@@ -91,4 +91,18 @@ func TestBeatPhase(t *testing.T) { //nolint:paralleltest // uses the package-lev
 	if !ok || ph < 0 || ph >= 1 {
 		t.Fatalf("beat phase %v, %v after the music played", ph, ok)
 	}
+	// paused (the pause menu) or stopped (a miss, a game over), the music has no beat: the
+	// portrait's beat bounce went on to the clock behind the pause menu
+	PauseBGM(true)
+	if _, ok := BeatPhase(); ok {
+		t.Error("a beat phase while the music is paused")
+	}
+	PauseBGM(false)
+	if _, ok := BeatPhase(); !ok {
+		t.Error("no beat phase after the music went on")
+	}
+	StopBGM()
+	if _, ok := BeatPhase(); ok {
+		t.Error("a beat phase after the music stopped")
+	}
 }

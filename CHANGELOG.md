@@ -31,6 +31,7 @@ All notable changes to this project are documented in this file. The format is b
 - The title and title_group screenshots of `--capture` now show the title even when the save has a secret character's arrival or the secret word still to tell. They showed the arrival instead.
 - The candy jar courses now have their macaron in the middle of the patch of sweets after each neck. The patch is laid every other cell and its middle row never covered the middle, so a jar only ever held plain candy (the cute girl's courses 7 and 15 of the regular side and 5 and 12 of the extra side, and the gyal girl's course 2 of the regular side and 12 of the extra side; nothing else on those roads changes).
 - The music now stops at a miss, as at a game over, and a retry starts it again once its READY is over. It played on under the jingle, the miss screen and READY, and was then cut off to start over from its beginning.
+- Her beat bounce in a cheerful pose now stops while the music is paused or stopped. Behind the pause menu it went on to a beat no one could hear.
 
 ## [0.1.0] - 2026-10-04
 
