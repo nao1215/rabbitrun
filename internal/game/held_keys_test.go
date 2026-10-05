@@ -1,6 +1,7 @@
 package game
 
 import (
+	"math"
 	"testing"
 
 	"github.com/nao1215/rabbitrun/internal/input"
@@ -81,4 +82,37 @@ func TestUpHeldIntoAMenuDoesNotMoveIt(t *testing.T) {
 			}
 		}
 	})
+}
+
+// TestSlideStartsSlowAfterAPause lets go of a direction while the game is paused and
+// presses it again as it goes on: the slide starts slow, as every new press does
+// (Engine.SlideSpeed). The frames held were counted on from before the pause, so the new
+// press slid her at full speed at once and a little tap went too far.
+//
+//nolint:paralleltest // shares the save data and the characters
+func TestSlideStartsSlowAfterAPause(t *testing.T) {
+	g := newScenario(t, nil)
+	s := startRun(t, g)
+	e := s.eng
+	for y := range road.Rows { // an open road: nothing stops her slide
+		e.G.Rows[y] = road.Row{}
+	}
+	e.G.Ahead = road.Row{}
+	e.G.X = 1.5
+	play(t, g, holding(20, input.Right)) // up to full speed
+	play(t, g, holding(1, input.Right, input.Pause))
+	if !s.paused {
+		t.Fatal("not paused")
+	}
+	play(t, g, wait(30))                             // let go while paused
+	play(t, g, holding(1, input.Right, input.Pause)) // pressed again as the game goes on
+	if s.paused {
+		t.Fatal("still paused")
+	}
+	x := e.G.X
+	play(t, g, holding(1, input.Right))
+	want := e.SlideSpeed(1) / 60
+	if got := e.G.X - x; math.Abs(got-want) > 1e-9 {
+		t.Errorf("the first frame of a new press slid her %.4f cells, want %.4f (a new press starts slow)", got, want)
+	}
 }

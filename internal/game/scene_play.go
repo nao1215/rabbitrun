@@ -218,6 +218,13 @@ var playArtwork = func() []string {
 func (s *playScene) Update(g *Game) {
 	s.frame++
 	defer s.updateLean() // after everything that moves her this frame
+	// The direction held is followed on every frame, also while the road waits (the pause,
+	// READY, a miss, a hammer): one let go of there and pressed again starts its slide slow,
+	// as a new press does. Followed only on the road, the new press went on from the frames
+	// held before and slid her at full speed at once.
+	if dir := g.in.Side(); dir != s.holdDir {
+		s.holdDir, s.holdFrames = dir, 0
+	}
 	character.UploadPrefetched(s.portraits, 3)
 	s.prefetchArt()
 	s.updateEffects()
@@ -310,11 +317,7 @@ func (s *playScene) Update(g *Game) {
 	} else {
 		// Sideways moves are smooth: she slides while a direction is held, slowly at
 		// first and faster the longer it is held (SlideSpeed).
-		dir := g.in.Side()
-		if dir != s.holdDir {
-			s.holdDir, s.holdFrames = dir, 0
-		}
-		if dir != 0 {
+		if dir := s.holdDir; dir != 0 {
 			s.holdFrames++
 			e.Move(float64(dir) * e.SlideSpeed(s.holdFrames) / 60)
 		}
