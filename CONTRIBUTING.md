@@ -17,6 +17,15 @@ make build   # build ./rabbitrun
 make run     # build and start the game
 ```
 
+The browser version is built with `make web` into `dist/web` (it needs Python 3 with Pillow for the pictures):
+
+```shell
+make web
+cd dist/web && python3 -m http.server 8000   # open http://localhost:8000
+```
+
+To try it on a phone, open `http://<your computer's IP address>:8000` from a phone on the same network (allow the port through the computer's firewall if it asks). The browser build embeds `webassets/` instead of `assets/`: `scripts/web_assets.py` (`make web-assets`) writes it, with the characters' pictures and the screens' artwork as WebP no larger than the game draws them, so the WebAssembly file is about 40 MB instead of over 200 MB. `webassets/` and `dist/` are generated and not committed; a plain `GOOS=js GOARCH=wasm go build` fails until `make web-assets` has run. The `Pages` workflow builds the page on pull requests and publishes it from `main`.
+
 Useful flags while developing:
 
 - `./rabbitrun --debug` unlocks every character and picture for one run.
@@ -36,9 +45,11 @@ The `main` package at the repository root only reads the command line and opens 
 - `internal/character`: the characters' manifests (`assets/characters/<id>/game.json`) and their pictures.
 - `internal/assets`: reading the assets directory: image decoding and the artwork of the screens.
 - `internal/gfx`: drawing helpers and text in the game's fonts.
-- `internal/input`: keys and gamepads as actions, and the script the scenario tests play through.
+- `internal/input`: keys, gamepads, touches and the mouse as actions, and the script the scenario tests play through.
 - `internal/sound`: the synthesized music and sound effects.
-- `internal/save`: the save data and where it is kept.
+- `internal/save`: the save data and where it is kept (a file on the desktop, localStorage in a browser).
+
+The files ending in `_js.go` are the browser (js/wasm) build's: the embedded `webassets/` (`assets_js.go`), the save data in localStorage and the title without EXIT. `web/index.html` is the page around the game. The localStorage code is tested under Node with `GOOS=js GOARCH=wasm go test -exec="$(go env GOROOT)/lib/wasm/go_js_wasm_exec" ./internal/save/`.
 
 `internal/game` uses the others; none of them imports `internal/game`, and `road`, `internal/input`, `internal/sound` and `internal/save` import nothing of the game.
 
