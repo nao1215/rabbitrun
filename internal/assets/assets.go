@@ -102,6 +102,6 @@ func DecodeFile(fsys fs.FS, name string) (image.Image, error) {
 	if err != nil {
 		return nil, err
 	}
-	img, _, err := image.Decode(f)
+	img, err := decodeImage(f)
 	return img, errors.Join(err, f.Close())
 }
