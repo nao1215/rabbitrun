@@ -96,12 +96,12 @@ func StartBGM(name string) {
 	}
 	bgmSong = name
 	bgm = newMusicStream(sg)
-	p, err := audioCtx.NewPlayerF32(bgm)
+	p, err := audioCtx.NewPlayerF32(bgmSource(bgm))
 	if err != nil {
 		log.Printf("cannot play the music: %v", err) // the game goes on without it
 		return
 	}
-	p.SetBufferSize(80e6) // 80ms; kept short so tempo changes take effect quickly
+	p.SetBufferSize(bgmBuffer)
 	p.SetVolume(0.7)
 	p.Play()
 	bgmPlayer = p
