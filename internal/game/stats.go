@@ -6,12 +6,14 @@ import (
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2/vector"
+
+	"github.com/nao1215/rabbitrun/internal/gfx"
 )
 
 // The frame meter of the browser build (the page opened with ?fps, statsAsked): the
 // ticks and frames a second as ebiten counts them, and the longest Update and Draw of
-// the last second, in the bottom left corner. It is for telling on a phone whether the
+// the last second, at the bottom of the screen. It is for telling on a phone whether the
 // game keeps up; without ?fps nothing of it runs.
 
 // showStats is set when the meter is asked for.
@@ -24,7 +26,6 @@ type frameStats struct {
 	drawSum         time.Duration
 	draws           int
 	text            string
-	img             *ebiten.Image // the meter's text, drawn at its own size (drawStats)
 }
 
 // timeUpdate measures an Update for the meter: call the function it returns at its end.
@@ -57,25 +58,16 @@ func (g *Game) timeDraw(screen *ebiten.Image) func() {
 	}
 }
 
-// statsScale is how much the meter's debug font is enlarged: at its own size it was too
-// small to read on a phone, where the screen is shown at about half its size.
-const statsScale = 2
-
-// drawStats draws the meter's text in the bottom left corner, on a dark band.
+// drawStats draws the meter's text at the bottom of the screen, on a dark band. It is
+// drawn in the game's font: ebitenutil's debug print brought net/http into the
+// WebAssembly file, which grew by 2 MB.
 func (g *Game) drawStats(screen *ebiten.Image) {
 	if g.stats.text == "" {
 		return
 	}
-	if g.stats.img == nil {
-		g.stats.img = ebiten.NewImage(ScreenW/statsScale, 36)
-	}
-	img := g.stats.img
-	img.Fill(color.NRGBA{0, 0, 0, 0xa0})
-	ebitenutil.DebugPrintAt(img, g.stats.text, 4, 2)
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Scale(statsScale, statsScale)
-	op.GeoM.Translate(0, ScreenH-36*statsScale)
-	screen.DrawImage(img, op)
+	const size, bandH = 22.0, 68
+	vector.FillRect(screen, 0, ScreenH-bandH, ScreenW, bandH, color.NRGBA{0, 0, 0, 0xa0}, false)
+	gfx.DrawText(screen, g.stats.text, ScreenW/2, ScreenH-bandH+4, size, color.White)
 }
 
 func ms(d time.Duration) float64 { return float64(d.Microseconds()) / 1000 }
