@@ -120,11 +120,14 @@ func (in *Input) Update() {
 	in.prev = in.held
 	if in.script != nil {
 		in.held, in.typed = in.script.Frame()
-		in.touch.held, in.touch.tapped = [NumActions]bool{}, false
-		if t, ok := in.script.(Tapper); ok {
-			if x, y, ok := t.Tap(); ok {
+		t := &in.touch
+		t.held, t.tapped, t.doubled = [NumActions]bool{}, false, false
+		t.frame++
+		if s, ok := in.script.(Tapper); ok {
+			if x, y, ok := s.Tap(); ok {
+				t.used = true
+				t.tap(x, y, t.frame)
 				in.held[Confirm] = true
-				in.touch.tapX, in.touch.tapY, in.touch.tapped, in.touch.used = x, y, true, true
 			}
 		}
 	} else {

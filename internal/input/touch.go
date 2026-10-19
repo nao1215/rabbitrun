@@ -17,23 +17,35 @@ import (
 //     drag left or right steers, and a drag up speeds up. The point the finger went down
 //     follows it when it goes further than touchReach, so turning back needs only a
 //     short way.
-//   - A tap (down and up again without moving, quickly) is Confirm: it chooses in a menu
-//     and swings the hammer on the road. While one finger steers, a tap with another
-//     swings the hammer.
+//   - A tap (down and up again without moving, quickly) is Confirm: it chooses in a menu.
+//     Two taps close together in time and place are a double tap (DoubleTap), which
+//     swings the hammer on the road; a single tap there does nothing, as a stray touch
+//     while steering threw hammers away. While one finger steers, another double taps.
 //   - The corner button the game shows (SetButton) is Escape: Cancel and Pause, so it
 //     pauses the road, goes back from a menu and resumes from the pause menu.
 //
-// The positions are in the game's screen pixels (its Layout), as ebiten gives them.
+// The positions are in the game's screen pixels (its Layout), as ebiten gives them. The
+// distances below are in device-independent pixels (CSS pixels in a browser), the unit
+// phones' own gestures are measured in, and are turned into screen pixels by the scale
+// the screen is shown at (SetPointScale): on a phone a screen pixel is about half a
+// device-independent pixel, and the first distances, set in screen pixels, wanted a drag
+// twice as long as a phone's before the bunny moved.
 
 const (
-	// touchSlop is how far a finger may move and still tap.
-	touchSlop = 24.0
+	// touchSlop is how far a finger may move and still tap (Android's touch slop is 8).
+	touchSlop = 10.0
 	// touchDead is how far a drag must go before a direction is held.
-	touchDead = 36.0
+	touchDead = 12.0
 	// touchReach is how far the point a drag started from stays behind the finger.
-	touchReach = 90.0
+	touchReach = 48.0
 	// tapFrames is how long a tap may last (frames, at 60 a second).
 	tapFrames = 24
+	// doubleTapFrames is how soon the second tap of a double tap must go down after the
+	// first came up (Android's double tap timeout is 300ms).
+	doubleTapFrames = 18
+	// doubleTapSlop is how far apart the two taps of a double tap may be (Android's is
+	// 100).
+	doubleTapSlop = 100.0
 	// mouseID stands for the mouse's left button among the touches.
 	mouseID = math.MinInt32
 	// mouseQuiet is how long the mouse is not read after a finger was on the screen
@@ -49,6 +61,7 @@ type pointer struct {
 	sx, sy   float64 // where it went down
 	x, y     float64 // where it is now
 	frames   int     // frames it has been down
+	down     int     // the frame it went down (touches.frame)
 	moved    bool    // it went further than touchSlop from where it went down
 	onButton bool    // it went down on the corner button
 }
@@ -72,12 +85,43 @@ type touches struct {
 	held       [NumActions]bool
 	tapX, tapY float64
 	tapped     bool
+	// doubled is set on the frame a tap ends that makes a double tap with the one before
+	// (lastTap, lastX, lastY: the frame the last single tap ended, and where).
+	doubled      bool
+	lastTap      int
+	lastX, lastY float64
+	// frame counts the frames update has seen.
+	frame int
+	// scale is how many screen pixels a device-independent pixel is (SetPointScale); 0
+	// is taken as 1.
+	scale float64
+}
+
+// px is d device-independent pixels in screen pixels.
+func (t *touches) px(d float64) float64 {
+	if t.scale > 0 {
+		return d * t.scale
+	}
+	return d
+}
+
+// tap records a tap that went down on the frame down and ended at (x, y) now: a press
+// of Confirm, and a double tap when it follows the last one soon and near enough.
+func (t *touches) tap(x, y float64, down int) {
+	t.held[Confirm] = true
+	t.tapX, t.tapY, t.tapped = x, y, true
+	if t.lastTap > 0 && down-t.lastTap <= doubleTapFrames && math.Hypot(x-t.lastX, y-t.lastY) <= t.px(doubleTapSlop) {
+		t.doubled, t.lastTap = true, 0 // a third tap starts over
+		return
+	}
+	t.lastTap, t.lastX, t.lastY = t.frame, x, y
 }
 
 // update takes this frame's fingers and works out the actions they hold.
 func (t *touches) update(now []touchSample) {
 	t.held = [NumActions]bool{}
-	t.tapped = false
+	t.tapped, t.doubled = false, false
+	t.frame++
 	// fingers lifted since the last frame: a tap, or a press of the button
 	t.ptrs = slices.DeleteFunc(t.ptrs, func(p pointer) bool {
 		if slices.ContainsFunc(now, func(s touchSample) bool { return s.id == p.id }) {
@@ -89,8 +133,7 @@ func (t *touches) update(now []touchSample) {
 				t.held[Cancel], t.held[Pause] = true, true
 			}
 		case !p.moved && p.frames <= tapFrames:
-			t.held[Confirm] = true
-			t.tapX, t.tapY, t.tapped = p.x, p.y, true
+			t.tap(p.x, p.y, p.down)
 		}
 		return true
 	})
@@ -99,13 +142,13 @@ func (t *touches) update(now []touchSample) {
 		if i < 0 {
 			t.used = true
 			on := image.Pt(int(s.x), int(s.y)).In(t.button)
-			t.ptrs = append(t.ptrs, pointer{id: s.id, x0: s.x, y0: s.y, sx: s.x, sy: s.y, onButton: on})
+			t.ptrs = append(t.ptrs, pointer{id: s.id, x0: s.x, y0: s.y, sx: s.x, sy: s.y, down: t.frame, onButton: on})
 			i = len(t.ptrs) - 1
 		}
 		p := &t.ptrs[i]
 		p.x, p.y = s.x, s.y
 		p.frames++
-		if math.Hypot(p.x-p.sx, p.y-p.sy) > touchSlop {
+		if math.Hypot(p.x-p.sx, p.y-p.sy) > t.px(touchSlop) {
 			p.moved = true
 		}
 	}
@@ -115,31 +158,32 @@ func (t *touches) update(now []touchSample) {
 		if p.onButton {
 			continue
 		}
-		p.x0 = follow(p.x0, p.x)
-		p.y0 = follow(p.y0, p.y)
+		reach, dead := t.px(touchReach), t.px(touchDead)
+		p.x0 = follow(p.x0, p.x, reach)
+		p.y0 = follow(p.y0, p.y, reach)
 		dx, dy := p.x-p.x0, p.y-p.y0
 		switch {
-		case math.Abs(dx) >= math.Abs(dy) && dx <= -touchDead:
+		case math.Abs(dx) >= math.Abs(dy) && dx <= -dead:
 			t.held[Left] = true
-		case math.Abs(dx) >= math.Abs(dy) && dx >= touchDead:
+		case math.Abs(dx) >= math.Abs(dy) && dx >= dead:
 			t.held[Right] = true
-		case math.Abs(dy) > math.Abs(dx) && dy <= -touchDead:
+		case math.Abs(dy) > math.Abs(dx) && dy <= -dead:
 			t.held[Up] = true
-		case math.Abs(dy) > math.Abs(dx) && dy >= touchDead:
+		case math.Abs(dy) > math.Abs(dx) && dy >= dead:
 			t.held[Down] = true
 		}
 		break
 	}
 }
 
-// follow moves the anchor a of a drag toward the finger at x, so it stays at most
-// touchReach behind.
-func follow(a, x float64) float64 {
+// follow moves the anchor a of a drag toward the finger at x, so it stays at most reach
+// behind.
+func follow(a, x, reach float64) float64 {
 	switch {
-	case x-a > touchReach:
-		return x - touchReach
-	case a-x > touchReach:
-		return x + touchReach
+	case x-a > reach:
+		return x - reach
+	case a-x > reach:
+		return x + reach
 	}
 	return a
 }
@@ -169,6 +213,14 @@ func (in *Input) readTouches() []touchSample {
 // takes it away. A finger that goes down on it and comes up there presses Escape (Cancel
 // and Pause) instead of tapping.
 func (in *Input) SetButton(r image.Rectangle) { in.touch.button = r }
+
+// SetPointScale tells how many screen pixels a device-independent pixel is: the screen
+// is shown at 1/scale of its size (Game.Layout knows the size of the window).
+func (in *Input) SetPointScale(scale float64) { in.touch.scale = scale }
+
+// DoubleTap reports whether a double tap ended this frame (its second tap is also a Tap
+// and a press of Confirm).
+func (in *Input) DoubleTap() bool { return in.touch.doubled }
 
 // Touched reports whether the screen has been touched or clicked since the game started:
 // the corner button is shown only then.

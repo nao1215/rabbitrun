@@ -154,3 +154,24 @@ func TestCornerButtonFollowsTheScreen(t *testing.T) {
 	g.placeButton()
 	g.drawButton(screen) // drawn once the screen was touched; it goes through either way
 }
+
+// TestHammerTakesADoubleTap: on the road one tap swings no hammer (a stray touch while
+// steering threw them away); a double tap swings one.
+//
+//nolint:paralleltest // the scenario uses the package-level game state
+func TestHammerTakesADoubleTap(t *testing.T) {
+	g, screen := newDrawScenario(t, nil)
+	playEveryFrame(t, g, screen, steps(press(input.Confirm), wait(2), press(input.Confirm), intro(), wait(readyFr+5)))
+	s, ok := g.scene.(*playScene)
+	if !ok || s.ready > 0 {
+		t.Fatalf("on %T, want the road running", g.scene)
+	}
+	playEveryFrame(t, g, screen, steps(tapAt(200, 400), wait(40)))
+	if s.cutin > 0 || s.crumble > 0 {
+		t.Fatal("a single tap swung the hammer")
+	}
+	playEveryFrame(t, g, screen, steps(tapAt(200, 400), wait(3), tapAt(210, 410)))
+	if s.cutin == 0 {
+		t.Fatal("a double tap did not swing the hammer")
+	}
+}

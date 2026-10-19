@@ -210,8 +210,15 @@ func (g *Game) end(done bool, err error) {
 	}
 }
 
-// Layout keeps the screen at its own size; the window scales it.
-func (g *Game) Layout(_, _ int) (int, int) { return ScreenW, ScreenH }
+// Layout keeps the screen at its own size; the window scales it. The touch controls are
+// told the scale, so their distances are a finger's whatever the size of the window.
+func (g *Game) Layout(outsideW, outsideH int) (int, int) {
+	if outsideW > 0 && outsideH > 0 {
+		// the screen fits the window: by the side that fills it
+		g.in.SetPointScale(max(float64(ScreenW)/float64(outsideW), float64(ScreenH)/float64(outsideH)))
+	}
+	return ScreenW, ScreenH
+}
 
 var quitRequested bool
 

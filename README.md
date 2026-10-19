@@ -91,7 +91,7 @@ The keyboard and gamepad work as in the table above. On a touch screen (the mous
 | --- | --- |
 | Move | Drag left or right from where you touch, and keep the finger there. The point you started from follows your finger, so a short drag back turns you around. |
 | Speed up (until a miss) | Drag up and keep the finger there |
-| Hammer (smash the walls) | Tap. While one finger steers, tap with another. |
+| Hammer (smash the walls) | Double tap (a single tap does nothing on the road). While one finger steers, double tap with another. |
 | Pause / back | The button in the top left corner |
 | Menus | Tap an item |
 | Character select | Tap a card to choose her and tap her again to start, or swipe left and right |

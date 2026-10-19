@@ -179,3 +179,65 @@ func TestScriptCanTap(t *testing.T) {
 		t.Fatal("the tap is over on the next frame")
 	}
 }
+
+// tapOnce taps at (x, y) for two frames and lets go, then waits gap frames with no finger;
+// it reports whether that tap ended a double tap.
+func tapOnce(tc *touches, x, y float64, gap int) bool {
+	tc.update([]touchSample{{9, x, y}})
+	tc.update([]touchSample{{9, x, y}})
+	tc.update(nil)
+	doubled := tc.doubled
+	for range gap {
+		tc.update(nil)
+	}
+	return doubled
+}
+
+func TestDoubleTap(t *testing.T) {
+	t.Parallel()
+	var tc touches
+	if tapOnce(&tc, 100, 100, 5) {
+		t.Fatal("one tap is no double tap")
+	}
+	if !tapOnce(&tc, 130, 120, 5) {
+		t.Fatal("a second tap soon after, near the first, must be a double tap")
+	}
+	if tapOnce(&tc, 130, 120, 40) {
+		t.Fatal("a third tap starts over: it is no second double tap")
+	}
+	if tapOnce(&tc, 100, 100, 0) {
+		t.Fatal("a tap long after the last is a first tap")
+	}
+	if tapOnce(&tc, 100+doubleTapSlop+1, 100, 30) {
+		t.Fatal("a second tap far from the first is no double tap")
+	}
+	tapOnce(&tc, 300, 300, doubleTapFrames)
+	if tapOnce(&tc, 300, 300, 0) {
+		t.Fatal("a second tap later than doubleTapFrames is no double tap")
+	}
+}
+
+// TestDragIsNoHalfOfADoubleTap: a drag between two taps, or before one, makes no double tap.
+func TestDragIsNoHalfOfADoubleTap(t *testing.T) {
+	t.Parallel()
+	var tc touches
+	fingers(t, &tc, []touchSample{{1, 300, 400}}, []touchSample{{1, 360, 400}}, nil)
+	if tapOnce(&tc, 300, 400, 0) {
+		t.Fatal("a drag and a tap are no double tap")
+	}
+}
+
+// TestDistancesFollowTheScale: at a scale of 2 screen pixels to a device-independent
+// pixel, a drag must go twice as many screen pixels.
+func TestDistancesFollowTheScale(t *testing.T) {
+	t.Parallel()
+	tc := touches{scale: 2}
+	fingers(t, &tc, []touchSample{{1, 300, 400}}, []touchSample{{1, 300 + touchDead*1.5, 400}})
+	if tc.held[Right] {
+		t.Fatal("at scale 2, 1.5 times touchDead screen pixels is inside the dead zone")
+	}
+	tc.update([]touchSample{{1, 300 + touchDead*2.5, 400}})
+	if !tc.held[Right] {
+		t.Fatal("at scale 2, 2.5 times touchDead screen pixels steers")
+	}
+}
