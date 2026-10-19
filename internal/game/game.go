@@ -37,6 +37,8 @@ type Game struct {
 	// err is why a capture or a recording ended early; Update returns it so the game exits
 	// with it (status 1).
 	err error
+	// stats is the frame meter (?fps in a browser, showStats).
+	stats frameStats
 }
 
 // Options are what the command line asks of a run of the game.
@@ -162,6 +164,9 @@ func (g *Game) Update() error {
 	if g.rec != nil && g.rec.skipUpdate() {
 		return nil
 	}
+	if showStats {
+		defer g.timeUpdate()()
+	}
 	g.frame++
 	g.placeButton()
 	g.in.Update()
@@ -187,6 +192,9 @@ func (g *Game) Update() error {
 
 // Draw draws the frame.
 func (g *Game) Draw(screen *ebiten.Image) {
+	if showStats {
+		defer g.timeDraw(screen)()
+	}
 	noteMenu(0, 0, 0, 0) // the scene notes the menu it draws, for taps
 	g.bg.draw(screen)
 	g.scene.Draw(screen)

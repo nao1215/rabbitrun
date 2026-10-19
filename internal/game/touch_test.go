@@ -1,7 +1,9 @@
 package game
 
 import (
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 
@@ -173,5 +175,17 @@ func TestHammerTakesADoubleTap(t *testing.T) {
 	playEveryFrame(t, g, screen, steps(tapAt(200, 400), wait(3), tapAt(210, 410)))
 	if s.cutin == 0 {
 		t.Fatal("a double tap did not swing the hammer")
+	}
+}
+
+// TestFrameMeter: the meter measures an Update and a Draw and, a second on, says what it
+// measured.
+func TestFrameMeter(t *testing.T) { //nolint:paralleltest // draws with the package-level fonts
+	g, screen := newDrawScenario(t, nil)
+	g.stats.since = time.Now().Add(-2 * time.Second)
+	g.timeDraw(screen)()
+	g.timeUpdate()()
+	if !strings.Contains(g.stats.text, "TPS") || !g.stats.since.After(time.Now().Add(-time.Second)) {
+		t.Fatalf("the meter says %q", g.stats.text)
 	}
 }

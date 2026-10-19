@@ -99,6 +99,8 @@ The keyboard and gamepad work as in the table above. On a touch screen (the mous
 
 Your progress is kept in the browser's storage for the site (localStorage), as the same JSON as `save.json`. A private window, or a browser that blocks storage for the site, plays without saving; clearing the site's data deletes the progress. The browser version has no EXIT (close the tab instead) and no command-line options, and the secret command needs a keyboard.
 
+To see whether the game keeps up on your device, open the page with `?fps` at the end of the address (<https://nao1215.github.io/rabbitrun/?fps>): the bottom left corner shows the ticks (TPS, 60 when the game runs at full speed) and frames a second, and the longest update and draw of the last second.
+
 ## How to install
 
 ### Download from itch.io
