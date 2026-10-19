@@ -33,3 +33,6 @@ __pycache__/
 
 # atago run state (last failed scenarios)
 /.atago/
+
+# The smaller assets the browser build embeds (scripts/web_assets.py, make web-assets)
+/webassets/

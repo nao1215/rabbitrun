@@ -15,6 +15,7 @@ import (
 	"path"
 
 	"golang.org/x/image/draw"
+	_ "golang.org/x/image/webp" // the characters' pictures in the browser build (scripts/web_assets.py)
 )
 
 // root is the assets directory the game reads (Use).
@@ -29,10 +30,12 @@ func FS() fs.FS { return root }
 // ReadFile reads the file name from the assets directory.
 func ReadFile(name string) ([]byte, error) { return fs.ReadFile(root, name) }
 
-// imageExts lists the image file extensions tried in order when looking up artwork.
-var imageExts = []string{".jpg", ".png"}
+// imageExts lists the image file extensions tried in order when looking up artwork. The
+// browser build's assets hold the characters' pictures as .webp (scripts/web_assets.py).
+var imageExts = []string{".jpg", ".png", ".webp"}
 
-// HasImage reports whether the picture stem.jpg or stem.png is in fsys (false without one).
+// HasImage reports whether the picture stem.jpg, stem.png or stem.webp is in fsys (false
+// without one).
 func HasImage(fsys fs.FS, stem string) bool {
 	if fsys == nil {
 		return false
@@ -68,7 +71,7 @@ func LogBroken(name string, err error) {
 	}
 }
 
-// Decode decodes the picture stem.jpg or stem.png in fsys, trying them in that order. A
+// Decode decodes the picture stem.jpg, stem.png or stem.webp in fsys, trying them in that order. A
 // file that does not decode is passed over for the next one too; the error wraps
 // fs.ErrNotExist when there is no file at all.
 func Decode(fsys fs.FS, stem string) (image.Image, error) {

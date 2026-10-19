@@ -1,4 +1,4 @@
-.PHONY: build run test test-long test-pixels e2e readme vet fmt lint vuln licenses tools clean help
+.PHONY: build run web web-assets test test-long test-pixels e2e readme vet fmt lint vuln licenses tools clean help
 
 APP         = rabbitrun
 VERSION     = $(shell git describe --tags --abbrev=0 2>/dev/null || echo dev)
@@ -15,6 +15,9 @@ build: ## Build the rabbitrun binary
 
 run: build ## Build and start the game
 	./$(APP)
+
+web-assets: ## Write webassets/, the smaller pictures the browser build embeds (needs Python 3 with Pillow)
+	python3 scripts/web_assets.py assets webassets
 
 test: ## Run unit tests with coverage (writes cover.out / cover.html)
 	$(GO) test -race -cover -coverprofile=cover.out ./...
@@ -58,7 +61,7 @@ tools: ## Install golangci-lint, govulncheck and go-licenses at the versions CI 
 	$(GO) install github.com/google/go-licenses/v2@$(GO_LICENSES_VERSION)
 
 clean: ## Remove build and coverage output
-	-rm -rf $(APP) $(APP).exe cover.out cover.html dist third_party_licenses
+	-rm -rf $(APP) $(APP).exe cover.out cover.html dist third_party_licenses webassets
 
 .DEFAULT_GOAL := help
 help:
