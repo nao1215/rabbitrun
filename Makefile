@@ -20,9 +20,10 @@ run: build ## Build and start the game
 WEB_DIR = dist/web
 
 web: web-assets ## Build the browser version into dist/web (needs Python 3 with Pillow)
-	rm -rf $(WEB_DIR)
 	mkdir -p $(WEB_DIR)
-	GOOS=js GOARCH=wasm $(GO) build -trimpath -buildvcs=false -ldflags '-s -w -X main.version=$(VERSION)' -o $(WEB_DIR)/rabbitrun.wasm .
+	# written beside and moved over, so a server already serving dist/web never sends half a file
+	GOOS=js GOARCH=wasm $(GO) build -trimpath -buildvcs=false -ldflags '-s -w -X main.version=$(VERSION)' -o $(WEB_DIR)/rabbitrun.wasm.tmp .
+	mv $(WEB_DIR)/rabbitrun.wasm.tmp $(WEB_DIR)/rabbitrun.wasm
 	cp "$$($(GO) env GOROOT)/lib/wasm/wasm_exec.js" $(WEB_DIR)/
 	chmod 644 $(WEB_DIR)/wasm_exec.js
 	size=$$(wc -c < $(WEB_DIR)/rabbitrun.wasm | tr -d ' '); \
