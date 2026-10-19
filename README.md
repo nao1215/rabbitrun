@@ -15,6 +15,8 @@
 
 Rabbit Run is a runner game with anime girls for Windows, macOS, Linux and web browsers (phones too). You steer a bunny up a road of gummy blocks while your character cheers you on beside it. It is a project for learning how to make a game with AI: the program, the characters and illustrations, the blocks and items, the backgrounds and the music arrangements were all made with AI. It is written in Go with [Ebitengine](https://ebitengine.org/).
 
+<p align="center"><b>▶ <a href="https://nao1215.github.io/rabbitrun/">Play in your browser</a></b> — no download, on PC or your phone · also on <a href="https://nao1215.itch.io/rabbit-run">itch.io</a></p>
+
 <p align="center"><img src="./doc/img/demo.gif" width="360" alt="the bunny hopping up the road and the hammer smashing the walls"></p>
 
 | Title | Character select | Play | Gallery |
