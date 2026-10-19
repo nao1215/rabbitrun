@@ -41,7 +41,7 @@ test-long: ## Run the tests that play or search every whole run (skipped by plai
 	RABBITRUN_LONG_TESTS=1 $(GO) test -count=1 -run 'EveryRunCanBePassed|CarefulPlayerClears' ./internal/engine/
 
 test-pixels: ## Read back what the screens draw (opens a window; on Linux without a desktop run it under xvfb-run)
-	$(GO) test -race -tags pixels -run Pixels ./internal/game/
+	$(GO) test -race -tags pixels -run Pixels ./internal/game/ ./internal/gfx/
 
 e2e: ## Run the atago end-to-end tests (requires atago; set RABBITRUN_E2E_DISPLAY=1 to include the specs that open a window)
 	$(GO) run ./e2e/runner
