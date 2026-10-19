@@ -84,6 +84,8 @@ type Input struct {
 	touchIDs []ebiten.TouchID
 	// mouseWait counts down the frames the mouse is not read after a touch (mouseQuiet).
 	mouseWait int
+	// byTouch are the actions held only by a finger this frame: they do not repeat.
+	byTouch [NumActions]bool
 }
 
 // Release lets go of the actions held now: until their keys or buttons come up they are
@@ -120,6 +122,7 @@ func (in *Input) Update() {
 	in.prev = in.held
 	if in.script != nil {
 		in.held, in.typed = in.script.Frame()
+		in.byTouch = [NumActions]bool{}
 		t := &in.touch
 		t.held, t.tapped, t.doubled = [NumActions]bool{}, false, false
 		t.frame++
@@ -134,7 +137,9 @@ func (in *Input) Update() {
 		in.pads = ebiten.AppendGamepadIDs(in.pads[:0])
 		in.touch.update(in.readTouches())
 		for a := Action(0); a < NumActions; a++ {
-			in.held[a] = in.poll(a) || in.touch.held[a]
+			key := in.poll(a)
+			in.held[a] = key || in.touch.held[a]
+			in.byTouch[a] = in.touch.held[a] && !key
 		}
 	}
 	for a := Action(0); a < NumActions; a++ {
@@ -244,8 +249,13 @@ func (in *Input) Held(a Action) bool { return in.held[a] }
 // Pressed reports whether a went down this frame.
 func (in *Input) Pressed(a Action) bool { return in.held[a] && !in.prev[a] }
 
-// Repeat implements key repeat for menus.
+// Repeat implements key repeat for menus. A direction held by a finger does not repeat:
+// a swipe is one step, however slowly it ends (a slow swipe ran on through a menu and
+// round to the other end).
 func (in *Input) Repeat(a Action) bool {
 	f := in.holdFrames[a]
+	if in.byTouch[a] {
+		return f == 1
+	}
 	return f == 1 || (f > 20 && f%5 == 0)
 }

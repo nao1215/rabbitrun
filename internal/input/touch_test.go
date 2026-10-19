@@ -241,3 +241,26 @@ func TestDistancesFollowTheScale(t *testing.T) {
 		t.Fatal("at scale 2, 2.5 times touchDead screen pixels steers")
 	}
 }
+
+// TestSwipeDoesNotRepeat: a direction held by a finger is one step of a menu, however
+// long the finger stays; held by a key it repeats.
+func TestSwipeDoesNotRepeat(t *testing.T) {
+	t.Parallel()
+	var in Input
+	in.byTouch[Left] = true
+	var fired int
+	for f := 1; f <= 60; f++ {
+		in.holdFrames[Left] = f
+		if in.Repeat(Left) {
+			fired++
+		}
+	}
+	if fired != 1 {
+		t.Fatalf("a finger held left stepped %d times, want 1", fired)
+	}
+	in.byTouch[Left] = false
+	in.holdFrames[Left] = 25
+	if !in.Repeat(Left) {
+		t.Fatal("a key held left must repeat")
+	}
+}
