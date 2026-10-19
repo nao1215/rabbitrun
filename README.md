@@ -13,7 +13,7 @@
 
 ![RABBIT RUN](./doc/img/banner.png)
 
-Rabbit Run is a runner game with anime girls for Windows, macOS, and Linux. You steer a bunny up a road of gummy blocks while your character cheers you on beside it. It is a project for learning how to make a game with AI: the program, the characters and illustrations, the blocks and items, the backgrounds and the music arrangements were all made with AI. It is written in Go with [Ebitengine](https://ebitengine.org/).
+Rabbit Run is a runner game with anime girls for Windows, macOS, Linux and web browsers (phones too). You steer a bunny up a road of gummy blocks while your character cheers you on beside it. It is a project for learning how to make a game with AI: the program, the characters and illustrations, the blocks and items, the backgrounds and the music arrangements were all made with AI. It is written in Go with [Ebitengine](https://ebitengine.org/).
 
 <p align="center"><img src="./doc/img/demo.gif" width="360" alt="the bunny hopping up the road and the hammer smashing the walls"></p>
 
@@ -80,6 +80,26 @@ On Windows, you can also double-click `rabbitrun.exe`. The game opens in a windo
 | Switch character in the gallery | Q / E | LB / RB |
 
 Choose PLAY on the title screen, pick a character, and the run starts. GALLERY shows the character portraits you have seen and the illustrations you have unlocked. Your progress is saved to `rabbitrun/save.json` in the user config directory (`~/.config` on Linux, `~/Library/Application Support` on macOS, `%AppData%` on Windows).
+
+## Play in your browser
+
+Open <https://nao1215.github.io/rabbitrun/> on a computer or a phone. The page downloads the whole game (about 40 MB) before it starts, and the sound comes on with your first tap or key. A phone shows the game upright with bands at the sides when it is held sideways, so holding it upright gives the biggest screen.
+
+The keyboard and gamepad work as in the table above. On a touch screen (the mouse's left button works the same way):
+
+| Action | Touch |
+| --- | --- |
+| Move | Drag left or right from where you touch, and keep the finger there. The point you started from follows your finger, so a short drag back turns you around. |
+| Speed up (until a miss) | Drag up and keep the finger there |
+| Hammer (smash the walls) | Double tap (a single tap does nothing on the road). While one finger steers, double tap with another. |
+| Pause / back | The button in the top left corner |
+| Menus | Tap an item |
+| Character select | Tap a card to choose her and tap her again to start, or swipe left and right |
+| Gallery | Tap a face at the top to switch characters and a tile to open it; swipe left and right to step through the pictures, tap to close |
+
+Your progress is kept in the browser's storage for the site (localStorage), as the same JSON as `save.json`. A private window, or a browser that blocks storage for the site, plays without saving; clearing the site's data deletes the progress. The browser version has no EXIT (close the tab instead) and no command-line options, and the secret command needs a keyboard.
+
+To see whether the game keeps up on your device, open the page with `?fps` at the end of the address (<https://nao1215.github.io/rabbitrun/?fps>): the bottom of the screen shows the ticks (TPS, 60 when the game runs at full speed) and frames a second, and the longest update and draw of the last second.
 
 ## How to install
 

@@ -37,6 +37,8 @@ type Game struct {
 	// err is why a capture or a recording ended early; Update returns it so the game exits
 	// with it (status 1).
 	err error
+	// stats is the frame meter (?fps in a browser, showStats).
+	stats frameStats
 }
 
 // Options are what the command line asks of a run of the game.
@@ -162,7 +164,11 @@ func (g *Game) Update() error {
 	if g.rec != nil && g.rec.skipUpdate() {
 		return nil
 	}
+	if showStats {
+		defer g.timeUpdate()()
+	}
 	g.frame++
+	g.placeButton()
 	g.in.Update()
 	if f11, altEnter := fullscreenKeys(); f11 || altEnter {
 		toggleFullscreen()
@@ -186,8 +192,13 @@ func (g *Game) Update() error {
 
 // Draw draws the frame.
 func (g *Game) Draw(screen *ebiten.Image) {
+	if showStats {
+		defer g.timeDraw(screen)()
+	}
+	noteMenu(0, 0, 0, 0) // the scene notes the menu it draws, for taps
 	g.bg.draw(screen)
 	g.scene.Draw(screen)
+	g.drawButton(screen)
 	if g.cap != nil {
 		g.end(g.cap.afterDraw(screen))
 	}
@@ -207,8 +218,15 @@ func (g *Game) end(done bool, err error) {
 	}
 }
 
-// Layout keeps the screen at its own size; the window scales it.
-func (g *Game) Layout(_, _ int) (int, int) { return ScreenW, ScreenH }
+// Layout keeps the screen at its own size; the window scales it. The touch controls are
+// told the scale, so their distances are a finger's whatever the size of the window.
+func (g *Game) Layout(outsideW, outsideH int) (int, int) {
+	if outsideW > 0 && outsideH > 0 {
+		// the screen fits the window: by the side that fills it
+		g.in.SetPointScale(max(float64(ScreenW)/float64(outsideW), float64(ScreenH)/float64(outsideH)))
+	}
+	return ScreenW, ScreenH
+}
 
 var quitRequested bool
 

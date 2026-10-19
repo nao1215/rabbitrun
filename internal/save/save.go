@@ -1,5 +1,6 @@
 // Package save keeps the save data: each character's progress and the rewards found,
-// kept as JSON in the user's config directory.
+// kept as JSON in the user's config directory (file.go), or in the browser's
+// localStorage when the game runs as WebAssembly (localstorage_js.go).
 package save
 
 import (
@@ -7,8 +8,6 @@ import (
 	"errors"
 	"io/fs"
 	"log"
-	"os"
-	"path/filepath"
 )
 
 // CharProgress is how far a character has got.
@@ -73,35 +72,6 @@ func Decode(dst *Data, raw []byte) error {
 	return err
 }
 
-// dirName is the directory under the user config dir that holds the save data.
-const dirName = "rabbitrun"
-
-func configDir() string {
-	dir, err := os.UserConfigDir()
-	if err != nil {
-		dir = "."
-	}
-	return dir
-}
-
-// Path is where the save data is kept.
-func Path() string {
-	return filepath.Join(configDir(), dirName, "save.json")
-}
-
-// Reset starts the save data over (the --reset-save option): the save file is moved aside
-// to save.json.bak next to it. It reports whether there was a save file to move.
-func Reset() (bool, error) {
-	p := Path()
-	if err := os.Rename(p, p+".bak"); err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return false, nil
-		}
-		return false, err
-	}
-	return true, nil
-}
-
 // Store is the save data in play and when it is written.
 type Store struct {
 	// Data is the save data.
@@ -133,7 +103,7 @@ func NewStore() *Store {
 // progress, and its first save threw the player's away for good). A file that cannot be
 // read at all, or cannot be kept aside, is not written over in this run.
 func (s *Store) Load() {
-	raw, err := os.ReadFile(Path())
+	raw, err := readSave()
 	if err != nil {
 		if !errors.Is(err, fs.ErrNotExist) { // no save yet is the usual first launch
 			log.Printf("cannot read save data (it is left as it is): %v", err)
@@ -143,7 +113,7 @@ func (s *Store) Load() {
 	}
 	if err := Decode(s.Data, raw); err != nil {
 		log.Printf("cannot read save data (it is kept as %s.broken): %v", Path(), err)
-		if err := os.WriteFile(Path()+".broken", raw, 0o600); err != nil { //nolint:gosec // G703: next to the save file, in the user's config directory
+		if err := keepBroken(raw); err != nil {
 			log.Printf("cannot keep the broken save data (it is left as it is): %v", err)
 			s.kept = true
 		}
@@ -187,23 +157,12 @@ func (s *Store) Write() {
 	}
 }
 
-// write writes the save data. It goes through a temporary file renamed over the old one,
-// so a crash or a failure while writing leaves the old save whole.
+// write writes the save data where it is kept (writeSave), leaving the old save whole
+// when it fails.
 func (s *Store) write() error {
 	raw, err := json.MarshalIndent(s.Data, "", "  ")
 	if err != nil {
 		return err
 	}
-	p := Path()
-	if err := os.MkdirAll(filepath.Dir(p), 0o750); err != nil {
-		return err
-	}
-	tmp := p + ".tmp"
-	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
-		return err
-	}
-	if err := os.Rename(tmp, p); err != nil {
-		return errors.Join(err, os.Remove(tmp))
-	}
-	return nil
+	return writeSave(raw)
 }

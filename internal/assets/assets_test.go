@@ -2,6 +2,7 @@ package assets
 
 import (
 	"bytes"
+	"encoding/base64"
 	"errors"
 	"image"
 	"image/color"
@@ -45,6 +46,31 @@ func TestBrokenPictureIsPassedOver(t *testing.T) {
 	LogBroken("x", errors.New("broken")) // logged, not fatal
 	if !HasImage(fsys, "x") || HasImage(fsys, "y") || HasImage(nil, "x") {
 		t.Fatal("HasImage does not follow the files")
+	}
+}
+
+// TestWebPPictureDecodes: the browser build stores the characters' pictures as lossy WebP
+// with alpha (scripts/web_assets.py); Decode finds them by their stem and keeps the alpha.
+func TestWebPPictureDecodes(t *testing.T) {
+	t.Parallel()
+	// a 4x4 red picture whose top row is transparent, as Pillow writes it (quality 80)
+	raw, err := base64.StdEncoding.DecodeString("UklGRmIAAABXRUJQVlA4WAoAAAAQAAAAAwAAAwAAQUxQSAwAAAABDzD/ERFiHiL6Hw5WUDggMAAAANABAJ0BKgQABAABQCYloAJ0ugH4AAOwAP7y63/82BXNc+/3/9Lg/S4P0uD/0pAAAA==")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fsys := fstest.MapFS{"x.webp": {Data: raw}}
+	if !HasImage(fsys, "x") {
+		t.Fatal("HasImage does not find a .webp picture")
+	}
+	img, err := Decode(fsys, "x")
+	if err != nil {
+		t.Fatalf("cannot decode a .webp picture: %v", err)
+	}
+	if _, _, _, a := img.At(1, 0).RGBA(); a != 0 {
+		t.Errorf("the transparent top row has alpha %d", a)
+	}
+	if r, _, _, a := img.At(1, 2).RGBA(); a != 0xffff || r < 0xc000 { // lossy: near red
+		t.Errorf("the red pixel came out as r %#x, alpha %#x", r, a)
 	}
 }
 

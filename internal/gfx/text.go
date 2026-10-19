@@ -87,7 +87,77 @@ func DrawTextOutline(dst *ebiten.Image, str string, x, y, size float64, clr colo
 
 // DrawTextOutlineColor draws centered text in fill with an outline of the given color, both
 // faded by alpha (dark outlines read on a dark screen).
+//
+// The outline is the text drawn twelve times around its place, and the fill once more on
+// top: thirteen draws of every letter, which were a good part of a frame's drawing (a
+// third of the play screen's in a browser). Unfaded, the finished text is kept in an
+// image (outlineCache) and drawn in one go, at the same place to the pixel: it is made at
+// the fraction of a pixel it is drawn at, and put down at a whole pixel.
 func DrawTextOutlineColor(dst *ebiten.Image, str string, x, y, size float64, fill, outline color.Color, alpha float32) {
+	if alpha != 1 {
+		drawTextOutline(dst, str, x, y, size, fill, outline, alpha)
+		return
+	}
+	ix, iy := math.Floor(x), math.Floor(y)
+	k := outlineKey{str: str, size: size, fx: x - ix, fy: y - iy, fill: nrgba(fill), outline: nrgba(outline)}
+	img, ok := outlineCache[k]
+	if !ok {
+		if len(outlineCache) >= outlineCacheMax {
+			clearOutlineCache()
+		}
+		w, h := text.Measure(str, Face(size, str), size*1.4)
+		m := math.Ceil(outlineWidth(size)) + 2
+		img = &outlined{left: math.Ceil(w/2 + m), top: m}
+		img.img = ebiten.NewImage(int(2*img.left)+2, int(math.Ceil(h+2*m))+2)
+		drawTextOutline(img.img, str, img.left+k.fx, img.top+k.fy, size, fill, outline, 1)
+		outlineCache[k] = img
+	}
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Translate(ix-img.left, iy-img.top)
+	dst.DrawImage(img.img, op)
+}
+
+// outlined is a finished outlined text: drawn with its anchor (the top middle of the
+// text) left and top pixels into the image.
+type outlined struct {
+	img       *ebiten.Image
+	left, top float64
+}
+
+// outlineKey names an outlined text: what it says, how and where within a pixel.
+type outlineKey struct {
+	str           string
+	size, fx, fy  float64
+	fill, outline color.NRGBA
+}
+
+// outlineCacheMax bounds the outlined texts kept: a text that changes (a counter) makes a
+// new one each time, and when this many are kept they are all let go.
+const outlineCacheMax = 256
+
+var outlineCache = map[outlineKey]*outlined{}
+
+func clearOutlineCache() {
+	for k, o := range outlineCache {
+		o.img.Deallocate()
+		delete(outlineCache, k)
+	}
+}
+
+// nrgba is c as non-premultiplied RGBA.
+func nrgba(c color.Color) color.NRGBA {
+	n, ok := color.NRGBAModel.Convert(c).(color.NRGBA)
+	if !ok {
+		return color.NRGBA{} // NRGBAModel always returns NRGBA
+	}
+	return n
+}
+
+// outlineWidth is how far the outline of text of the size reaches around it.
+func outlineWidth(size float64) float64 { return math.Max(2, size/12) }
+
+// drawTextOutline draws the outlined text letter by letter (DrawTextOutlineColor).
+func drawTextOutline(dst *ebiten.Image, str string, x, y, size float64, fill, outline color.Color, alpha float32) {
 	fade := func(c color.Color) color.Color {
 		n, ok := color.NRGBAModel.Convert(c).(color.NRGBA)
 		if !ok {
@@ -96,7 +166,7 @@ func DrawTextOutlineColor(dst *ebiten.Image, str string, x, y, size float64, fil
 		n.A = uint8(float32(n.A) * alpha)
 		return n
 	}
-	w := math.Max(2, size/12)
+	w := outlineWidth(size)
 	for i := range 12 {
 		t := float64(i) / 12 * 2 * math.Pi
 		DrawText(dst, str, x+math.Cos(t)*w, y+math.Sin(t)*w, size, fade(outline))

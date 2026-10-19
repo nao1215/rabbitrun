@@ -1,4 +1,4 @@
-.PHONY: build run test test-long test-pixels e2e readme vet fmt lint vuln licenses tools clean help
+.PHONY: build run web web-assets test test-long test-pixels e2e readme vet fmt lint vuln licenses tools clean help
 
 APP         = rabbitrun
 VERSION     = $(shell git describe --tags --abbrev=0 2>/dev/null || echo dev)
@@ -16,6 +16,23 @@ build: ## Build the rabbitrun binary
 run: build ## Build and start the game
 	./$(APP)
 
+# The browser build: dist/web holds a page that GitHub Pages (or any static server) can serve.
+WEB_DIR = dist/web
+
+web: web-assets ## Build the browser version into dist/web (needs Python 3 with Pillow)
+	mkdir -p $(WEB_DIR)
+	# written beside and moved over, so a server already serving dist/web never sends half a file
+	GOOS=js GOARCH=wasm $(GO) build -trimpath -buildvcs=false -ldflags '-s -w -X main.version=$(VERSION)' -o $(WEB_DIR)/rabbitrun.wasm.tmp .
+	mv $(WEB_DIR)/rabbitrun.wasm.tmp $(WEB_DIR)/rabbitrun.wasm
+	cp "$$($(GO) env GOROOT)/lib/wasm/wasm_exec.js" $(WEB_DIR)/
+	chmod 644 $(WEB_DIR)/wasm_exec.js
+	size=$$(wc -c < $(WEB_DIR)/rabbitrun.wasm | tr -d ' '); \
+	sed -e "s/@WASM_SIZE@/$$size/" -e "s/@WASM_MB@/$$((size / 1000000))/" web/index.html > $(WEB_DIR)/index.html
+	@ls -l $(WEB_DIR)
+
+web-assets: ## Write webassets/, the smaller pictures the browser build embeds (needs Python 3 with Pillow)
+	python3 scripts/web_assets.py assets webassets
+
 test: ## Run unit tests with coverage (writes cover.out / cover.html)
 	$(GO) test -race -cover -coverprofile=cover.out ./...
 	$(GO) tool cover -html=cover.out -o cover.html
@@ -24,7 +41,7 @@ test-long: ## Run the tests that play or search every whole run (skipped by plai
 	RABBITRUN_LONG_TESTS=1 $(GO) test -count=1 -run 'EveryRunCanBePassed|CarefulPlayerClears' ./internal/engine/
 
 test-pixels: ## Read back what the screens draw (opens a window; on Linux without a desktop run it under xvfb-run)
-	$(GO) test -race -tags pixels -run Pixels ./internal/game/
+	$(GO) test -race -tags pixels -run Pixels ./internal/game/ ./internal/gfx/
 
 e2e: ## Run the atago end-to-end tests (requires atago; set RABBITRUN_E2E_DISPLAY=1 to include the specs that open a window)
 	$(GO) run ./e2e/runner
@@ -58,7 +75,7 @@ tools: ## Install golangci-lint, govulncheck and go-licenses at the versions CI 
 	$(GO) install github.com/google/go-licenses/v2@$(GO_LICENSES_VERSION)
 
 clean: ## Remove build and coverage output
-	-rm -rf $(APP) $(APP).exe cover.out cover.html dist third_party_licenses
+	-rm -rf $(APP) $(APP).exe cover.out cover.html dist third_party_licenses webassets
 
 .DEFAULT_GOAL := help
 help:

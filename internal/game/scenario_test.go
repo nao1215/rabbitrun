@@ -16,27 +16,40 @@ import (
 // The scenario tests play the whole game the way a player does: a script stands in for
 // the keyboard (input.Input.SetScript), and Game.Update runs frame by frame from the title.
 
-// script is an input.Script that plays its frames in order, and then nothing.
+// script is an input.Script that plays its frames in order, and then nothing. It is an
+// input.Tapper too: tap is the tap of the frame played last.
 type script struct {
 	frames []scriptFrame
+	tap    *[2]float64
 }
 
-// scriptFrame is one frame of a script: the actions held and the letters typed.
+// scriptFrame is one frame of a script: the actions held, the letters typed and where the
+// screen is tapped (nil for no tap).
 type scriptFrame struct {
 	held  []input.Action
 	typed string
+	tap   *[2]float64
 }
 
 func (s *script) Frame() (held [input.NumActions]bool, typed []rune) {
+	s.tap = nil
 	if len(s.frames) == 0 {
 		return held, nil
 	}
 	f := s.frames[0]
 	s.frames = s.frames[1:]
+	s.tap = f.tap
 	for _, a := range f.held {
 		held[a] = true
 	}
 	return held, []rune(f.typed)
+}
+
+func (s *script) Tap() (x, y float64, ok bool) {
+	if s.tap == nil {
+		return 0, 0, false
+	}
+	return s.tap[0], s.tap[1], true
 }
 
 // pressNow presses a on in for one frame, as the player does just now.
