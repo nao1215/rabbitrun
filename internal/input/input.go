@@ -1,5 +1,6 @@
-// Package input reads the player's controls: the keyboard (arrows, WASD and the vi keys)
-// and gamepads, as the actions the game knows. A Script can stand in for the player.
+// Package input reads the player's controls: the keyboard (arrows, WASD and the vi keys),
+// gamepads, and touches and the mouse (touch.go), as the actions the game knows. A Script
+// can stand in for the player.
 package input
 
 import (
@@ -77,6 +78,12 @@ type Input struct {
 	// stale are the actions Release let go of: held on, they count as up until the key
 	// or button comes up.
 	stale [NumActions]bool
+	// touch follows the fingers on the screen (and the mouse); touchIDs is kept to read
+	// them into without allocating.
+	touch    touches
+	touchIDs []ebiten.TouchID
+	// mouseWait counts down the frames the mouse is not read after a touch (mouseQuiet).
+	mouseWait int
 }
 
 // Release lets go of the actions held now: until their keys or buttons come up they are
@@ -97,6 +104,13 @@ type Script interface {
 	Frame() (held [NumActions]bool, typed []rune)
 }
 
+// Tapper is a Script that also taps the screen: Tap, asked after each Frame, gives where
+// that frame's tap ends, if it does. The tap is a press of Confirm, as a finger's is.
+type Tapper interface {
+	Script
+	Tap() (x, y float64, ok bool)
+}
+
 // SetScript makes s stand in for the keyboard and the pads from the next Update on (nil
 // goes back to them).
 func (in *Input) SetScript(s Script) { in.script = s }
@@ -106,10 +120,18 @@ func (in *Input) Update() {
 	in.prev = in.held
 	if in.script != nil {
 		in.held, in.typed = in.script.Frame()
+		in.touch.held, in.touch.tapped = [NumActions]bool{}, false
+		if t, ok := in.script.(Tapper); ok {
+			if x, y, ok := t.Tap(); ok {
+				in.held[Confirm] = true
+				in.touch.tapX, in.touch.tapY, in.touch.tapped, in.touch.used = x, y, true, true
+			}
+		}
 	} else {
 		in.pads = ebiten.AppendGamepadIDs(in.pads[:0])
+		in.touch.update(in.readTouches())
 		for a := Action(0); a < NumActions; a++ {
-			in.held[a] = in.poll(a)
+			in.held[a] = in.poll(a) || in.touch.held[a]
 		}
 	}
 	for a := Action(0); a < NumActions; a++ {
