@@ -163,3 +163,24 @@ func TestSoundHelpers(t *testing.T) {
 		t.Fatalf("synth length = %d", len(b))
 	}
 }
+
+// TestWrapIsMathMod: wrap gives exactly what math.Mod does for the powers of two the music
+// wraps by, so the faster music is the same music, bit for bit.
+func TestWrapIsMathMod(t *testing.T) {
+	t.Parallel()
+	x := 0.0
+	for i := range 200000 {
+		x = x*1.000173 + 0.0137*float64(i%7) + 1e-9 // positions from tiny to large
+		if i%1000 == 0 {
+			x = float64(i) / 3
+		}
+		for _, m := range []float64{0.25, 0.5, 1, 2, 8, 32} {
+			if got, want := wrap(x, m), math.Mod(x, m); got != want {
+				t.Fatalf("wrap(%v, %v) = %v, math.Mod gives %v", x, m, got, want)
+			}
+		}
+	}
+	if got, want := wrap(-1.3, 0.25), math.Mod(-1.3, 0.25); got != want {
+		t.Fatalf("wrap(-1.3, 0.25) = %v, want %v", got, want)
+	}
+}

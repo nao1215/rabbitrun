@@ -117,7 +117,20 @@ func (r *reverb) run(x float64) float64 {
 	return out
 }
 
-func saw(t, f float64) float64 { return 2*math.Mod(t*f, 1) - 1 }
+func saw(t, f float64) float64 { return 2*wrap(t*f, 1) - 1 }
+
+// wrap is math.Mod(x, m) for the powers of two m the music uses (1, 2, 0.5, 0.25, 8, 32).
+// For x >= 0 it is x - m*Floor(x/m), and that is exact: dividing and multiplying by a
+// power of two round nothing, and what is left is the low part of x. It costs a fraction
+// of math.Mod, which was more than half the time the music took to synthesize: in a
+// browser, where the game and its sound share one thread, that dropped frames and broke
+// up the sound.
+func wrap(x, m float64) float64 {
+	if x < 0 {
+		return math.Mod(x, m)
+	}
+	return x - m*math.Floor(x/m)
+}
 
 // gate returns which entry of pattern (start beat and length) is sounding at position pb within 2 beats, and the beats elapsed since it started.
 func gate(pb float64, pattern [][2]float64) (float64, float64, bool) {
@@ -248,7 +261,7 @@ func (m *musicStream) Read(p []byte) (int, error) {
 		delaySamples := int(0.75 * spb * sampleRate) // dotted-eighth delay
 		b := m.beat
 		t := m.time
-		pos := math.Mod(b, patternLen)  // 2-bar pattern
+		pos := wrap(b, patternLen)      // 2-bar pattern
 		if pos < 1/spb/sampleRate*1.5 { // switch stages at the start of each 2 bars
 			m.level = int(m.target.Load())
 		}
@@ -282,13 +295,13 @@ func (m *musicStream) Read(p []byte) (int, error) {
 			drums += hatN * math.Exp(-th*spb*80) * 0.16 * vh
 		}
 		// Every 8 bars (32 beats): a crash at the start and a snare fill in the last 2 beats
-		phrase := math.Mod(b, 32)
+		phrase := wrap(b, 32)
 		if lv == 2 && phrase < 3 {
 			ct := phrase * spb
 			drums += hp * math.Exp(-ct*2.2) * 0.12
 		}
 		if lv == 2 && phrase >= 30 {
-			ft := math.Mod(phrase-30, 0.25) * spb
+			ft := wrap(phrase-30, 0.25) * spb
 			rise := (phrase - 30) / 2
 			drums += (nz*math.Exp(-ft*25)*0.5 + math.Sin(2*math.Pi*200*ft)*math.Exp(-ft*30)*0.3) * (0.2 + 0.4*rise)
 		}
@@ -311,18 +324,18 @@ func (m *musicStream) Read(p []byte) (int, error) {
 		bass := 0.0
 		switch lv {
 		case 0:
-			bt := math.Mod(b, 2) * spb
+			bt := wrap(b, 2) * spb
 			bass = sub * 0.9 * math.Min(1, bt/0.02) * math.Min(1, (2*spb-bt)/0.04)
 		case 1:
-			if bt, bl, on := gate(math.Mod(b, 2), bassRhythm); on {
+			if bt, bl, on := gate(wrap(b, 2), bassRhythm); on {
 				bt, bl = bt*spb, bl*spb
 				bf := noteFreq(chordRoot)
 				mid := m.bassF.run((saw(t, bf*1.005)+saw(t, bf*0.995))*0.5, 500)
 				bass = (sub*0.8 + mid*0.5) * math.Min(1, bt/0.006) * math.Min(1, (bl-bt)/0.03)
 			}
 		default:
-			step := int(math.Mod(b, 2) / 0.5)
-			bt := math.Mod(b, 0.5) * spb
+			step := int(wrap(b, 2) / 0.5)
+			bt := wrap(b, 0.5) * spb
 			bf := noteFreq([]int{chordRoot, chordRoot + 12, fifth, chordRoot + 12}[step])
 			mid := m.bassF.run((saw(t, bf*1.005)+saw(t, bf*0.995))*0.5, 350+900*math.Exp(-bt*12))
 			bass = mid*0.7*math.Min(1, bt/0.004)*math.Min(1, (0.5*spb*0.85-bt)/0.02) + sub*0.8
@@ -340,7 +353,7 @@ func (m *musicStream) Read(p []byte) (int, error) {
 		if lv == 0 {
 			prh = [][2]float64{{0, 2}} // just hold the chord for 2 beats
 		}
-		if pt, _, on := gate(math.Mod(b, 2), prh); on {
+		if pt, _, on := gate(wrap(b, 2), prh); on {
 			pt *= spb
 			env := math.Min(1, pt/0.003) * math.Exp(-pt*4)
 			// the chord and its root an octave up (without building a new slice every sample)
