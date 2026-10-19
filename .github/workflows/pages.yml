@@ -1,0 +1,70 @@
+name: Pages
+
+# Builds the browser version (make web) and publishes dist/web to GitHub Pages.
+# Pull requests only build it, so a change that breaks the js/wasm build is caught
+# before it reaches main.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deployment at a time; a newer push waits for the one in progress.
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "stable"
+          check-latest: true
+
+      # scripts/web_assets.py writes the WebP pictures with Pillow.
+      - name: Install Pillow
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pil
+
+      # The save data in localStorage, run under Node.
+      - name: Test the browser-only code
+        env:
+          GOOS: js
+          GOARCH: wasm
+        run: go test -exec="$(go env GOROOT)/lib/wasm/go_js_wasm_exec" ./internal/save/
+
+      - name: Build the browser version
+        run: make web
+
+      - name: Upload the page
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: dist/web
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

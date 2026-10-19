@@ -16,6 +16,19 @@ build: ## Build the rabbitrun binary
 run: build ## Build and start the game
 	./$(APP)
 
+# The browser build: dist/web holds a page that GitHub Pages (or any static server) can serve.
+WEB_DIR = dist/web
+
+web: web-assets ## Build the browser version into dist/web (needs Python 3 with Pillow)
+	rm -rf $(WEB_DIR)
+	mkdir -p $(WEB_DIR)
+	GOOS=js GOARCH=wasm $(GO) build -trimpath -buildvcs=false -ldflags '-s -w -X main.version=$(VERSION)' -o $(WEB_DIR)/rabbitrun.wasm .
+	cp "$$($(GO) env GOROOT)/lib/wasm/wasm_exec.js" $(WEB_DIR)/
+	chmod 644 $(WEB_DIR)/wasm_exec.js
+	size=$$(wc -c < $(WEB_DIR)/rabbitrun.wasm | tr -d ' '); \
+	sed -e "s/@WASM_SIZE@/$$size/" -e "s/@WASM_MB@/$$((size / 1000000))/" web/index.html > $(WEB_DIR)/index.html
+	@ls -l $(WEB_DIR)
+
 web-assets: ## Write webassets/, the smaller pictures the browser build embeds (needs Python 3 with Pillow)
 	python3 scripts/web_assets.py assets webassets
 

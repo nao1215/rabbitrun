@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="description" content="Rabbit Run: steer a bunny up a road of gummy blocks while your character cheers you on.">
+<meta name="theme-color" content="#ffd6e5">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Rabbit Run</title>
+<style>
+  :root {
+    --bg: #ffd6e5;
+    --ink: #b24d75;
+    --bar: #ffffff;
+    --fill: #e8739c;
+  }
+  html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #000;
+    overscroll-behavior: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  canvas { touch-action: none; }
+  #loading {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    background: var(--bg);
+    color: var(--ink);
+    font: bold 20px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+    text-align: center;
+    padding: 0 16px;
+    z-index: 1;
+  }
+  #loading h1 { margin: 0; font-size: 40px; letter-spacing: 0.04em; }
+  #bar {
+    width: min(320px, 80vw);
+    height: 14px;
+    border-radius: 7px;
+    background: var(--bar);
+    overflow: hidden;
+  }
+  #fill { width: 0; height: 100%; background: var(--fill); transition: width 0.2s; }
+  #note { font-size: 14px; font-weight: normal; max-width: 28em; }
+</style>
+</head>
+<body>
+<div id="loading">
+  <h1>RABBIT RUN</h1>
+  <div id="bar"><div id="fill"></div></div>
+  <div id="status">Loading...</div>
+  <div id="note">The game is about @WASM_MB@ MB. Tap the screen once it starts to turn the sound on.</div>
+  <noscript>Rabbit Run needs JavaScript and WebAssembly.</noscript>
+</div>
+<script src="wasm_exec.js"></script>
+<script>
+"use strict";
+(async () => {
+  const status = document.getElementById("status");
+  const fill = document.getElementById("fill");
+  const loading = document.getElementById("loading");
+  // The size of rabbitrun.wasm, written in by make web: the server may send it compressed,
+  // and then its Content-Length is not what is read.
+  const wasmSize = Number("@WASM_SIZE@") || 0;
+  const fail = (msg) => { status.textContent = msg; fill.parentElement.style.display = "none"; };
+  if (typeof WebAssembly !== "object") {
+    fail("This browser cannot run WebAssembly.");
+    return;
+  }
+  // Long presses and right clicks would open menus over the game.
+  document.addEventListener("contextmenu", (e) => e.preventDefault());
+  // The loading screen goes away once the game puts its canvas on the page.
+  new MutationObserver((_, obs) => {
+    if (document.querySelector("canvas")) {
+      loading.remove();
+      obs.disconnect();
+    }
+  }).observe(document.body, { childList: true, subtree: true });
+  try {
+    const res = await fetch("rabbitrun.wasm");
+    if (!res.ok) throw new Error(res.status + " " + res.statusText);
+    const chunks = [];
+    let got = 0;
+    const reader = res.body.getReader();
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      got += value.length;
+      if (wasmSize > 0) {
+        const pct = Math.min(100, Math.floor(got * 100 / wasmSize));
+        fill.style.width = pct + "%";
+        status.textContent = "Loading... " + pct + "%";
+      }
+    }
+    const bytes = new Uint8Array(got);
+    let at = 0;
+    for (const c of chunks) { bytes.set(c, at); at += c.length; }
+    status.textContent = "Starting...";
+    const go = new Go();
+    const { instance } = await WebAssembly.instantiate(bytes, go.importObject);
+    await go.run(instance);
+  } catch (err) {
+    fail("The game could not start: " + err);
+  }
+})();
+</script>
+</body>
+</html>
