@@ -32,7 +32,9 @@ type titleScene struct {
 	wordFrame int
 }
 
-var titleItems = []string{"PLAY", "GALLERY", "EXIT"}
+// titleItems is the title menu. EXIT is left out where the game cannot close itself
+// (titleItemCount: in a browser the tab is closed instead).
+var titleItems = []string{"PLAY", "GALLERY", "EXIT"}[:titleItemCount]
 
 func newTitleScene() *titleScene {
 	s := &titleScene{group: extraMode(), reveal: newSecret(), word: wordDue()}
