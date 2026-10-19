@@ -60,6 +60,7 @@ func (s *playScene) updateMiss(g *Game) {
 		s.missSel = 1 - s.missSel
 		sound.Play(sound.Move)
 	}
+	s.missSel = tapMenu(&g.in, s.missSel, len(missItems))
 	if g.in.Pressed(input.Confirm) {
 		sound.Play(sound.Confirm)
 		if s.missSel == 0 {
@@ -173,6 +174,7 @@ func (s *playScene) drawMiss(screen *ebiten.Image) {
 	}
 	if s.missFrame >= missFrames && s.countdown == 0 {
 		gfx.DrawTextOutline(screen, "RESTART AT "+s.eng.RestartProgress(), boardMidX, boardY+cell*8.9, 26, gfx.TextMain)
+		noteMenu(len(missItems), boardMidX, boardY+cell*10, 40)
 		gfx.DrawMenuAt(screen, missItems, s.missSel, boardMidX, boardY+cell*10, 40)
 	}
 }
@@ -265,6 +267,7 @@ func (s *playScene) drawGameOver(screen *ebiten.Image) {
 	a := float32(math.Min(1, float64(s.overFrame-curtainStart-curtainFrames)/20))
 	gfx.DrawTextOutlineColor(screen, "GAME OVER", ScreenW/2, 240, 64, color.White, gfx.DarkOutline, a)
 	gfx.DrawTextOutlineColor(screen, "STAGE "+s.eng.Progress(), ScreenW/2, 330, 44, gfx.CandyPink, gfx.DarkOutline, a)
+	noteMenu(len(overItems), ScreenW/2, 460, 40)
 	gfx.DrawMenuOn(screen, overItems, s.overSel, ScreenW/2, 460, 40, color.NRGBA{0xee, 0xe6, 0xf2, 0xff}, gfx.DarkOutline)
 }
 

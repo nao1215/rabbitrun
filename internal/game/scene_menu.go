@@ -345,6 +345,7 @@ func (s *charSelectScene) Update(g *Game) {
 	bg.setImage("select")
 	n := len(characters)
 	s.sel = menuNav(&g.in, s.sel, n, input.Left, input.Right)
+	s.sel = tapCard(&g.in, s.sel, n)
 	if c := characters[s.sel]; s.mode == modePlay && !locked(c) {
 		// her usual pose and the cut-in, decoded while she is chosen: play's first frame
 		// waited 30 to 40 ms for the pose otherwise (the rest decode as play starts)
@@ -462,10 +463,7 @@ func (s *charSelectScene) Draw(screen *ebiten.Image) {
 		op.GeoM.Rotate(ang)
 		// The cards are spread evenly across the screen (tilted like a fan), so every face
 		// shows beside the selected one, which is pulled straight up.
-		cx := ScreenW / 2.0
-		if n > 1 {
-			cx = cardMargin + cardW/2 + float64(i)*(ScreenW-2*cardMargin-cardW)/float64(n-1)
-		}
+		cx := cardX(i, n)
 		cy := fanPivotY - math.Cos(ang)*fanRadius - cardPull*s.pull[i]
 		// shadow
 		sh := *op
@@ -481,8 +479,10 @@ func (s *charSelectScene) Draw(screen *ebiten.Image) {
 }
 
 // menuNav moves the selection sel of a menu of n items with key repeat: prev steps it back
-// and next forward, wrapping around at the ends, each step with a click.
+// and next forward, wrapping around at the ends, each step with a click. A tap on an item
+// of the menu shown chooses it (tapMenu).
 func menuNav(in *input.Input, sel, n int, prev, next input.Action) int {
+	sel = tapMenu(in, sel, n)
 	if in.Repeat(prev) {
 		sel = (sel + n - 1) % n
 		sound.Play(sound.Move)

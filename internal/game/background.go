@@ -82,5 +82,6 @@ func dimScreen(dst *ebiten.Image, a uint8) {
 
 // drawMenu draws a vertical menu. The selected item is pink and a little larger.
 func drawMenu(dst *ebiten.Image, items []string, sel int, y, size float64) {
+	noteMenu(len(items), ScreenW/2, y, size)
 	gfx.DrawMenuAt(dst, items, sel, ScreenW/2, y, size)
 }

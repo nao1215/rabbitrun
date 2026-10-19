@@ -159,19 +159,23 @@ func (s *galleryScene) Update(g *Game) {
 		}
 		return
 	}
+	// a tap on a character's card shows her; on a tile, chooses it (Confirm opens it)
+	if c, ok := s.tap(&g.in, n); ok {
+		s.showChar(c)
+		return
+	}
 	// switch characters
 	if d := boolInt(g.in.Pressed(input.TabNext)) - boolInt(g.in.Pressed(input.TabPrev)); d != 0 {
 		// Skip characters that are still locked.
+		c := s.charIdx
 		n := len(characters)
 		for range n {
-			s.charIdx = (s.charIdx + d + n) % n
-			if !locked(characters[s.charIdx]) {
+			c = (c + d + n) % n
+			if !locked(characters[c]) {
 				break
 			}
 		}
-		s.sel, s.scroll, s.scrollView = 0, 0, 0
-		s.hold(nil)
-		sound.Play(sound.Move)
+		s.showChar(c)
 		return
 	}
 	old := s.sel
@@ -222,6 +226,21 @@ func (s *galleryScene) Update(g *Game) {
 		sound.Play(sound.Cancel)
 		g.SetScene(newTitleScene())
 	}
+}
+
+// showChar lists the pictures of the character at index c, from the top.
+func (s *galleryScene) showChar(c int) {
+	s.charIdx = c
+	s.sel, s.scroll, s.scrollView = 0, 0, 0
+	s.hold(nil)
+	sound.Play(sound.Move)
+}
+
+// faceCardLeft is the left edge of the character card i of n in a strip drawn at size
+// (drawFaceStrip).
+func faceCardLeft(i, n int, size float64) float64 {
+	w := headCardW * size
+	return ScreenW/2 + (float64(i)-float64(n-1)/2)*(w+24*size) - w/2
 }
 
 func boolInt(b bool) int {
@@ -588,7 +607,7 @@ func drawFaceStrip(screen *ebiten.Image, sel int, pull []float64, top, size floa
 			t = 1
 		}
 		pull[i] += (t - pull[i]) * 0.2
-		x := ScreenW/2 + (float64(i)-float64(n-1)/2)*(w+24*size) - w/2
+		x := faceCardLeft(i, n, size)
 		y := top + 8*size*(1-pull[i])
 		gfx.FillRoundRect(screen, float32(x)+4, float32(y)+6, float32(w), float32(h), 12, shadowColor())
 		gfx.FillRoundRect(screen, float32(x), float32(y), float32(w), float32(h), 12, gfx.PanelFill)

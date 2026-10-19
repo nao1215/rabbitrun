@@ -163,6 +163,7 @@ func (g *Game) Update() error {
 		return nil
 	}
 	g.frame++
+	g.placeButton()
 	g.in.Update()
 	if f11, altEnter := fullscreenKeys(); f11 || altEnter {
 		toggleFullscreen()
@@ -186,8 +187,10 @@ func (g *Game) Update() error {
 
 // Draw draws the frame.
 func (g *Game) Draw(screen *ebiten.Image) {
+	noteMenu(0, 0, 0, 0) // the scene notes the menu it draws, for taps
 	g.bg.draw(screen)
 	g.scene.Draw(screen)
+	g.drawButton(screen)
 	if g.cap != nil {
 		g.end(g.cap.afterDraw(screen))
 	}
