@@ -11,3 +11,8 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    groups:
+      # init, analyze and upload-sarif must stay on one version: CodeQL fails when they differ.
+      codeql-action:
+        patterns:
+          - "github/codeql-action*"
