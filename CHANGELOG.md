@@ -4,8 +4,21 @@ All notable changes to this project are documented in this file. The format is b
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-28
+
 ### Added
-- The browser version now has Open Graph and Twitter card tags, so a link to it shows the game's picture, title, and description on X, Slack, and other sites.
+- A browser version, published on GitHub Pages: a full-screen page for phones with a loading bar. It keeps the save in the browser's localStorage (a page without it plays on without saving), and its title has no EXIT, since closing the tab ends the game.
+- Touch and mouse play. A drag is a stick that floats where the finger went down (left and right steer, up speeds up), a quick tap confirms, a double tap swings the hammer, and a tap on a menu item, a character's card or a gallery tile chooses it. Once the screen has been touched or clicked, a button in the top left corner goes back, pauses or resumes.
+- The browser version's link shows the game's picture, title and description as a card on X, Slack and other sites.
+- `?fps` on the browser version's address shows the ticks and frames a second and the longest update and draw of the last second in the bottom left corner, to tell whether a phone keeps up.
+
+### Changed
+- The browser version's pictures are smaller WebP copies decoded by the browser itself, so the download is about 39 MB instead of 238 MB and the screen no longer stalls while pictures come in.
+- Ebitengine 2.10.5.
+
+### Fixed
+- The music no longer crackles in a browser when a frame is slow, as on a phone or while pictures come in on the character select.
+- A slow swipe on a menu now moves one step. A finger held in a direction repeated like a held key, so a swipe on the character select ran on through the cards.
 
 ## [0.2.0] - 2026-10-05
 
