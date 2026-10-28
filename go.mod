@@ -3,7 +3,7 @@ module github.com/nao1215/rabbitrun
 go 1.26.6
 
 require (
-	github.com/hajimehoshi/ebiten/v2 v2.10.4
+	github.com/hajimehoshi/ebiten/v2 v2.10.5
 	github.com/spf13/pflag v1.0.10
 	golang.org/x/image v0.46.0
 )
