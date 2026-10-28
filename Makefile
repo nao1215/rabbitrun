@@ -26,6 +26,8 @@ web: web-assets ## Build the browser version into dist/web (needs Python 3 with 
 	mv $(WEB_DIR)/rabbitrun.wasm.tmp $(WEB_DIR)/rabbitrun.wasm
 	cp "$$($(GO) env GOROOT)/lib/wasm/wasm_exec.js" $(WEB_DIR)/
 	chmod 644 $(WEB_DIR)/wasm_exec.js
+	# the link preview picture that og:image in web/index.html points at
+	cp doc/img/ogp.png $(WEB_DIR)/ogp.png
 	size=$$(wc -c < $(WEB_DIR)/rabbitrun.wasm | tr -d ' '); \
 	sed -e "s/@WASM_SIZE@/$$size/" -e "s/@WASM_MB@/$$((size / 1000000))/" web/index.html > $(WEB_DIR)/index.html
 	@ls -l $(WEB_DIR)

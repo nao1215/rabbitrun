@@ -4,6 +4,9 @@ All notable changes to this project are documented in this file. The format is b
 
 ## [Unreleased]
 
+### Added
+- The browser version now has Open Graph and Twitter card tags, so a link to it shows the game's picture, title, and description on X, Slack, and other sites.
+
 ## [0.2.0] - 2026-10-05
 
 ### Added
