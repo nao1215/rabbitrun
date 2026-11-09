@@ -7,7 +7,7 @@ GO_LDFLAGS  = -ldflags '-X main.version=$(VERSION)'
 
 # Tool versions; keep them equal to the versions the CI workflows pin.
 GOLANGCI_LINT_VERSION = v2.14.0
-GOVULNCHECK_VERSION   = v1.8.0
+GOVULNCHECK_VERSION   = v1.9.0
 GO_LICENSES_VERSION   = v2.0.1
 
 build: ## Build the rabbitrun binary
