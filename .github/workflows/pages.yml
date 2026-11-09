@@ -20,6 +20,10 @@ concurrency:
 
 jobs:
   build:
+    # A name of its own so the required check "build" (build.yml) and this
+    # js/wasm build are two separate required checks rather than one name
+    # that either job can satisfy.
+    name: Pages / build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
