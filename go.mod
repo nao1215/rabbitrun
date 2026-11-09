@@ -4,7 +4,7 @@ go 1.26.6
 
 require (
 	github.com/hajimehoshi/ebiten/v2 v2.10.5
-	github.com/spf13/pflag v1.0.10
+	github.com/spf13/pflag v1.1.0
 	golang.org/x/image v0.47.0
 )
 

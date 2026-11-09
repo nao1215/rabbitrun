@@ -4,6 +4,9 @@ All notable changes to this project are documented in this file. The format is b
 
 ## [Unreleased]
 
+### Changed
+- spf13/pflag 1.1.0.
+
 ## [0.3.0] - 2026-10-28
 
 ### Added
