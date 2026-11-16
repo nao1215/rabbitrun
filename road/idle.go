@@ -170,7 +170,7 @@ func (g *Game) idleBlock(row Row) Row {
 				}
 			}
 			g.idle.since, g.idle.blockX = 0, x
-			g.idle.sides = [2]bool{x > 0 && row[x-1].Wall == 0, x < W-1 && row[x+1].Wall == 0}
+			g.idle.sides = [2]bool{x > 0 && row[x-1].Wall == 0, x < W-1 && row[x+1].Wall == 0} // #nosec G602 -- each index is guarded by the bounds test before it
 		}
 	}
 	x, moved := lazyNext(g.idle.x, row, last)
@@ -237,7 +237,7 @@ func (g *Game) lookAhead() []lookRow {
 	if c.src.UnmarshalBinary(b) != nil {
 		return nil
 	}
-	c.rng = rand.New(c.src) //nolint:gosec // G404: game randomness, not security sensitive
+	c.rng = rand.New(c.src) // #nosec G404 -- game randomness, not security sensitive
 	c.Events, c.taken, c.lookingAhead = nil, nil, true
 	c.starts = make(map[int]roadShape, len(g.starts))
 	for k, v := range g.starts {

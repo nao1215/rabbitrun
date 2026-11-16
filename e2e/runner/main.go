@@ -108,7 +108,7 @@ func run(ctx context.Context, args []string) error {
 		return fmt.Errorf("can not export RABBITRUN_E2E_BIN_DIR: %w", err)
 	}
 
-	version, err := exec.CommandContext(ctx, binary, "--version").Output() //nolint:gosec // the path is one this program just built
+	version, err := exec.CommandContext(ctx, binary, "--version").Output() // #nosec G204 -- the path is one this program just built
 	if err != nil {
 		return fmt.Errorf("can not run the freshly built rabbitrun: %w", err)
 	}
@@ -124,7 +124,7 @@ func run(ctx context.Context, args []string) error {
 		atagoArgs = append(atagoArgs, filepath.Join(repoRoot, "e2e", "atago"))
 	}
 
-	atago := exec.CommandContext(ctx, "atago", atagoArgs...) //nolint:gosec // a fixed command with author-supplied spec targets
+	atago := exec.CommandContext(ctx, "atago", atagoArgs...) // #nosec G204 G702 -- a fixed command with author-supplied spec targets
 	atago.Dir = repoRoot
 	atago.Stdout = os.Stdout
 	atago.Stderr = os.Stderr
@@ -143,7 +143,7 @@ func run(ctx context.Context, args []string) error {
 // release sets it (Makefile, .goreleaser.yaml).
 func buildRabbitrun(ctx context.Context, repoRoot, output string) error {
 	log.Print("building rabbitrun...")
-	cmd := exec.CommandContext(ctx, "go", "build", "-ldflags", "-X main.version="+e2eVersion, "-o", output, ".") //nolint:gosec // fixed arguments and a path this program chose
+	cmd := exec.CommandContext(ctx, "go", "build", "-ldflags", "-X main.version="+e2eVersion, "-o", output, ".") // #nosec G204 -- fixed arguments and a path this program chose
 	cmd.Dir = repoRoot
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

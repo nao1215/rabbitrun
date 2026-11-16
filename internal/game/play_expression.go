@@ -215,7 +215,7 @@ func (s *playScene) pickVariant(state string) string {
 		}
 	}
 	for range 4 {
-		id := vs[rand.IntN(len(vs))].ID //nolint:gosec // G404: game randomness, not security sensitive
+		id := vs[rand.IntN(len(vs))].ID // #nosec G404 -- game randomness, not security sensitive
 		if id != s.exprID {
 			return id
 		}

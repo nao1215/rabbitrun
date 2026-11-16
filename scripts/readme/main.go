@@ -147,7 +147,7 @@ func updateCounts(path string, chars []*character.Character, w io.Writer) error 
 			return err
 		}
 	}
-	raw, err := os.ReadFile(path) //nolint:gosec // G304: the README the caller names
+	raw, err := os.ReadFile(path) // #nosec G304 G703 -- the README the caller names
 	if err != nil {
 		return err
 	}
@@ -158,7 +158,7 @@ func updateCounts(path string, chars []*character.Character, w io.Writer) error 
 	if out == string(raw) {
 		return nil
 	}
-	return os.WriteFile(path, []byte(out), 0o600) //nolint:gosec // G703: the README the caller names
+	return os.WriteFile(path, []byte(out), 0o600) // #nosec G703 -- the README the caller names
 }
 
 // gallerySave is the save data of the gallery screenshot: every regular character has
@@ -188,8 +188,8 @@ func writeGallerySave(path string, chars []*character.Character) error {
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil { //nolint:gosec // G703: the save file the caller names
+	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil { // #nosec G703 -- the save file the caller names
 		return err
 	}
-	return os.WriteFile(path, append(raw, '\n'), 0o600) //nolint:gosec // G703: the save file the caller names
+	return os.WriteFile(path, append(raw, '\n'), 0o600) // #nosec G703 -- the save file the caller names
 }

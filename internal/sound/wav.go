@@ -21,7 +21,7 @@ func WriteBGMWavs(dir string) error {
 		style := name + "_" + []string{"0calm", "1groove", "2full"}[lv]
 		p := filepath.Join(dir, style+".wav")
 		// opened before rendering, so a directory that cannot be written is told at once
-		f, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600) //nolint:gosec // G304: p is under the directory the user passed with --bgm-wav
+		f, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600) // #nosec G304 -- p is under the directory the user passed with --bgm-wav
 		if err != nil {
 			return fmt.Errorf("cannot write %s: %w", p, err)
 		}
@@ -40,10 +40,10 @@ func WriteBGMWavs(dir string) error {
 		for i := 0; i+4 <= len(pcm); i += 4 { // left and right interleaved
 			v := math.Float32frombits(binary.LittleEndian.Uint32(pcm[i:]))
 			sample := int16(max(-1, min(1, v)) * 32767)
-			data = binary.LittleEndian.AppendUint16(data, uint16(sample)) //nolint:gosec // G115: intentional two's complement reinterpretation of a signed PCM sample
+			data = binary.LittleEndian.AppendUint16(data, uint16(sample)) // #nosec G115 -- intentional two's complement reinterpretation of a signed PCM sample
 		}
 		// data holds 30 seconds of 16-bit stereo audio (about 5 MB), far below the uint32 limit of a WAV header.
-		dataLen := uint32(len(data)) //nolint:gosec // G115: len(data) is a fixed ~5 MB, well within uint32
+		dataLen := uint32(len(data)) // #nosec G115 -- len(data) is a fixed ~5 MB, well within uint32
 		h := []byte("RIFF")
 		h = binary.LittleEndian.AppendUint32(h, 36+dataLen)
 		h = append(h, "WAVEfmt "...)
