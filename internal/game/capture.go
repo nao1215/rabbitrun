@@ -40,7 +40,7 @@ func (r *recorder) start(g *Game) error {
 	// Draw as fast as possible: a hidden window would otherwise be held to a few frames a second.
 	ebiten.SetVsyncEnabled(false)
 	ebiten.SetTPS(ebiten.SyncWithFPS)
-	cmd := exec.CommandContext(context.Background(), "ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgba", //nolint:gosec // G204: fixed arguments and the path the user passed
+	cmd := exec.CommandContext(context.Background(), "ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgba", // #nosec G204 -- fixed arguments and the path the user passed
 		"-s", fmt.Sprintf("%dx%d", ScreenW, ScreenH), "-r", "30", "-i", "-",
 		"-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "23", r.path)
 	return r.open(cmd)
@@ -319,7 +319,7 @@ func (c *captureState) save(img image.Image) (bool, error) {
 
 // writePNG encodes img as a PNG file at p.
 func writePNG(p string, img image.Image) error {
-	f, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600) //nolint:gosec // G304: p is under the directory the user passed with -capture
+	f, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600) // #nosec G304 -- p is under the directory the user passed with -capture
 	if err != nil {
 		return err
 	}

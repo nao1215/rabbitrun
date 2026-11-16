@@ -321,7 +321,7 @@ func BombChance(stage int) float64 { return max(0.1, 0.5-0.15*float64(stage-1)) 
 // none. It has its own random numbers (from the seed and the stage), so it is the same
 // every time, whichever course of the stage is being built, and does not change the road.
 func (g *Game) hammerRowOf(stage int) int {
-	r := rand.New(rand.NewPCG(g.seed^0x5bd1e995, uint64(stage))) //nolint:gosec // G404: game randomness, not security sensitive
+	r := rand.New(rand.NewPCG(g.seed^0x5bd1e995, uint64(stage))) // #nosec G115 G404 -- game randomness, not security sensitive
 	if r.Float64() >= BombChance(stage) {
 		return -1
 	}
@@ -530,7 +530,7 @@ func (g *Game) Bonus() bool { return g.TotalCourses > 0 && Feasts[g.Level] }
 // colorfulWall is the color of the wall block at column x of row r of the course at level:
 // any of the candy colors, the same every time the row is built.
 func colorfulWall(level, r, x int) int8 {
-	h := uint32(level)*0x9e3779b1 ^ uint32(r)*0x85ebca6b ^ uint32(x)*0xc2b2ae35 //nolint:gosec // G115: small non-negative numbers
+	h := uint32(level)*0x9e3779b1 ^ uint32(r)*0x85ebca6b ^ uint32(x)*0xc2b2ae35 // #nosec G115 -- small non-negative numbers
 	h ^= h >> 15
 	h *= 0x2c1b3c6d
 	h ^= h >> 13
@@ -929,7 +929,7 @@ func (g *Game) pathLine(row *Row, left, right int) {
 
 // pathHash mixes the seed, the stage and the row into the numbers of pathLine.
 func pathHash(seed uint64, stage, row int) uint64 {
-	x := seed ^ uint64(stage)*0x9e3779b97f4a7c15 ^ uint64(row)*0xbf58476d1ce4e5b9 //nolint:gosec // G115: small non-negative numbers
+	x := seed ^ uint64(stage)*0x9e3779b97f4a7c15 ^ uint64(row)*0xbf58476d1ce4e5b9 // #nosec G115 -- small non-negative numbers
 	x ^= x >> 31
 	x *= 0x94d049bb133111eb
 	return x ^ x>>29
@@ -1012,8 +1012,8 @@ const specialAt = 2
 // number). The road runs on from the course before: there is no open stretch between
 // courses (it was there to show the new illustration, which now shows all the time).
 func (g *Game) startCourse() {
-	g.src = rand.NewPCG(g.seed, uint64(g.Level)*0x9e3779b97f4a7c15) //nolint:gosec // G115: the course number is small and positive
-	g.rng = rand.New(g.src)                                         //nolint:gosec // G404: game randomness, not security sensitive
+	g.src = rand.NewPCG(g.seed, uint64(g.Level)*0x9e3779b97f4a7c15) // #nosec G115 -- the course number is small and positive
+	g.rng = rand.New(g.src)                                         // #nosec G404 -- game randomness, not security sensitive
 	if s, ok := g.starts[g.Level]; ok {
 		s.restore(g) // built again (a retry): from where it began the first time
 	} else {
@@ -1190,7 +1190,7 @@ func (g *Game) Step() {
 	g.pick()
 	// walls right beside the player on both sides are a near miss
 	lo, hi := span(g.X)
-	if lo > 0 && hi < W-1 && row[lo-1].Wall != 0 && row[hi+1].Wall != 0 { //nolint:gosec // G602: hi < W-1 keeps hi+1 inside the row
+	if lo > 0 && hi < W-1 && row[lo-1].Wall != 0 && row[hi+1].Wall != 0 { // #nosec G602 -- hi < W-1 keeps hi+1 inside the row
 		g.Events = append(g.Events, Event{Kind: EventNearMiss})
 	}
 }

@@ -551,7 +551,7 @@ func lockedTile(i int) *ebiten.Image {
 			iw, ih := tileInnerW, tileInnerH
 			cellSize := float64(iw) / road.W
 			rows := int(math.Ceil(float64(ih)/cellSize)) + 1
-			g := road.New(uint64(k) + 11) //nolint:gosec // G115: k is a small index
+			g := road.New(uint64(k) + 11) // #nosec G115 -- k is a small index
 			for range 40 {                // let the road wander a little first
 				g.Safe = 1
 				g.Step()
@@ -562,7 +562,7 @@ func lockedTile(i int) *ebiten.Image {
 				if y >= road.Rows || g.Rows[y][x].Wall == 0 {
 					return gummyCell{}
 				}
-				return gummyCell{kind: wall, id: int32(y*road.W + x + 1), alpha: 1} //nolint:gosec // G115: a few hundred cells
+				return gummyCell{kind: wall, id: int32(y*road.W + x + 1), alpha: 1} // #nosec G115 -- a few hundred cells
 			}, 0, oy, cellSize)
 			vector.FillRect(l, 0, 0, float32(iw), float32(ih), color.NRGBA{0xff, 0xff, 0xff, 0x90}, false)
 		})

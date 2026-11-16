@@ -86,7 +86,7 @@ func (s *playScene) drawBoard(screen *ebiten.Image) {
 		if buried(x, y) {
 			return gummyCell{}
 		}
-		return gummyCell{kind: Kind(w), id: int32(y*boardW + x + 1), alpha: fade} //nolint:gosec // G115: at most 17*9 cells; each cell its own block
+		return gummyCell{kind: Kind(w), id: int32(y*boardW + x + 1), alpha: fade} // #nosec G115 -- at most 17*9 cells; each cell its own block
 	}, 0, rowY(0), cell)
 	if s.breaking() {
 		s.drawShards(layer, rowY)

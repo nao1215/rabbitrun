@@ -2,6 +2,8 @@
 [![MultiPlatformUnitTest](https://github.com/nao1215/rabbitrun/actions/workflows/unit_test.yml/badge.svg)](https://github.com/nao1215/rabbitrun/actions/workflows/unit_test.yml)
 [![golangci-lint](https://github.com/nao1215/rabbitrun/actions/workflows/golangci-lint.yml/badge.svg)](https://github.com/nao1215/rabbitrun/actions/workflows/golangci-lint.yml)
 [![reviewdog](https://github.com/nao1215/rabbitrun/actions/workflows/reviewdog.yml/badge.svg)](https://github.com/nao1215/rabbitrun/actions/workflows/reviewdog.yml)
+[![Gosec](https://github.com/nao1215/rabbitrun/actions/workflows/gosec.yml/badge.svg)](https://github.com/nao1215/rabbitrun/actions/workflows/gosec.yml)
+[![Trivy](https://github.com/nao1215/rabbitrun/actions/workflows/trivy.yml/badge.svg)](https://github.com/nao1215/rabbitrun/actions/workflows/trivy.yml)
 [![Release Smoke](https://github.com/nao1215/rabbitrun/actions/workflows/release-smoke.yml/badge.svg)](https://github.com/nao1215/rabbitrun/actions/workflows/release-smoke.yml)
 ![Coverage](https://raw.githubusercontent.com/nao1215/octocovs-central-repo/main/badges/nao1215/rabbitrun/coverage.svg)
 [![tested with atago](https://img.shields.io/badge/tested%20with-atago-7c3aed?logo=data:image/svg%2Bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTMuNiA0LjIgMTEuOSAxMmwtOC4zIDcuOC0xLjktMi4yTDcuOSAxMiAxLjcgNi40eiIvPjxyZWN0IGZpbGw9IiNmZmYiIHg9IjEyLjYiIHk9IjE3LjIiIHdpZHRoPSI5LjciIGhlaWdodD0iMi44IiByeD0iMS40Ii8%2BPC9zdmc%2B&logoColor=white)](https://github.com/nao1215/atago)
