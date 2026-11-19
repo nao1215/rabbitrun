@@ -45,16 +45,18 @@ jobs:
 
       # The snapshot cross-compiles six targets, which no other job builds, so
       # it keeps its own cache key. Saved only from main; release.yml itself
-      # still builds from a clean cache.
+      # still builds from a clean cache. The entry is about 1.9 GB, so there is
+      # one per Go version and go.sum, not one per commit: a new one each push
+      # would push the other caches out of the repository's 10 GB.
       - name: Restore Go caches
+        id: go-cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/go/pkg/mod
             ~/.cache/go-build
-          key: go-${{ runner.os }}-release-smoke-${{ steps.go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}-${{ github.sha }}
+          key: go-${{ runner.os }}-release-smoke-${{ steps.go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}
           restore-keys: |
-            go-${{ runner.os }}-release-smoke-${{ steps.go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}-
             go-${{ runner.os }}-release-smoke-${{ steps.go.outputs.go-version }}-
 
       # The goreleaser before hook collects the dependency license texts.
@@ -71,13 +73,13 @@ jobs:
         run: ./scripts/smoke_artifacts.sh dist
 
       - name: Save Go caches
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.go-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/go/pkg/mod
             ~/.cache/go-build
-          key: go-${{ runner.os }}-release-smoke-${{ steps.go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}-${{ github.sha }}
+          key: go-${{ runner.os }}-release-smoke-${{ steps.go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}
 
       - name: Upload artifacts for the per-OS smoke jobs
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

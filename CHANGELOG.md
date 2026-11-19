@@ -10,6 +10,7 @@ All notable changes to this project are documented in this file. The format is b
 - Dependencies updated: `golang.org/x/image` 0.48.0, `golang.org/x/sync` 0.25.0, `golang.org/x/sys` 0.50.0 and `golang.org/x/text` 0.44.0. The Go minimum stays at 1.26.6.
 - The end-to-end tests run on atago v0.26.3 (setup-atago v0.1.5), and govulncheck is v1.10.0. gitleaks skips Dependabot pull requests, whose read-only token cannot list the commits. A new push to a pull request cancels the run it supersedes.
 - CI keeps the browser build's WebP pictures and the release snapshot's Go build cache between runs (saved from main only), so the Pages build no longer converts all 466 pictures on every pull request.
+- The save data has property tests with rapid (20,000 inputs a night), and gremlins mutation testing covers the game's rules (`road/`, `internal/engine/`, `internal/save/`) weekly and on the lines a pull request changes (44.11% on the first full run). The release snapshot's Go cache is kept once per Go version and `go.sum` instead of once per commit, so it no longer pushes the other caches out. See doc/testing.md.
 
 ## [0.3.1] - 2026-11-09
 

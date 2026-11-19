@@ -36,3 +36,6 @@ __pycache__/
 
 # The smaller assets the browser build embeds (scripts/web_assets.py, make web-assets)
 /webassets/
+
+# Inputs rapid writes when a property test fails
+testdata/rapid/

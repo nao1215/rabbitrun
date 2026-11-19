@@ -195,6 +195,20 @@ gh attestation verify rabbitrun_0.3.1_linux_amd64.tar.gz --repo nao1215/rabbitru
 
 A mistake in the options, such as an unknown option, a stray argument or two of `--capture`, `--bgm-wav`, `--reset-save` and `--record-demo` at once, exits with status 2 before the game opens. A failure while doing the job, such as a directory that cannot be written, a screenshot that cannot be saved or ffmpeg failing during `--record-demo`, exits with status 1.
 
+## Testing
+
+| Technique | Bug class caught here |
+|---|---|
+| Unit and scenario tests ([internal/engine/difficulty_rules_test.go](internal/engine/difficulty_rules_test.go), [road/designed_test.go](road/designed_test.go)) | A stage that stops getting harder, a designed theme that loses its shape, a run the careful player can no longer clear |
+| Pixel tests ([internal/game/pixels_test.go](internal/game/pixels_test.go)) | A screen that draws something other than it should |
+| E2E tests ([e2e/atago/](e2e/atago/)) | A command-line option that exits with the wrong status, writes the wrong files or touches the player's save |
+| Differential tests ([internal/engine/passability_test.go](internal/engine/passability_test.go)) | The careful player's search sliding differently from the game itself |
+| Property and metamorphic tests ([internal/save/property_test.go](internal/save/property_test.go)) | Progress lost between two launches, or a read-only run that changes the save |
+| Fuzzing ([internal/save/fuzz_test.go](internal/save/fuzz_test.go), [internal/engine/fuzz_test.go](internal/engine/fuzz_test.go), [road/fuzz_test.go](road/fuzz_test.go)) | A broken save file that crashes the game, an input sequence that breaks the engine |
+| Mutation testing ([.github/workflows/mutation.yml](.github/workflows/mutation.yml)) | A test that runs a changed rule without noticing the change |
+
+How to run each one is in [doc/testing.md](doc/testing.md).
+
 ## Contributing
 
 Bug reports, ideas and pull requests are welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md) for how to build, test and lint the game.
