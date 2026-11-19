@@ -1,16 +1,27 @@
 name: gitleaks
-# Pull requests and direct pushes to main: a secret committed straight to main
-# would otherwise never be scanned.
+# Scans the commits of pull requests and of direct pushes to main for committed
+# secrets. A secret pushed straight to main would otherwise never be scanned.
 on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
+
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   scan:
     name: gitleaks
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Dependabot runs get a read-only token and the action's PR-commit listing
+    # 403s with it. Version bumps carry no secrets to scan.
+    if: ${{ github.actor != 'dependabot[bot]' }}
     # gitleaks-action lists the pull request's commits through the API.
     permissions:
       contents: read
