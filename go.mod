@@ -6,6 +6,7 @@ require (
 	github.com/hajimehoshi/ebiten/v2 v2.10.6
 	github.com/spf13/pflag v1.1.0
 	golang.org/x/image v0.48.0
+	pgregory.net/rapid v1.3.0
 )
 
 require (
