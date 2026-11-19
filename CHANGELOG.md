@@ -7,6 +7,9 @@ All notable changes to this project are documented in this file. The format is b
 ### Changed
 
 - CI scans the repository with gosec and Trivy on every pull request (Trivy covers dependency vulnerabilities, committed secrets and misconfigurations, and also runs daily). Workflow actions are recorded in `.github/workflows/actions.lock`, which CI verifies against the pinned commits.
+- Dependencies updated: `golang.org/x/image` 0.48.0, `golang.org/x/sync` 0.25.0, `golang.org/x/sys` 0.50.0 and `golang.org/x/text` 0.44.0. The Go minimum stays at 1.26.6.
+- The end-to-end tests run on atago v0.26.3 (setup-atago v0.1.5), and govulncheck is v1.10.0. gitleaks skips Dependabot pull requests, whose read-only token cannot list the commits. A new push to a pull request cancels the run it supersedes.
+- CI keeps the browser build's WebP pictures and the release snapshot's Go build cache between runs (saved from main only), so the Pages build no longer converts all 466 pictures on every pull request.
 
 ## [0.3.1] - 2026-11-09
 

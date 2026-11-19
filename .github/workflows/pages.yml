@@ -49,8 +49,34 @@ jobs:
           GOARCH: wasm
         run: go test -exec="$(go env GOROOT)/lib/wasm/go_js_wasm_exec" ./internal/save/
 
+      # Converting the 466 pictures to WebP is most of this job (about 280 of
+      # its 320 seconds). The result depends only on assets/ and the script, so
+      # it is cached under their hash. Saved only from main, so a pull request
+      # cannot push main's entry out of the cache, and restored everywhere.
+      - name: Restore the converted pictures
+        id: webassets
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: webassets
+          key: webassets-${{ hashFiles('assets/**', 'scripts/web_assets.py') }}
+
+      # web_assets.py keeps a converted picture only when it is newer than its
+      # source, and checkout gives every source the current time. A restored
+      # entry matches assets/ exactly, so mark it newer and let the script
+      # convert nothing.
+      - name: Mark the restored pictures as up to date
+        if: steps.webassets.outputs.cache-hit == 'true'
+        run: find webassets -type f -exec touch {} +
+
       - name: Build the browser version
         run: make web
+
+      - name: Save the converted pictures
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.webassets.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: webassets
+          key: webassets-${{ hashFiles('assets/**', 'scripts/web_assets.py') }}
 
       - name: Upload the page
         if: github.event_name != 'pull_request'
