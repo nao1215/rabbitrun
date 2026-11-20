@@ -20,7 +20,7 @@
 
 Rabbit Run is a runner game with anime girls for Windows, macOS, Linux and web browsers (phones too). You steer a bunny up a road of gummy blocks while your character cheers you on beside it. It is a project for learning how to make a game with AI: the program, the characters and illustrations, the blocks and items, the backgrounds and the music arrangements were all made with AI. It is written in Go with [Ebitengine](https://ebitengine.org/).
 
-<p align="center"><b>▶ <a href="https://nao1215.github.io/rabbitrun/">Play in your browser</a></b> — no download, on PC or your phone · also on <a href="https://nao1215.itch.io/rabbit-run">itch.io</a></p>
+<p align="center"><a href="https://nao1215.github.io/rabbitrun/">Play in your browser</a> on a PC or a phone without downloading anything, or get it on <a href="https://nao1215.itch.io/rabbit-run">itch.io</a>.</p>
 
 <p align="center"><img src="./doc/img/demo.gif" width="360" alt="the bunny hopping up the road and the hammer smashing the walls"></p>
 
@@ -46,7 +46,7 @@ Move the bunny with the left and right keys, hold up to speed up, and press Spac
 
 ### Illustrations
 
-Each course you clear unlocks an illustration of your character, which becomes the background of the next course. The gallery shows everything you have unlocked.
+Each course you clear unlocks an illustration of your character, which becomes the background of the next course and stays in the gallery.
 
 | An unlocked illustration | Behind the next course |
 | :---: | :---: |
@@ -68,13 +68,13 @@ Your character stands beside the road and reacts to the run: she relaxes on a wi
 
 ## How to play
 
-Install Rabbit Run (see [How to install](#how-to-install)) and start it from a terminal:
+[Install Rabbit Run](#how-to-install) and start it from a terminal:
 
 ```shell
 rabbitrun
 ```
 
-On Windows, you can also double-click `rabbitrun.exe`. The game opens in a window; press F11 or Alt+Enter to switch to full screen.
+On Windows you can also double-click `rabbitrun.exe`. F11 or Alt+Enter switches the window to full screen.
 
 | Action | Keyboard | Gamepad |
 | --- | --- | --- |
@@ -86,11 +86,11 @@ On Windows, you can also double-click `rabbitrun.exe`. The game opens in a windo
 | Confirm / back | Enter / Esc | A / B |
 | Switch character in the gallery | Q / E | LB / RB |
 
-Choose PLAY on the title screen, pick a character, and the run starts. GALLERY shows the character portraits you have seen and the illustrations you have unlocked. Your progress is saved to `rabbitrun/save.json` in the user config directory (`~/.config` on Linux, `~/Library/Application Support` on macOS, `%AppData%` on Windows).
+Choose PLAY on the title screen and pick a character to start a run. GALLERY shows the portraits you have seen and the illustrations you have unlocked. Progress is saved to `rabbitrun/save.json` in the user config directory (`~/.config` on Linux, `~/Library/Application Support` on macOS, `%AppData%` on Windows).
 
 ## Play in your browser
 
-Open <https://nao1215.github.io/rabbitrun/> on a computer or a phone. The page downloads the whole game (about 40 MB) before it starts, and the sound comes on with your first tap or key. A phone shows the game upright with bands at the sides when it is held sideways, so holding it upright gives the biggest screen.
+Open <https://nao1215.github.io/rabbitrun/> on a computer or a phone. The page downloads the whole game (about 40 MB) first, and the sound comes on with your first tap or key. A phone held sideways shows the game upright with bands at the sides, so hold it upright for the biggest screen.
 
 The keyboard and gamepad work as in the table above. On a touch screen (the mouse's left button works the same way):
 
@@ -104,9 +104,9 @@ The keyboard and gamepad work as in the table above. On a touch screen (the mous
 | Character select | Tap a card to choose her and tap her again to start, or swipe left and right |
 | Gallery | Tap a face at the top to switch characters and a tile to open it; swipe left and right to step through the pictures, tap to close |
 
-Your progress is kept in the browser's storage for the site (localStorage), as the same JSON as `save.json`. A private window, or a browser that blocks storage for the site, plays without saving; clearing the site's data deletes the progress. The browser version has no EXIT (close the tab instead) and no command-line options, and the secret command needs a keyboard.
+Progress is kept in the site's localStorage as the same JSON as `save.json`. A private window or a browser that blocks site storage plays without saving, and clearing the site's data deletes the progress. The browser version has no EXIT (close the tab) and no command-line options, and the secret command needs a keyboard.
 
-To see whether the game keeps up on your device, open the page with `?fps` at the end of the address (<https://nao1215.github.io/rabbitrun/?fps>): the bottom of the screen shows the ticks (TPS, 60 when the game runs at full speed) and frames a second, and the longest update and draw of the last second.
+With `?fps` at the end of the address (<https://nao1215.github.io/rabbitrun/?fps>), the bottom of the screen shows ticks (TPS, 60 at full speed) and frames a second, and the longest update and draw of the last second.
 
 ## How to install
 
@@ -128,13 +128,13 @@ sudo apt install libx11-6 libgl1 libglx-mesa0 libxcursor1 libxi6 libxinerama1 li
 
 Rabbit Run needs Go 1.26.6 or later. CI tests Go 1.26.6 and the latest release on Linux, macOS and Windows.
 
-### Use homebrew
+### Use Homebrew
 
 ```shell
 brew install --cask nao1215/tap/rabbitrun
 ```
 
-### Install from Package or Binary
+### Install from a package or binary
 
 [The release page](https://github.com/nao1215/rabbitrun/releases) contains packages in .deb, .rpm, and .apk formats for `amd64` and `arm64`, plus `.tar.gz` archives for Linux/macOS and `.zip` archives for Windows. Unpack an archive and run `rabbitrun` (`rabbitrun.exe` on Windows), or install a package:
 
@@ -153,7 +153,7 @@ Replace `0.3.2` with the release you downloaded and `amd64` with `arm64` where a
 
 ### Verifying release integrity
 
-Each release publishes `checksums.txt`, a cosign signature bundle for it, an SBOM for each archive, SLSA build provenance (`multiple.intoto.jsonl`) and GitHub build provenance.
+Each release has `checksums.txt` with a cosign signature bundle, an SBOM for each archive, SLSA build provenance (`multiple.intoto.jsonl`) and GitHub build provenance.
 
 ```shell
 # Verify the signature of checksums.txt (keyless, via Sigstore)
@@ -193,25 +193,15 @@ gh attestation verify rabbitrun_0.3.2_linux_amd64.tar.gz --repo nao1215/rabbitru
 | `--record-seconds N` | The length of the demo recording in seconds (60 by default). |
 | `--record-extra` | Record the demo on the extra stages. |
 
-A mistake in the options, such as an unknown option, a stray argument or two of `--capture`, `--bgm-wav`, `--reset-save` and `--record-demo` at once, exits with status 2 before the game opens. A failure while doing the job, such as a directory that cannot be written, a screenshot that cannot be saved or ffmpeg failing during `--record-demo`, exits with status 1.
+A bad command line (an unknown option, a stray argument, or more than one of `--capture`, `--bgm-wav`, `--reset-save` and `--record-demo`) exits with status 2 before the game opens. A failure during the job, such as an unwritable directory or ffmpeg failing during `--record-demo`, exits with status 1.
 
 ## Testing
 
-| Technique | Bug class caught here |
-|---|---|
-| Unit and scenario tests ([internal/engine/difficulty_rules_test.go](internal/engine/difficulty_rules_test.go), [road/designed_test.go](road/designed_test.go)) | A stage that stops getting harder, a designed theme that loses its shape, a run the careful player can no longer clear |
-| Pixel tests ([internal/game/pixels_test.go](internal/game/pixels_test.go)) | A screen that draws something other than it should |
-| E2E tests ([e2e/atago/](e2e/atago/)) | A command-line option that exits with the wrong status, writes the wrong files or touches the player's save |
-| Differential tests ([internal/engine/passability_test.go](internal/engine/passability_test.go)) | The careful player's search sliding differently from the game itself |
-| Property and metamorphic tests ([internal/save/property_test.go](internal/save/property_test.go)) | Progress lost between two launches, or a read-only run that changes the save |
-| Fuzzing ([internal/save/fuzz_test.go](internal/save/fuzz_test.go), [internal/engine/fuzz_test.go](internal/engine/fuzz_test.go), [road/fuzz_test.go](road/fuzz_test.go)) | A broken save file that crashes the game, an input sequence that breaks the engine |
-| Mutation testing ([.github/workflows/mutation.yml](.github/workflows/mutation.yml)) | A test that runs a changed rule without noticing the change |
-
-How to run each one is in [doc/testing.md](doc/testing.md).
+Unit, scenario, pixel, E2E ([atago](e2e/atago/)), differential, property and metamorphic tests, fuzzing, and mutation testing guard the difficulty curve, the screens, the command-line options and the save file. [doc/testing.md](doc/testing.md) says what each covers and how to run it.
 
 ## Contributing
 
-Bug reports, ideas and pull requests are welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md) for how to build, test and lint the game.
+Bug reports, ideas and pull requests are welcome. [CONTRIBUTING.md](./CONTRIBUTING.md) says how to build, test and lint the game.
 
 ## Contributors
 
@@ -249,7 +239,7 @@ The fifth card on the character select screen shows only a silhouette until each
 <details>
 <summary>Secret command</summary>
 
-Clear the game with the secret character, and the next title screen tells you the secret word. On the title screen, type `RABBITRUN` on the keyboard, in capitals. The extra stages open: every character runs a new, tighter set of courses and unlocks another fifteen illustrations, and the title shows all the characters together. Type it again to go back to the regular stages; the game always starts on the regular ones. Once you have typed it, the gallery also lists the extra illustrations.
+Clear the game with the secret character, and the next title screen tells you the secret word. Type `RABBITRUN` in capitals on the title screen to open the extra stages: every character runs a new, tighter set of courses and unlocks another fifteen illustrations, the title shows all the characters together, and the gallery lists the extra illustrations. Type it again to go back. The game always starts on the regular stages.
 
 </details>
 
@@ -272,7 +262,6 @@ If you just want to see every character and picture, start the game with `--debu
 ## Limitations
 
 - I am not used to image generation yet, so the characters' faces and outfits sometimes look slightly different from one picture to another.
-- This game is a learning project. I made it to learn how to build a game together with AI.
 
 ## License
 
